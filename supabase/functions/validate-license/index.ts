@@ -63,7 +63,7 @@ serve(async (req) => {
       .eq('key', apiKey);
 
     // Get license key from request
-    const { license_key, hwid } = await req.json();
+    const { license_key, hwid, device_name, os_info } = await req.json();
 
     if (!license_key) {
       return new Response(
@@ -155,7 +155,11 @@ serve(async (req) => {
       if (existingDevice) {
         await supabase
           .from('devices')
-          .update({ last_verified: new Date().toISOString() })
+          .update({ 
+            last_verified: new Date().toISOString(),
+            device_name: device_name || existingDevice.device_name,
+            os_info: os_info || existingDevice.os_info
+          })
           .eq('id', existingDevice.id);
       } else {
         await supabase
@@ -163,6 +167,8 @@ serve(async (req) => {
           .insert({
             license_id: license.id,
             hwid: hwid,
+            device_name: device_name,
+            os_info: os_info,
             last_verified: new Date().toISOString()
           });
       }
