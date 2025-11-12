@@ -6,6 +6,42 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
 };
 
+// Rate limiting configuration
+const rateLimitWindow = 60000; // 1 minute
+const maxRequestsPerWindow = 30; // Max 30 requests per minute per API key
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+
+// Clean up old entries every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, value] of rateLimitMap.entries()) {
+    if (now > value.resetTime) {
+      rateLimitMap.delete(key);
+    }
+  }
+}, 300000);
+
+// Rate limiting function
+function checkRateLimit(apiKey: string): boolean {
+  const now = Date.now();
+  const limitData = rateLimitMap.get(apiKey);
+
+  if (!limitData || now > limitData.resetTime) {
+    rateLimitMap.set(apiKey, {
+      count: 1,
+      resetTime: now + rateLimitWindow
+    });
+    return true;
+  }
+
+  if (limitData.count >= maxRequestsPerWindow) {
+    return false;
+  }
+
+  limitData.count++;
+  return true;
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -24,6 +60,15 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: 'Missing API key', valid: false }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check rate limit
+    if (!checkRateLimit(apiKey)) {
+      console.warn(`Rate limit exceeded for API key: ${apiKey.substring(0, 8)}...`);
+      return new Response(
+        JSON.stringify({ error: 'Too many requests. Please try again later.', valid: false }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
