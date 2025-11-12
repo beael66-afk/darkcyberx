@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 import { customerSchema } from "@/lib/validations";
 import { z } from "zod";
+import { logActivity } from "@/lib/logger";
 
 type Customer = Tables<"customers">;
 
@@ -43,10 +44,17 @@ const Customers = () => {
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      const { error } = await supabase.from("customers").insert([data]);
+      const { data: result, error } = await supabase.from("customers").insert([data]).select().single();
       if (error) throw error;
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
+      await logActivity({
+        action: "created",
+        entityType: "customer",
+        entityId: data.id,
+        description: `تم إضافة عميل جديد: ${data.name}`
+      });
       queryClient.invalidateQueries({ queryKey: ["customers"] });
       toast.success("تم إضافة العميل بنجاح");
       handleCloseDialog();
@@ -55,11 +63,17 @@ const Customers = () => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: typeof formData }) => {
+    mutationFn: async ({ id, data, name }: { id: string; data: typeof formData; name: string }) => {
       const { error } = await supabase.from("customers").update(data).eq("id", id);
       if (error) throw error;
+      return name;
     },
-    onSuccess: () => {
+    onSuccess: async (name) => {
+      await logActivity({
+        action: "updated",
+        entityType: "customer",
+        description: `تم تحديث عميل: ${name}`
+      });
       queryClient.invalidateQueries({ queryKey: ["customers"] });
       toast.success("تم تحديث العميل بنجاح");
       handleCloseDialog();
@@ -68,11 +82,17 @@ const Customers = () => {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id, name }: { id: string; name: string }) => {
       const { error } = await supabase.from("customers").delete().eq("id", id);
       if (error) throw error;
+      return name;
     },
-    onSuccess: () => {
+    onSuccess: async (name) => {
+      await logActivity({
+        action: "deleted",
+        entityType: "customer",
+        description: `تم حذف عميل: ${name}`
+      });
       queryClient.invalidateQueries({ queryKey: ["customers"] });
       toast.success("تم حذف العميل بنجاح");
     },
@@ -86,7 +106,7 @@ const Customers = () => {
       const validated = customerSchema.parse(formData);
       
       if (editingCustomer) {
-        updateMutation.mutate({ id: editingCustomer.id, data: validated as any });
+        updateMutation.mutate({ id: editingCustomer.id, data: validated as any, name: validated.name });
       } else {
         createMutation.mutate(validated as any);
       }
@@ -247,7 +267,7 @@ const Customers = () => {
                         variant="ghost"
                         onClick={() => {
                           if (confirm("هل أنت متأكد من حذف هذا العميل؟")) {
-                            deleteMutation.mutate(customer.id);
+                            deleteMutation.mutate({ id: customer.id, name: customer.name });
                           }
                         }}
                       >

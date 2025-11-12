@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import type { Tables } from "@/integrations/supabase/types";
+import { logActivity } from "@/lib/logger";
 
 type Device = Tables<"devices">;
 
@@ -30,14 +31,20 @@ const Devices = () => {
   });
 
   const toggleActiveMutation = useMutation({
-    mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
+    mutationFn: async ({ id, isActive, deviceName }: { id: string; isActive: boolean; deviceName: string }) => {
       const { error } = await supabase
         .from("devices")
         .update({ is_active: !isActive })
         .eq("id", id);
       if (error) throw error;
+      return { isActive: !isActive, deviceName };
     },
-    onSuccess: () => {
+    onSuccess: async ({ isActive, deviceName }) => {
+      await logActivity({
+        action: isActive ? "activated" : "deactivated",
+        entityType: "device",
+        description: `تم ${isActive ? "تفعيل" : "تعطيل"} الجهاز: ${deviceName}`
+      });
       queryClient.invalidateQueries({ queryKey: ["devices"] });
       toast.success("تم تحديث حالة الجهاز بنجاح");
     },
@@ -45,11 +52,17 @@ const Devices = () => {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id, deviceName }: { id: string; deviceName: string }) => {
       const { error } = await supabase.from("devices").delete().eq("id", id);
       if (error) throw error;
+      return deviceName;
     },
-    onSuccess: () => {
+    onSuccess: async (deviceName) => {
+      await logActivity({
+        action: "deleted",
+        entityType: "device",
+        description: `تم حذف الجهاز: ${deviceName}`
+      });
       queryClient.invalidateQueries({ queryKey: ["devices"] });
       toast.success("تم حذف الجهاز بنجاح");
     },
@@ -129,7 +142,8 @@ const Devices = () => {
                         variant="ghost"
                         onClick={() => toggleActiveMutation.mutate({
                           id: device.id,
-                          isActive: device.is_active ?? false
+                          isActive: device.is_active ?? false,
+                          deviceName: device.device_name || device.hwid
                         })}
                       >
                         {device.is_active ? (
@@ -143,7 +157,10 @@ const Devices = () => {
                         variant="ghost"
                         onClick={() => {
                           if (confirm("هل أنت متأكد من حذف هذا الجهاز؟")) {
-                            deleteMutation.mutate(device.id);
+                            deleteMutation.mutate({ 
+                              id: device.id, 
+                              deviceName: device.device_name || device.hwid 
+                            });
                           }
                         }}
                       >

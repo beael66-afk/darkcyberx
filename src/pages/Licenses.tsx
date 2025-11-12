@@ -24,6 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { logActivity } from "@/lib/logger";
 
 interface License {
   id: string;
@@ -121,7 +122,7 @@ const Licenses = () => {
   const createLicense = async () => {
     try {
       const licenseKey = await generateLicenseKey();
-      const { error } = await supabase.from("licenses").insert([{
+      const { data, error } = await supabase.from("licenses").insert([{
         license_key: licenseKey,
         customer_id: formData.customer_id || null,
         product_id: formData.product_id || null,
@@ -129,9 +130,16 @@ const Licenses = () => {
         expire_at: formData.expire_at || null,
         status: formData.status,
         notes: formData.notes || null
-      }]);
+      }]).select().single();
 
       if (error) throw error;
+
+      await logActivity({
+        action: "created",
+        entityType: "license",
+        entityId: data.id,
+        description: `تم إنشاء ترخيص جديد: ${licenseKey}`
+      });
 
       toast({
         title: "تم الإنشاء",
@@ -165,6 +173,13 @@ const Licenses = () => {
         .eq("id", editingLicense.id);
 
       if (error) throw error;
+
+      await logActivity({
+        action: "updated",
+        entityType: "license",
+        entityId: editingLicense.id,
+        description: `تم تحديث الترخيص: ${editingLicense.license_key}`
+      });
 
       toast({
         title: "تم التحديث",
@@ -224,10 +239,17 @@ const Licenses = () => {
     });
   };
 
-  const deleteLicense = async (id: string) => {
+  const deleteLicense = async (id: string, licenseKey: string) => {
     try {
       const { error } = await supabase.from("licenses").delete().eq("id", id);
       if (error) throw error;
+
+      await logActivity({
+        action: "deleted",
+        entityType: "license",
+        entityId: id,
+        description: `تم حذف الترخيص: ${licenseKey}`
+      });
 
       toast({
         title: "تم الحذف",
@@ -462,7 +484,7 @@ const Licenses = () => {
                           size="icon"
                           onClick={() => {
                             if (confirm("هل أنت متأكد من حذف هذا الترخيص؟")) {
-                              deleteLicense(license.id);
+                              deleteLicense(license.id, license.license_key);
                             }
                           }}
                         >

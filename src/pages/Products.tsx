@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 import { productSchema } from "@/lib/validations";
 import { z } from "zod";
+import { logActivity } from "@/lib/logger";
 
 type Product = Tables<"products">;
 
@@ -45,13 +46,20 @@ const Products = () => {
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      const { error } = await supabase.from("products").insert([{
+      const { data: result, error } = await supabase.from("products").insert([{
         ...data,
         price: data.price ? parseFloat(data.price) : null
-      }]);
+      }]).select().single();
       if (error) throw error;
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
+      await logActivity({
+        action: "created",
+        entityType: "product",
+        entityId: data.id,
+        description: `تم إضافة منتج جديد: ${data.name}`
+      });
       queryClient.invalidateQueries({ queryKey: ["products"] });
       toast.success("تم إضافة المنتج بنجاح");
       handleCloseDialog();
@@ -60,14 +68,20 @@ const Products = () => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: typeof formData }) => {
+    mutationFn: async ({ id, data, name }: { id: string; data: typeof formData; name: string }) => {
       const { error } = await supabase.from("products").update({
         ...data,
         price: data.price ? parseFloat(data.price) : null
       }).eq("id", id);
       if (error) throw error;
+      return name;
     },
-    onSuccess: () => {
+    onSuccess: async (name) => {
+      await logActivity({
+        action: "updated",
+        entityType: "product",
+        description: `تم تحديث منتج: ${name}`
+      });
       queryClient.invalidateQueries({ queryKey: ["products"] });
       toast.success("تم تحديث المنتج بنجاح");
       handleCloseDialog();
@@ -76,11 +90,17 @@ const Products = () => {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id, name }: { id: string; name: string }) => {
       const { error } = await supabase.from("products").delete().eq("id", id);
       if (error) throw error;
+      return name;
     },
-    onSuccess: () => {
+    onSuccess: async (name) => {
+      await logActivity({
+        action: "deleted",
+        entityType: "product",
+        description: `تم حذف منتج: ${name}`
+      });
       queryClient.invalidateQueries({ queryKey: ["products"] });
       toast.success("تم حذف المنتج بنجاح");
     },
@@ -94,7 +114,7 @@ const Products = () => {
       const validated = productSchema.parse(formData);
       
       if (editingProduct) {
-        updateMutation.mutate({ id: editingProduct.id, data: validated as any });
+        updateMutation.mutate({ id: editingProduct.id, data: validated as any, name: validated.name });
       } else {
         createMutation.mutate(validated as any);
       }
@@ -260,7 +280,7 @@ const Products = () => {
                         variant="ghost"
                         onClick={() => {
                           if (confirm("هل أنت متأكد من حذف هذا المنتج؟")) {
-                            deleteMutation.mutate(product.id);
+                            deleteMutation.mutate({ id: product.id, name: product.name });
                           }
                         }}
                       >
