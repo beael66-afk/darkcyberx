@@ -13,6 +13,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -54,6 +65,8 @@ const Licenses = () => {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [licenseToDelete, setLicenseToDelete] = useState<{ id: string; key: string } | null>(null);
   const [editingLicense, setEditingLicense] = useState<License | null>(null);
   const [formData, setFormData] = useState<{
     customer_id: string;
@@ -239,16 +252,18 @@ const Licenses = () => {
     });
   };
 
-  const deleteLicense = async (id: string, licenseKey: string) => {
+  const deleteLicense = async () => {
+    if (!licenseToDelete) return;
+
     try {
-      const { error } = await supabase.from("licenses").delete().eq("id", id);
+      const { error } = await supabase.from("licenses").delete().eq("id", licenseToDelete.id);
       if (error) throw error;
 
       await logActivity({
         action: "deleted",
         entityType: "license",
-        entityId: id,
-        description: `تم حذف الترخيص: ${licenseKey}`
+        entityId: licenseToDelete.id,
+        description: `تم حذف الترخيص: ${licenseToDelete.key}`
       });
 
       toast({
@@ -262,6 +277,9 @@ const Licenses = () => {
         description: "فشل حذف الترخيص",
         variant: "destructive",
       });
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setLicenseToDelete(null);
     }
   };
 
@@ -437,11 +455,17 @@ const Licenses = () => {
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8">
-                    جاري التحميل...
-                  </TableCell>
-                </TableRow>
+                [...Array(5)].map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                  </TableRow>
+                ))
               ) : filteredLicenses.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
@@ -483,9 +507,8 @@ const Licenses = () => {
                           variant="ghost"
                           size="icon"
                           onClick={() => {
-                            if (confirm("هل أنت متأكد من حذف هذا الترخيص؟")) {
-                              deleteLicense(license.id, license.license_key);
-                            }
+                            setLicenseToDelete({ id: license.id, key: license.license_key });
+                            setIsDeleteDialogOpen(true);
                           }}
                         >
                           <Trash2 className="h-4 w-4" />
@@ -499,6 +522,24 @@ const Licenses = () => {
           </Table>
         </CardContent>
       </Card>
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
+            <AlertDialogDescription>
+              هذا الإجراء لا يمكن التراجع عنه. سيتم حذف الترخيص نهائياً
+              {licenseToDelete && ` (${licenseToDelete.key})`}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction onClick={deleteLicense} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              حذف
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
