@@ -33,8 +33,8 @@ interface License {
   max_devices: number;
   expire_at: string | null;
   created_at: string;
-  customer: { name: string } | null;
-  product: { name: string } | null;
+  customer: { id: string; name: string } | null;
+  product: { id: string; name: string } | null;
 }
 
 interface Customer {
@@ -84,8 +84,8 @@ const Licenses = () => {
         .from("licenses")
         .select(`
           *,
-          customer:customers(name),
-          product:products(name)
+          customer:customers(id, name),
+          product:products(id, name)
         `)
         .order("created_at", { ascending: false });
 
@@ -208,8 +208,8 @@ const Licenses = () => {
   const handleEdit = (license: License) => {
     setEditingLicense(license);
     setFormData({
-      customer_id: (license.customer as any)?.id || "",
-      product_id: (license.product as any)?.id || "",
+      customer_id: license.customer?.id || "",
+      product_id: license.product?.id || "",
       max_devices: license.max_devices.toString(),
       expire_at: license.expire_at ? new Date(license.expire_at).toISOString().split('T')[0] : "",
       status: license.status as "active" | "expired" | "pending" | "suspended",
