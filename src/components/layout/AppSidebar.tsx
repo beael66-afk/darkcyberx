@@ -11,6 +11,7 @@ import {
   LogOut,
   KeySquare,
   Code2,
+  Bell,
 } from "lucide-react";
 import {
   Sidebar,
@@ -37,6 +38,7 @@ const menuItems = [
   { title: "التقارير", url: "/reports", icon: BarChart3 },
   { title: "السجلات", url: "/logs", icon: ScrollText },
   { title: "بيانات الاعتماد", url: "/api-credentials", icon: Code2 },
+  { title: "إعدادات الإشعارات", url: "/notification-settings", icon: Bell },
   { title: "الإعدادات", url: "/settings", icon: Settings },
 ];
 

@@ -18,9 +18,30 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Starting check for expiring licenses...");
 
-    // Calculate dates for notifications (7, 3, and 1 day before expiry)
+    // Fetch notification settings from database
+    const { data: settingsData, error: settingsError } = await supabase
+      .from("notification_settings")
+      .select("*")
+      .single();
+
+    if (settingsError || !settingsData) {
+      console.error("Error fetching notification settings:", settingsError);
+      return new Response(
+        JSON.stringify({ error: "Failed to fetch notification settings" }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    if (!settingsData.email_enabled) {
+      console.log("Email notifications are disabled");
+      return new Response(
+        JSON.stringify({ success: true, message: "الإشعارات البريدية معطلة" }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const notificationDays = settingsData.notification_days as number[];
     const today = new Date();
-    const notificationDays = [7, 3, 1];
     
     let totalSent = 0;
 
