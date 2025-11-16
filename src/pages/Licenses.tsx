@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Copy, Trash2, Edit } from "lucide-react";
+import { Plus, Search, Copy, Trash2, Edit, FileSpreadsheet, FileText } from "lucide-react";
+import { exportToExcel, exportToCSV } from "@/lib/exportUtils";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -319,14 +320,29 @@ const Licenses = () => {
           <h1 className="text-3xl font-bold mb-2">التراخيص</h1>
           <p className="text-muted-foreground">إدارة جميع التراخيص</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2" onClick={() => setEditingLicense(null)}>
-              <Plus className="h-4 w-4" />
-              إضافة ترخيص
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => exportToExcel(filteredLicenses, "licenses")}
+          >
+            <FileSpreadsheet className="ml-2 h-4 w-4" />
+            Excel
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => exportToCSV(filteredLicenses, "licenses")}
+          >
+            <FileText className="ml-2 h-4 w-4" />
+            CSV
+          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2" onClick={() => setEditingLicense(null)}>
+                <Plus className="h-4 w-4" />
+                إضافة ترخيص
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>{editingLicense ? "تعديل الترخيص" : "إضافة ترخيص جديد"}</DialogTitle>
             </DialogHeader>
@@ -420,6 +436,7 @@ const Licenses = () => {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <Card>

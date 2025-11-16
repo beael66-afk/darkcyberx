@@ -4,8 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Filter, FileText, UserPlus, Edit, Trash, Check, X } from "lucide-react";
+import { Search, Filter, FileText, UserPlus, Edit, Trash, Check, X, FileSpreadsheet } from "lucide-react";
+import { exportToExcel, exportToCSV } from "@/lib/exportUtils";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import type { Tables } from "@/integrations/supabase/types";
@@ -126,7 +128,27 @@ const Logs = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>البحث والفلترة</CardTitle>
+          <div className="flex justify-between items-center">
+            <CardTitle>البحث والفلترة</CardTitle>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => exportToExcel(filteredLogs, "logs")}
+              >
+                <FileSpreadsheet className="ml-2 h-4 w-4" />
+                Excel
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => exportToCSV(filteredLogs, "logs")}
+              >
+                <FileText className="ml-2 h-4 w-4" />
+                CSV
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-4">
