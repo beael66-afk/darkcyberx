@@ -206,6 +206,22 @@ export default function ApiCredentials() {
 
   useEffect(() => {
     fetchApiKeys();
+    
+    // Refresh data every 30 seconds to show updated last_used_at
+    const interval = setInterval(fetchApiKeys, 30000);
+    
+    // Refresh when user returns to the tab
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchApiKeys();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   const fetchApiKeys = async () => {
