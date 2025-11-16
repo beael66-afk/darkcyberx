@@ -216,6 +216,36 @@ export type Database = {
           },
         ]
       }
+      notification_settings: {
+        Row: {
+          created_at: string
+          email_enabled: boolean
+          email_subject: string
+          id: string
+          notification_days: number[]
+          notification_time: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email_enabled?: boolean
+          email_subject?: string
+          id?: string
+          notification_days?: number[]
+          notification_time?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email_enabled?: boolean
+          email_subject?: string
+          id?: string
+          notification_days?: number[]
+          notification_time?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           created_at: string | null
@@ -299,14 +329,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      generate_api_key: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      generate_license_key: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      generate_api_key: { Args: never; Returns: string }
+      generate_license_key: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
