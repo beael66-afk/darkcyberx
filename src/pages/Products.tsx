@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Edit, Trash2 } from "lucide-react";
+import { Plus, Search, Edit, Trash2, FileSpreadsheet, FileText } from "lucide-react";
+import { exportToExcel, exportToCSV } from "@/lib/exportUtils";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 import { productSchema } from "@/lib/validations";
@@ -155,14 +156,29 @@ const Products = () => {
           <h1 className="text-3xl font-bold mb-2">المنتجات</h1>
           <p className="text-muted-foreground">إدارة المنتجات والإصدارات</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setEditingProduct(null)}>
-              <Plus className="ml-2 h-4 w-4" />
-              إضافة منتج
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => exportToExcel(filteredProducts, "products")}
+          >
+            <FileSpreadsheet className="ml-2 h-4 w-4" />
+            Excel
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => exportToCSV(filteredProducts, "products")}
+          >
+            <FileText className="ml-2 h-4 w-4" />
+            CSV
+          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => setEditingProduct(null)}>
+                <Plus className="ml-2 h-4 w-4" />
+                إضافة منتج
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
             <DialogHeader>
               <DialogTitle>{editingProduct ? "تعديل المنتج" : "إضافة منتج جديد"}</DialogTitle>
             </DialogHeader>
@@ -223,6 +239,7 @@ const Products = () => {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <div className="relative">

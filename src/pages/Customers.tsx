@@ -7,7 +7,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, Edit, Trash2 } from "lucide-react";
+import { Plus, Search, Edit, Trash2, FileSpreadsheet, FileText } from "lucide-react";
+import { exportToExcel, exportToCSV } from "@/lib/exportUtils";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 import { customerSchema } from "@/lib/validations";
@@ -148,14 +149,29 @@ const Customers = () => {
           <h1 className="text-3xl font-bold mb-2">العملاء</h1>
           <p className="text-muted-foreground">إدارة بيانات العملاء</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setEditingCustomer(null)}>
-              <Plus className="ml-2 h-4 w-4" />
-              إضافة عميل
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => exportToExcel(filteredCustomers, "customers")}
+          >
+            <FileSpreadsheet className="ml-2 h-4 w-4" />
+            Excel
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => exportToCSV(filteredCustomers, "customers")}
+          >
+            <FileText className="ml-2 h-4 w-4" />
+            CSV
+          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => setEditingCustomer(null)}>
+                <Plus className="ml-2 h-4 w-4" />
+                إضافة عميل
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
             <DialogHeader>
               <DialogTitle>{editingCustomer ? "تعديل العميل" : "إضافة عميل جديد"}</DialogTitle>
             </DialogHeader>
@@ -214,6 +230,7 @@ const Customers = () => {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <div className="relative">
