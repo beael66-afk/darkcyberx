@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Search, Trash2, Power, PowerOff } from "lucide-react";
 import { toast } from "sonner";
@@ -11,6 +12,13 @@ import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import type { Tables } from "@/integrations/supabase/types";
 import { logActivity } from "@/lib/logger";
+import { usePagination } from "@/hooks/usePagination";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+} from "@/components/ui/pagination";
 
 type Device = Tables<"devices">;
 
@@ -75,6 +83,17 @@ const Devices = () => {
     device.os_info?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const {
+    paginatedData,
+    currentPage,
+    totalPages,
+    nextPage,
+    prevPage,
+    goToPage,
+    hasNext,
+    hasPrev,
+  } = usePagination({ data: filteredDevices || [], itemsPerPage: 10 });
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
@@ -107,15 +126,13 @@ const Devices = () => {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center">جاري التحميل...</TableCell>
-              </TableRow>
-            ) : filteredDevices?.length === 0 ? (
+              <TableSkeleton rows={10} columns={7} />
+            ) : !paginatedData || paginatedData.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center">لا توجد أجهزة</TableCell>
               </TableRow>
             ) : (
-              filteredDevices?.map((device) => (
+              paginatedData.map((device) => (
                 <TableRow key={device.id}>
                   <TableCell className="font-medium">{device.device_name || "-"}</TableCell>
                   <TableCell className="font-mono text-sm">{device.hwid}</TableCell>
@@ -174,6 +191,60 @@ const Devices = () => {
           </TableBody>
         </Table>
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            عرض {((currentPage - 1) * 10) + 1} إلى {Math.min(currentPage * 10, filteredDevices?.length || 0)} من {filteredDevices?.length || 0} نتيجة
+          </p>
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={prevPage}
+                  disabled={!hasPrev}
+                >
+                  السابق
+                </Button>
+              </PaginationItem>
+              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                let page: number;
+                if (totalPages <= 5) {
+                  page = i + 1;
+                } else if (currentPage <= 3) {
+                  page = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  page = totalPages - 4 + i;
+                } else {
+                  page = currentPage - 2 + i;
+                }
+                return (
+                  <PaginationItem key={page}>
+                    <PaginationLink
+                      onClick={() => goToPage(page)}
+                      isActive={currentPage === page}
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
+                );
+              })}
+              <PaginationItem>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={nextPage}
+                  disabled={!hasNext}
+                >
+                  التالي
+                </Button>
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
     </div>
   );
 };

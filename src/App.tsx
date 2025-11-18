@@ -1,24 +1,47 @@
+import { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import Dashboard from "./pages/Dashboard";
-import Licenses from "./pages/Licenses";
-import Customers from "./pages/Customers";
-import Products from "./pages/Products";
-import Devices from "./pages/Devices";
-import Logs from "./pages/Logs";
-import Reports from "./pages/Reports";
-import Settings from "./pages/Settings";
-import ApiCredentials from "./pages/ApiCredentials";
-import NotificationSettings from "./pages/NotificationSettings";
 import { DashboardLayout } from "./components/layout/DashboardLayout";
-import NotFound from "./pages/NotFound";
+import { Skeleton } from "@/components/ui/skeleton";
 
-const queryClient = new QueryClient();
+// Lazy load pages
+const Index = lazy(() => import("./pages/Index"));
+const Auth = lazy(() => import("./pages/Auth"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Licenses = lazy(() => import("./pages/Licenses"));
+const Customers = lazy(() => import("./pages/Customers"));
+const Products = lazy(() => import("./pages/Products"));
+const Devices = lazy(() => import("./pages/Devices"));
+const Logs = lazy(() => import("./pages/Logs"));
+const Reports = lazy(() => import("./pages/Reports"));
+const Settings = lazy(() => import("./pages/Settings"));
+const ApiCredentials = lazy(() => import("./pages/ApiCredentials"));
+const NotificationSettings = lazy(() => import("./pages/NotificationSettings"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes (previously cacheTime)
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
+
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="space-y-4 w-full max-w-md p-6">
+      <Skeleton className="h-8 w-3/4" />
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-5/6" />
+    </div>
+  </div>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -26,23 +49,25 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route element={<DashboardLayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/licenses" element={<Licenses />} />
-            <Route path="/customers" element={<Customers />} />
-            <Route path="/products" element={<Products />} />
-            <Route path="/devices" element={<Devices />} />
-            <Route path="/logs" element={<Logs />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/api-credentials" element={<ApiCredentials />} />
-            <Route path="/notification-settings" element={<NotificationSettings />} />
-            <Route path="/settings" element={<Settings />} />
-          </Route>
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route element={<DashboardLayout />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/licenses" element={<Licenses />} />
+              <Route path="/customers" element={<Customers />} />
+              <Route path="/products" element={<Products />} />
+              <Route path="/devices" element={<Devices />} />
+              <Route path="/logs" element={<Logs />} />
+              <Route path="/reports" element={<Reports />} />
+              <Route path="/api-credentials" element={<ApiCredentials />} />
+              <Route path="/notification-settings" element={<NotificationSettings />} />
+              <Route path="/settings" element={<Settings />} />
+            </Route>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
