@@ -7,7 +7,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, Edit, Trash2, FileSpreadsheet, FileText } from "lucide-react";
+import { Plus, Search, Edit, Trash2, FileSpreadsheet, FileText, UserCheck } from "lucide-react";
+import { CreateAccountDialog } from "@/components/customers/CreateAccountDialog";
+import { Badge } from "@/components/ui/badge";
 import { exportToExcel, exportToCSV } from "@/lib/exportUtils";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
@@ -272,6 +274,20 @@ const Customers = () => {
                   <TableCell>{customer.company || "-"}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
+                      {!customer.account_created && (
+                        <CreateAccountDialog
+                          customerId={customer.id}
+                          customerName={customer.name}
+                          customerEmail={customer.email}
+                          onSuccess={() => queryClient.invalidateQueries({ queryKey: ["customers"] })}
+                        />
+                      )}
+                      {customer.account_created && (
+                        <Badge variant="outline" className="gap-1">
+                          <UserCheck className="h-3 w-3" />
+                          لديه حساب
+                        </Badge>
+                      )}
                       <Button
                         size="sm"
                         variant="ghost"
