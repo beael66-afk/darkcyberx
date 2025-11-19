@@ -22,6 +22,11 @@ const ApiCredentials = lazy(() => import("./pages/ApiCredentials"));
 const NotificationSettings = lazy(() => import("./pages/NotificationSettings"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
+// Customer Portal Pages
+const CustomerAuth = lazy(() => import("./pages/customer/CustomerAuth"));
+const CustomerDashboard = lazy(() => import("./pages/customer/CustomerDashboard"));
+const CustomerLayout = lazy(() => import("./pages/customer/CustomerLayout").then(m => ({ default: m.CustomerLayout })));
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -53,6 +58,14 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            
+            {/* Customer Portal Routes */}
+            <Route path="/customer" element={<CustomerAuth />} />
+            <Route element={<CustomerLayout />}>
+              <Route path="/customer/dashboard" element={<CustomerDashboard />} />
+            </Route>
+            
+            {/* Admin Dashboard Routes */}
             <Route element={<DashboardLayout />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/licenses" element={<Licenses />} />
@@ -65,6 +78,7 @@ const App = () => (
               <Route path="/notification-settings" element={<NotificationSettings />} />
               <Route path="/settings" element={<Settings />} />
             </Route>
+            
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>

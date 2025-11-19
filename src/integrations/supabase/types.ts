@@ -49,6 +49,7 @@ export type Database = {
       }
       customers: {
         Row: {
+          account_created: boolean | null
           company: string | null
           created_at: string | null
           email: string
@@ -57,8 +58,10 @@ export type Database = {
           notes: string | null
           phone: string | null
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
+          account_created?: boolean | null
           company?: string | null
           created_at?: string | null
           email: string
@@ -67,8 +70,10 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
+          account_created?: boolean | null
           company?: string | null
           created_at?: string | null
           email?: string
@@ -77,6 +82,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -114,6 +120,69 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "devices_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "licenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          amount: number
+          created_at: string | null
+          currency: string | null
+          customer_id: string
+          due_date: string | null
+          id: string
+          invoice_number: string
+          license_id: string | null
+          notes: string | null
+          paid_at: string | null
+          payment_method: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          currency?: string | null
+          customer_id: string
+          due_date?: string | null
+          id?: string
+          invoice_number: string
+          license_id?: string | null
+          notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          currency?: string | null
+          customer_id?: string
+          due_date?: string | null
+          id?: string
+          invoice_number?: string
+          license_id?: string | null
+          notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_license_id_fkey"
             columns: ["license_id"]
             isOneToOne: false
             referencedRelation: "licenses"
@@ -330,6 +399,7 @@ export type Database = {
     }
     Functions: {
       generate_api_key: { Args: never; Returns: string }
+      generate_invoice_number: { Args: never; Returns: string }
       generate_license_key: { Args: never; Returns: string }
       has_role: {
         Args: {
@@ -340,7 +410,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "moderator" | "user"
+      app_role: "admin" | "moderator" | "user" | "customer"
       license_status: "active" | "expired" | "suspended" | "pending"
       log_action:
         | "created"
@@ -476,7 +546,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "moderator", "user"],
+      app_role: ["admin", "moderator", "user", "customer"],
       license_status: ["active", "expired", "suspended", "pending"],
       log_action: [
         "created",
