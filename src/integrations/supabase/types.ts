@@ -398,7 +398,42 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      api_keys_safe: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          id: string | null
+          is_active: boolean | null
+          key_hash: string | null
+          key_masked: string | null
+          last_used_at: string | null
+          name: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          key_hash?: string | null
+          key_masked?: never
+          last_used_at?: string | null
+          name?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          key_hash?: string | null
+          key_masked?: never
+          last_used_at?: string | null
+          name?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       generate_api_key: { Args: never; Returns: string }
@@ -410,6 +445,18 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      update_api_key_last_used: {
+        Args: { api_key_value: string }
+        Returns: undefined
+      }
+      validate_api_key_by_value: {
+        Args: { api_key_value: string }
+        Returns: {
+          expires_at: string
+          is_active: boolean
+          user_id: string
+        }[]
       }
     }
     Enums: {
