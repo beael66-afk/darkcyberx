@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Copy, Check, Plus, Trash2, Eye, EyeOff } from "lucide-react";
+import { Copy, Check, Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -187,7 +187,7 @@ const languages = [
 interface ApiKey {
   id: string;
   name: string;
-  key: string;
+  key_masked: string;
   is_active: boolean;
   created_at: string;
   last_used_at: string | null;
@@ -201,7 +201,6 @@ export default function ApiCredentials() {
   const [newKeyName, setNewKeyName] = useState("");
   const [createdKey, setCreatedKey] = useState<string | null>(null);
   const [deleteKeyId, setDeleteKeyId] = useState<string | null>(null);
-  const [visibleKeys, setVisibleKeys] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   useEffect(() => {
@@ -226,9 +225,10 @@ export default function ApiCredentials() {
 
   const fetchApiKeys = async () => {
     try {
+      // Use the safe view that only shows masked keys
       const { data, error } = await supabase
-        .from('api_keys')
-        .select('*')
+        .from('api_keys_safe')
+        .select('id, user_id, name, key_masked, is_active, created_at, last_used_at')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -318,21 +318,7 @@ export default function ApiCredentials() {
     }
   };
 
-  const toggleKeyVisibility = (keyId: string) => {
-    setVisibleKeys(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(keyId)) {
-        newSet.delete(keyId);
-      } else {
-        newSet.add(keyId);
-      }
-      return newSet;
-    });
-  };
-
-  const maskKey = (key: string) => {
-    return key.substring(0, 8) + '...' + key.substring(key.length - 4);
-  };
+  // Keys are now always masked from the database for security
 
   const copyToClipboard = (text: string, type: string) => {
     navigator.clipboard.writeText(text);
@@ -419,45 +405,27 @@ export default function ApiCredentials() {
             <p className="text-center text-muted-foreground">لا توجد مفاتيح API. أنشئ مفتاحاً للبدء</p>
           ) : (
             <div className="space-y-3">
-              {apiKeys.map((key) => (
+              {apiKeys.map((apiKey) => (
                 <div
-                  key={key.id}
+                  key={apiKey.id}
                   className="flex items-center justify-between p-4 border rounded-lg"
                 >
                   <div className="flex-1">
-                    <p className="font-medium">{key.name}</p>
+                    <p className="font-medium">{apiKey.name}</p>
                     <div className="flex items-center gap-2 mt-1">
                       <code className="text-sm text-muted-foreground">
-                        {visibleKeys.has(key.id) ? key.key : maskKey(key.key)}
+                        {apiKey.key_masked}
                       </code>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => toggleKeyVisibility(key.id)}
-                      >
-                        {visibleKeys.has(key.id) ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                      </Button>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      آخر استخدام: {key.last_used_at ? new Date(key.last_used_at).toLocaleDateString('ar-SA') : 'لم يستخدم بعد'}
+                      آخر استخدام: {apiKey.last_used_at ? new Date(apiKey.last_used_at).toLocaleDateString('ar-SA') : 'لم يستخدم بعد'}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
                       size="sm"
-                      variant="outline"
-                      onClick={() => copyToClipboard(key.key, key.id)}
-                    >
-                      {copiedLang === key.id ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                    </Button>
-                    <Button
-                      size="sm"
                       variant="destructive"
-                      onClick={() => setDeleteKeyId(key.id)}
+                      onClick={() => setDeleteKeyId(apiKey.id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
