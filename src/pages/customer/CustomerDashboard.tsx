@@ -5,9 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { LogOut, FileText, Laptop, Key, Calendar, AlertCircle } from "lucide-react";
+import { LogOut, FileText, Laptop, Key, Calendar, AlertCircle, Receipt } from "lucide-react";
 
 interface CustomerData {
+  id: string;
   name: string;
   email: string;
   company: string | null;
@@ -68,33 +69,33 @@ const CustomerDashboard = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Fetch customer info
+      // Fetch customer info with ID
       const { data: customerData } = await supabase
         .from("customers")
-        .select("name, email, company")
+        .select("id, name, email, company")
         .eq("user_id", user.id)
         .single();
 
       if (customerData) {
         setCustomer(customerData);
-      }
 
-      // Fetch licenses with products and devices
-      const { data: licensesData } = await supabase
-        .from("licenses")
-        .select(`
-          id,
-          license_key,
-          status,
-          expire_at,
-          max_devices,
-          products (name, version),
-          devices (id, device_name, is_active)
-        `)
-        .eq("customers.user_id", user.id);
+        // Fetch licenses with products and devices using customer_id
+        const { data: licensesData } = await supabase
+          .from("licenses")
+          .select(`
+            id,
+            license_key,
+            status,
+            expire_at,
+            max_devices,
+            products (name, version),
+            devices (id, device_name, is_active)
+          `)
+          .eq("customer_id", customerData.id);
 
-      if (licensesData) {
-        setLicenses(licensesData as any);
+        if (licensesData) {
+          setLicenses(licensesData as any);
+        }
       }
     } catch (error: any) {
       toast.error("خطأ في تحميل البيانات");
@@ -154,7 +155,7 @@ const CustomerDashboard = () => {
 
       <main className="container mx-auto px-4 py-8 space-y-6">
         {/* Overview Cards */}
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">إجمالي التراخيص</CardTitle>
@@ -186,6 +187,16 @@ const CustomerDashboard = () => {
               <div className="text-2xl font-bold">
                 {licenses.reduce((acc, l) => acc + (l.devices?.length || 0), 0)}
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate("/customer/invoices")}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">الفواتير</CardTitle>
+              <Receipt className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm text-primary">عرض الفواتير ←</div>
             </CardContent>
           </Card>
         </div>
