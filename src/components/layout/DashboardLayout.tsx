@@ -8,14 +8,36 @@ import { User } from "@supabase/supabase-js";
 
 export const DashboardLayout = () => {
   const [user, setUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const navigate = useNavigate();
+
+  const checkAdminRole = async (userId: string) => {
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .single();
+    
+    if (!data) {
+      await supabase.auth.signOut();
+      navigate("/auth");
+      return false;
+    }
+    return true;
+  };
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setUser(session?.user ?? null);
         if (!session) {
+          setIsAdmin(null);
           navigate("/auth");
+        } else {
+          setTimeout(() => {
+            checkAdminRole(session.user.id).then(setIsAdmin);
+          }, 0);
         }
       }
     );
@@ -23,14 +45,21 @@ export const DashboardLayout = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (!session) {
+        setIsAdmin(null);
         navigate("/auth");
+      } else {
+        checkAdminRole(session.user.id).then(setIsAdmin);
       }
     });
 
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  if (!user) {
+  if (!user || isAdmin === null) {
+    return null;
+  }
+
+  if (!isAdmin) {
     return null;
   }
 
