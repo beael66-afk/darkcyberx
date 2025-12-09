@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Search, Edit, Trash2, FileSpreadsheet, FileText, UserCheck } from "lucide-react";
 import { CreateAccountDialog } from "@/components/customers/CreateAccountDialog";
+import { ViewCredentialsDialog } from "@/components/customers/ViewCredentialsDialog";
 import { Badge } from "@/components/ui/badge";
 import { exportToExcel, exportToCSV } from "@/lib/exportUtils";
 import { toast } from "sonner";
@@ -283,10 +284,10 @@ const Customers = () => {
                         />
                       )}
                       {customer.account_created && (
-                        <Badge variant="outline" className="gap-1">
-                          <UserCheck className="h-3 w-3" />
-                          لديه حساب
-                        </Badge>
+                        <ViewCredentialsDialog
+                          customerName={customer.name}
+                          customerEmail={customer.email}
+                        />
                       )}
                       <Button
                         size="sm"
