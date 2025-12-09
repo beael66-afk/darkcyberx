@@ -15,36 +15,43 @@ const CustomerAuth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session) {
-        // Check if user is a customer
-        const { data: roles } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", session.user.id)
-          .eq("role", "customer")
-          .single();
+  const checkCustomerRole = async (userId: string) => {
+    const { data: roles, error } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "customer")
+      .maybeSingle();
 
-        if (roles) {
-          navigate("/customer/dashboard");
-        } else {
-          toast.error("غير مصرح لك بالدخول إلى بوابة العملاء");
-          await supabase.auth.signOut();
-        }
+    if (error) {
+      console.error("Error checking customer role:", error);
+      return false;
+    }
+
+    return !!roles;
+  };
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        // Defer the role check to avoid deadlock
+        setTimeout(async () => {
+          const isCustomer = await checkCustomerRole(session.user.id);
+          if (isCustomer) {
+            navigate("/customer/dashboard");
+          } else {
+            toast.error("غير مصرح لك بالدخول إلى بوابة العملاء");
+            await supabase.auth.signOut();
+          }
+        }, 0);
       }
     });
 
+    // Check existing session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
-        const { data: roles } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", session.user.id)
-          .eq("role", "customer")
-          .single();
-
-        if (roles) {
+        const isCustomer = await checkCustomerRole(session.user.id);
+        if (isCustomer) {
           navigate("/customer/dashboard");
         }
       }
