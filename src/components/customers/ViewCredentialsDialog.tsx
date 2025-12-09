@@ -7,9 +7,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Key, Mail, Copy, RefreshCw } from "lucide-react";
+import { Key, Mail, Copy, RefreshCw, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -24,13 +23,22 @@ export const ViewCredentialsDialog = ({
 }: ViewCredentialsDialogProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  const [generatedPassword, setGeneratedPassword] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleCopyEmail = () => {
     navigator.clipboard.writeText(customerEmail);
     toast.success("تم نسخ البريد الإلكتروني");
   };
 
-  const handleResendCredentials = async () => {
+  const handleCopyPassword = () => {
+    if (generatedPassword) {
+      navigator.clipboard.writeText(generatedPassword);
+      toast.success("تم نسخ كلمة المرور");
+    }
+  };
+
+  const handleGenerateNewPassword = async () => {
     setIsResending(true);
     try {
       const { data: session } = await supabase.auth.getSession();
@@ -51,17 +59,32 @@ export const ViewCredentialsDialog = ({
         throw new Error(data.error);
       }
 
-      toast.success("تم إرسال كلمة مرور جديدة للعميل عبر البريد الإلكتروني");
+      // Store the generated password to display it
+      if (data?.newPassword) {
+        setGeneratedPassword(data.newPassword);
+        setShowPassword(true);
+      }
+
+      toast.success("تم إنشاء كلمة مرور جديدة وإرسالها للعميل");
     } catch (error: any) {
-      console.error("Error resending credentials:", error);
-      toast.error(error.message || "فشل إعادة إرسال بيانات الدخول");
+      console.error("Error generating password:", error);
+      toast.error(error.message || "فشل إنشاء كلمة مرور جديدة");
     } finally {
       setIsResending(false);
     }
   };
 
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open);
+    if (!open) {
+      // Clear password when dialog closes
+      setGeneratedPassword(null);
+      setShowPassword(false);
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button size="sm" variant="outline" className="gap-1">
           <Key className="h-3 w-3" />
@@ -73,10 +96,11 @@ export const ViewCredentialsDialog = ({
           <DialogTitle>بيانات دخول العميل</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
+          {/* Email Section */}
           <div className="p-4 rounded-lg bg-muted/50 space-y-3">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Mail className="h-4 w-4" />
-              <span>البريد الإلكتروني للدخول:</span>
+              <span>البريد الإلكتروني:</span>
             </div>
             <div className="flex items-center gap-2">
               <Input
@@ -95,24 +119,74 @@ export const ViewCredentialsDialog = ({
             </div>
           </div>
 
-          <div className="p-4 rounded-lg border border-dashed space-y-3">
-            <p className="text-sm text-muted-foreground">
-              لأسباب أمنية، لا يتم تخزين كلمات المرور. يمكنك إرسال كلمة مرور جديدة للعميل.
-            </p>
-            <Button
-              onClick={handleResendCredentials}
-              disabled={isResending}
-              className="w-full"
-              variant="secondary"
-            >
-              <RefreshCw className={`ml-2 h-4 w-4 ${isResending ? "animate-spin" : ""}`} />
-              {isResending ? "جاري الإرسال..." : "إرسال كلمة مرور جديدة"}
-            </Button>
+          {/* Password Section */}
+          <div className="p-4 rounded-lg bg-muted/50 space-y-3">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Key className="h-4 w-4" />
+              <span>كلمة المرور:</span>
+            </div>
+            
+            {generatedPassword ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={showPassword ? generatedPassword : "••••••••••••"}
+                    readOnly
+                    className="flex-1 bg-background font-mono"
+                  />
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={() => setShowPassword(!showPassword)}
+                    title={showPassword ? "إخفاء" : "إظهار"}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={handleCopyPassword}
+                    title="نسخ كلمة المرور"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-green-600 dark:text-green-400">
+                  ✓ تم إرسال كلمة المرور أيضاً إلى بريد العميل
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  اضغط على الزر لإنشاء كلمة مرور جديدة وعرضها
+                </p>
+                <Button
+                  onClick={handleGenerateNewPassword}
+                  disabled={isResending}
+                  className="w-full"
+                  variant="secondary"
+                >
+                  <RefreshCw className={`ml-2 h-4 w-4 ${isResending ? "animate-spin" : ""}`} />
+                  {isResending ? "جاري الإنشاء..." : "إنشاء كلمة مرور جديدة"}
+                </Button>
+              </div>
+            )}
           </div>
 
-          <div className="text-xs text-muted-foreground">
-            <p>• سيتم إرسال كلمة مرور مؤقتة جديدة إلى: {customerEmail}</p>
-            <p>• يُنصح العميل بتغيير كلمة المرور بعد تسجيل الدخول</p>
+          {generatedPassword && (
+            <Button
+              onClick={handleGenerateNewPassword}
+              disabled={isResending}
+              variant="outline"
+              className="w-full"
+            >
+              <RefreshCw className={`ml-2 h-4 w-4 ${isResending ? "animate-spin" : ""}`} />
+              إنشاء كلمة مرور أخرى
+            </Button>
+          )}
+
+          <div className="text-xs text-muted-foreground border-t pt-3">
+            <p>⚠️ كلمة المرور المعروضة مؤقتة ولن تظهر مرة أخرى بعد إغلاق هذه النافذة</p>
           </div>
         </div>
       </DialogContent>
