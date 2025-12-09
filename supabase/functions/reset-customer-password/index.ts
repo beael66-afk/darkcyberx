@@ -162,7 +162,11 @@ Deno.serve(async (req) => {
     console.log(`Password reset successful for: ${email}`);
 
     return new Response(
-      JSON.stringify({ success: true, message: "تم إرسال كلمة المرور الجديدة بنجاح" }),
+      JSON.stringify({ 
+        success: true, 
+        message: "تم إرسال كلمة المرور الجديدة بنجاح",
+        newPassword: newPassword // Return password so admin can see it
+      }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: unknown) {
