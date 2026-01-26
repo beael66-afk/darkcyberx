@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Search, Trash2, Power, PowerOff } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -24,6 +25,7 @@ type Device = Tables<"devices">;
 
 const Devices = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedDevices, setSelectedDevices] = useState<Set<string>>(new Set());
   const queryClient = useQueryClient();
 
   const { data: devices, isLoading } = useQuery({
@@ -77,6 +79,28 @@ const Devices = () => {
     onError: () => toast.error("فشل حذف الجهاز")
   });
 
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { error } = await supabase
+        .from("devices")
+        .delete()
+        .in("id", ids);
+      if (error) throw error;
+      return ids.length;
+    },
+    onSuccess: async (count) => {
+      await logActivity({
+        action: "deleted",
+        entityType: "device",
+        description: `تم حذف ${count} جهاز`
+      });
+      setSelectedDevices(new Set());
+      queryClient.invalidateQueries({ queryKey: ["devices"] });
+      toast.success(`تم حذف ${count} جهاز بنجاح`);
+    },
+    onError: () => toast.error("فشل حذف الأجهزة")
+  });
+
   const filteredDevices = devices?.filter(device =>
     device.hwid.toLowerCase().includes(searchTerm.toLowerCase()) ||
     device.device_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -95,6 +119,46 @@ const Devices = () => {
     hasPrev,
   } = usePagination({ data: filteredDevices || [], itemsPerPage: 10 });
 
+  const handleSelectDevice = (deviceId: string, checked: boolean) => {
+    const newSelected = new Set(selectedDevices);
+    if (checked) {
+      newSelected.add(deviceId);
+    } else {
+      newSelected.delete(deviceId);
+    }
+    setSelectedDevices(newSelected);
+  };
+
+  const handleSelectPage = (checked: boolean) => {
+    const newSelected = new Set(selectedDevices);
+    paginatedData.forEach(device => {
+      if (checked) {
+        newSelected.add(device.id);
+      } else {
+        newSelected.delete(device.id);
+      }
+    });
+    setSelectedDevices(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    if (filteredDevices) {
+      const newSelected = new Set(filteredDevices.map(d => d.id));
+      setSelectedDevices(newSelected);
+      toast.success(`تم تحديد ${filteredDevices.length} جهاز`);
+    }
+  };
+
+  const isPageSelected = paginatedData.length > 0 && paginatedData.every(device => selectedDevices.has(device.id));
+  const isPagePartiallySelected = paginatedData.some(device => selectedDevices.has(device.id)) && !isPageSelected;
+
+  const handleBulkDelete = () => {
+    if (selectedDevices.size === 0) return;
+    if (confirm(`هل أنت متأكد من حذف ${selectedDevices.size} جهاز؟`)) {
+      bulkDeleteMutation.mutate(Array.from(selectedDevices));
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
@@ -102,20 +166,58 @@ const Devices = () => {
         <p className="text-muted-foreground">إدارة الأجهزة المرتبطة بالتراخيص</p>
       </div>
 
-      <div className="relative">
-        <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="بحث عن جهاز أو ترخيص..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pr-10"
-        />
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="بحث عن جهاز أو ترخيص..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pr-10"
+          />
+        </div>
+        
+        {selectedDevices.size > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">
+              تم تحديد {selectedDevices.size} جهاز
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSelectAll}
+            >
+              تحديد الكل ({filteredDevices?.length || 0})
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleBulkDelete}
+              disabled={bulkDeleteMutation.isPending}
+            >
+              <Trash2 className="h-4 w-4 ml-2" />
+              حذف المحدد
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="rounded-lg border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12">
+                <Checkbox
+                  checked={isPageSelected}
+                  ref={(el) => {
+                    if (el) {
+                      (el as any).indeterminate = isPagePartiallySelected;
+                    }
+                  }}
+                  onCheckedChange={handleSelectPage}
+                  aria-label="تحديد الصفحة"
+                />
+              </TableHead>
               <TableHead>اسم الجهاز</TableHead>
               <TableHead>HWID</TableHead>
               <TableHead>نظام التشغيل</TableHead>
@@ -127,14 +229,21 @@ const Devices = () => {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableSkeleton rows={10} columns={7} />
+              <TableSkeleton rows={10} columns={8} />
             ) : !paginatedData || paginatedData.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center">لا توجد أجهزة</TableCell>
+                <TableCell colSpan={8} className="text-center">لا توجد أجهزة</TableCell>
               </TableRow>
             ) : (
               paginatedData.map((device) => (
-                <TableRow key={device.id}>
+                <TableRow key={device.id} className={selectedDevices.has(device.id) ? "bg-muted/50" : ""}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedDevices.has(device.id)}
+                      onCheckedChange={(checked) => handleSelectDevice(device.id, checked as boolean)}
+                      aria-label={`تحديد ${device.device_name || device.hwid}`}
+                    />
+                  </TableCell>
                   <TableCell className="font-medium">{device.device_name || "-"}</TableCell>
                   <TableCell className="font-mono text-sm">{device.hwid}</TableCell>
                   <TableCell>{device.os_info || "-"}</TableCell>
