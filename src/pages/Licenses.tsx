@@ -306,12 +306,19 @@ const Licenses = () => {
     );
   };
 
-  const filteredLicenses = licenses.filter(
-    (license) =>
-      license.license_key.toLowerCase().includes(search.toLowerCase()) ||
-      license.customer?.name?.toLowerCase().includes(search.toLowerCase()) ||
-      license.product?.name?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredLicenses = licenses
+    .filter(
+      (license) =>
+        license.license_key.toLowerCase().includes(search.toLowerCase()) ||
+        license.customer?.name?.toLowerCase().includes(search.toLowerCase()) ||
+        license.product?.name?.toLowerCase().includes(search.toLowerCase())
+    )
+    .sort((a, b) => {
+      if (!a.expire_at && !b.expire_at) return 0;
+      if (!a.expire_at) return 1;
+      if (!b.expire_at) return -1;
+      return new Date(a.expire_at).getTime() - new Date(b.expire_at).getTime();
+    });
 
   return (
     <div className="space-y-6 animate-fade-in">
