@@ -501,7 +501,11 @@ const Licenses = () => {
                     <TableCell>{license.max_devices}</TableCell>
                     <TableCell>
                       {license.expire_at
-                        ? new Date(license.expire_at).toLocaleDateString("ar")
+                        ? new Date(license.expire_at).toLocaleDateString("ar-EG", {
+                            year: "numeric",
+                            month: "2-digit",
+                            day: "2-digit",
+                          })
                         : "غير محدد"}
                     </TableCell>
                     <TableCell>
