@@ -436,6 +436,7 @@ export type Database = {
       }
     }
     Functions: {
+      auto_expire_licenses: { Args: never; Returns: number }
       generate_api_key: { Args: never; Returns: string }
       generate_invoice_number: { Args: never; Returns: string }
       generate_license_key: { Args: never; Returns: string }
