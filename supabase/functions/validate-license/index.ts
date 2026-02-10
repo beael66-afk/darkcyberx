@@ -72,11 +72,9 @@ serve(async (req) => {
       );
     }
 
-    // Verify API key
+    // Verify API key using hash comparison (secure - no plaintext lookup)
     const { data: apiKeyData, error: apiKeyError } = await supabase
-      .from('api_keys')
-      .select('user_id, is_active, expires_at')
-      .eq('key', apiKey)
+      .rpc('validate_api_key_by_value', { api_key_value: apiKey })
       .single();
 
     if (apiKeyError || !apiKeyData) {
@@ -101,11 +99,8 @@ serve(async (req) => {
       );
     }
 
-    // Update last_used_at
-    await supabase
-      .from('api_keys')
-      .update({ last_used_at: new Date().toISOString() })
-      .eq('key', apiKey);
+    // Update last_used_at using hash comparison (secure)
+    await supabase.rpc('update_api_key_last_used', { api_key_value: apiKey });
 
     // Get license key from request
     const { license_key, hwid, device_name, os_info } = await req.json();
