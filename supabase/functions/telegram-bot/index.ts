@@ -53,9 +53,16 @@ Deno.serve(async (req) => {
         await handleHelp(chatId, TELEGRAM_BOT_TOKEN);
         break;
       default:
-        await sendMessage(chatId, TELEGRAM_BOT_TOKEN,
-          "❓ أمر غير معروف. أرسل /help لعرض الأوامر المتاحة."
-        );
+        // Treat plain text as email input for linking
+        if (text.includes("@") && text.includes(".")) {
+          await handleStart(supabase, chatId, text, TELEGRAM_BOT_TOKEN);
+        } else {
+          await sendMessage(chatId, TELEGRAM_BOT_TOKEN,
+            "❓ أمر غير معروف.\n\n" +
+            "📧 إذا تريد ربط حسابك، أرسل بريدك الإلكتروني مباشرة.\n" +
+            "📋 أرسل /help لعرض الأوامر المتاحة."
+          );
+        }
     }
   } catch (error) {
     console.error("Telegram bot error:", error);
@@ -72,13 +79,20 @@ async function handleStart(
 ) {
   if (!email) {
     await sendMessage(chatId, token,
-      "👋 مرحباً بك في بوت إدارة التراخيص!\n\n" +
-      "لربط حسابك، أرسل:\n" +
-      "/start your@email.com\n\n" +
-      "📋 الأوامر المتاحة:\n" +
-      "/licenses - عرض تراخيصك\n" +
-      "/renew - تجديد ترخيص\n" +
-      "/help - المساعدة"
+      "━━━━━━━━━━━━━━━━━━━━━\n" +
+      "🎉 *أهلاً وسهلاً بك!*\n" +
+      "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+      "🤖 أنا بوت إدارة التراخيص الخاص بك\n" +
+      "أقدر أساعدك في:\n\n" +
+      "📋 عرض تراخيصك ومتابعة حالتها\n" +
+      "🔄 تجديد التراخيص المنتهية\n" +
+      "📊 معرفة تفاصيل اشتراكاتك\n\n" +
+      "━━━━━━━━━━━━━━━━━━━━━\n" +
+      "✉️ *للبدء، أدخل بريدك الإلكتروني*\n" +
+      "المسجّل في النظام:\n\n" +
+      "مثال: `example@email.com`\n" +
+      "━━━━━━━━━━━━━━━━━━━━━",
+      "Markdown"
     );
     return;
   }
@@ -122,8 +136,16 @@ async function handleStart(
   }
 
   await sendMessage(chatId, token,
-    `✅ تم ربط حسابك بنجاح! مرحباً ${customer.name}\n\n` +
-    "أرسل /licenses لعرض تراخيصك."
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    `✅ *تم ربط حسابك بنجاح!*\n\n` +
+    `👤 مرحباً *${customer.name}*\n\n` +
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "📋 الأوامر المتاحة:\n\n" +
+    "/licenses - 📄 عرض تراخيصك\n" +
+    "/renew - 🔄 تجديد ترخيص\n" +
+    "/help - ❓ المساعدة\n" +
+    "━━━━━━━━━━━━━━━━━━━━━",
+    "Markdown"
   );
 }
 
