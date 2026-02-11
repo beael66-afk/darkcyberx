@@ -7,10 +7,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, Edit, Trash2, FileSpreadsheet, FileText, UserCheck } from "lucide-react";
+import { Plus, Search, Edit, Trash2, FileSpreadsheet, FileText, Users, Building2, Mail, Phone, StickyNote } from "lucide-react";
 import { CreateAccountDialog } from "@/components/customers/CreateAccountDialog";
 import { ViewCredentialsDialog } from "@/components/customers/ViewCredentialsDialog";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { exportToExcel, exportToCSV } from "@/lib/exportUtils";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
@@ -145,16 +146,22 @@ const Customers = () => {
     customer.company?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const totalCustomers = customers?.length || 0;
+  const withAccounts = customers?.filter(c => c.account_created).length || 0;
+  const withCompany = customers?.filter(c => c.company).length || 0;
+
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-start">
+      {/* Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold mb-2">العملاء</h1>
-          <p className="text-muted-foreground">إدارة بيانات العملاء</p>
+          <h1 className="text-3xl font-bold tracking-tight">العملاء</h1>
+          <p className="text-muted-foreground mt-1">إدارة بيانات العملاء وحساباتهم</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           <Button
             variant="outline"
+            size="sm"
             onClick={() => exportToExcel(filteredCustomers, "customers")}
           >
             <FileSpreadsheet className="ml-2 h-4 w-4" />
@@ -162,6 +169,7 @@ const Customers = () => {
           </Button>
           <Button
             variant="outline"
+            size="sm"
             onClick={() => exportToCSV(filteredCustomers, "customers")}
           >
             <FileText className="ml-2 h-4 w-4" />
@@ -174,107 +182,195 @@ const Customers = () => {
                 إضافة عميل
               </Button>
             </DialogTrigger>
-            <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{editingCustomer ? "تعديل العميل" : "إضافة عميل جديد"}</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="name">الاسم *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="email">البريد الإلكتروني *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="phone">رقم الهاتف</Label>
-                <Input
-                  id="phone"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="company">الشركة</Label>
-                <Input
-                  id="company"
-                  value={formData.company}
-                  onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="notes">ملاحظات</Label>
-                <Textarea
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
-                  {editingCustomer ? "تحديث" : "إضافة"}
-                </Button>
-                <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                  إلغاء
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="text-xl">
+                  {editingCustomer ? "تعديل العميل" : "إضافة عميل جديد"}
+                </DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4 mt-2">
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="flex items-center gap-2">
+                    <Users className="h-4 w-4 text-primary" />
+                    الاسم *
+                  </Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="أدخل اسم العميل"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-primary" />
+                    البريد الإلكتروني *
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="example@email.com"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    رقم الهاتف
+                  </Label>
+                  <Input
+                    id="phone"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    placeholder="01xxxxxxxxx"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="company" className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                    الشركة
+                  </Label>
+                  <Input
+                    id="company"
+                    value={formData.company}
+                    onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                    placeholder="اسم الشركة (اختياري)"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="notes" className="flex items-center gap-2">
+                    <StickyNote className="h-4 w-4 text-muted-foreground" />
+                    ملاحظات
+                  </Label>
+                  <Textarea
+                    id="notes"
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    placeholder="ملاحظات إضافية..."
+                    rows={3}
+                  />
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <Button type="submit" className="flex-1" disabled={createMutation.isPending || updateMutation.isPending}>
+                    {editingCustomer ? "تحديث" : "إضافة"}
+                  </Button>
+                  <Button type="button" variant="outline" onClick={handleCloseDialog}>
+                    إلغاء
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card className="border-none shadow-sm bg-gradient-to-br from-primary/10 to-primary/5">
+          <CardContent className="p-4 flex items-center gap-4">
+            <div className="rounded-xl bg-primary/15 p-3">
+              <Users className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">إجمالي العملاء</p>
+              <p className="text-2xl font-bold">{totalCustomers}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-none shadow-sm bg-gradient-to-br from-green-500/10 to-green-500/5">
+          <CardContent className="p-4 flex items-center gap-4">
+            <div className="rounded-xl bg-green-500/15 p-3">
+              <Mail className="h-5 w-5 text-green-600 dark:text-green-400" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">لديهم حسابات</p>
+              <p className="text-2xl font-bold">{withAccounts}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-none shadow-sm bg-gradient-to-br from-blue-500/10 to-blue-500/5">
+          <CardContent className="p-4 flex items-center gap-4">
+            <div className="rounded-xl bg-blue-500/15 p-3">
+              <Building2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">شركات</p>
+              <p className="text-2xl font-bold">{withCompany}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Search */}
       <div className="relative">
-        <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
+        <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="بحث عن عميل..."
+          placeholder="ابحث بالاسم أو البريد أو الشركة..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="pr-10"
         />
       </div>
 
-      <div className="rounded-lg border bg-card">
+      {/* Table */}
+      <Card className="border shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>الاسم</TableHead>
-              <TableHead>البريد الإلكتروني</TableHead>
-              <TableHead>الهاتف</TableHead>
-              <TableHead>الشركة</TableHead>
-              <TableHead className="text-left">الإجراءات</TableHead>
+            <TableRow className="bg-muted/50 hover:bg-muted/50">
+              <TableHead className="font-semibold">العميل</TableHead>
+              <TableHead className="font-semibold">البريد الإلكتروني</TableHead>
+              <TableHead className="font-semibold">الهاتف</TableHead>
+              <TableHead className="font-semibold">الشركة</TableHead>
+              <TableHead className="font-semibold">الحالة</TableHead>
+              <TableHead className="font-semibold text-left">الإجراءات</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center">جاري التحميل...</TableCell>
+                <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+                  جاري التحميل...
+                </TableCell>
               </TableRow>
             ) : filteredCustomers?.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center">لا توجد عملاء</TableCell>
+                <TableCell colSpan={6} className="text-center py-12">
+                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                    <Users className="h-10 w-10 opacity-30" />
+                    <p>لا توجد عملاء</p>
+                  </div>
+                </TableCell>
               </TableRow>
             ) : (
               filteredCustomers?.map((customer) => (
-                <TableRow key={customer.id}>
-                  <TableCell className="font-medium">{customer.name}</TableCell>
-                  <TableCell>{customer.email}</TableCell>
-                  <TableCell>{customer.phone || "-"}</TableCell>
-                  <TableCell>{customer.company || "-"}</TableCell>
+                <TableRow key={customer.id} className="group">
                   <TableCell>
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-3">
+                      <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm shrink-0">
+                        {customer.name.charAt(0)}
+                      </div>
+                      <span className="font-medium">{customer.name}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{customer.email}</TableCell>
+                  <TableCell className="text-muted-foreground">{customer.phone || "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">{customer.company || "—"}</TableCell>
+                  <TableCell>
+                    {customer.account_created ? (
+                      <Badge variant="default" className="bg-green-500/15 text-green-700 dark:text-green-400 hover:bg-green-500/20 border-none text-xs">
+                        مفعّل
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary" className="text-xs">
+                        غير مفعّل
+                      </Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
                       {!customer.account_created && (
                         <CreateAccountDialog
                           customerId={customer.id}
@@ -292,6 +388,7 @@ const Customers = () => {
                       <Button
                         size="sm"
                         variant="ghost"
+                        className="h-8 w-8 p-0"
                         onClick={() => handleEdit(customer)}
                       >
                         <Edit className="h-4 w-4" />
@@ -299,6 +396,7 @@ const Customers = () => {
                       <Button
                         size="sm"
                         variant="ghost"
+                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                         onClick={() => {
                           if (confirm("هل أنت متأكد من حذف هذا العميل؟")) {
                             deleteMutation.mutate({ id: customer.id, name: customer.name });
@@ -314,7 +412,7 @@ const Customers = () => {
             )}
           </TableBody>
         </Table>
-      </div>
+      </Card>
     </div>
   );
 };
