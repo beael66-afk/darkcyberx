@@ -375,6 +375,76 @@ export type Database = {
         }
         Relationships: []
       }
+      renewal_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          is_used: boolean
+          license_id: string
+          renewal_days: number
+          token: string
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          is_used?: boolean
+          license_id: string
+          renewal_days?: number
+          token?: string
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          is_used?: boolean
+          license_id?: string
+          renewal_days?: number
+          token?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "renewal_tokens_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "licenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      telegram_links: {
+        Row: {
+          created_at: string
+          customer_id: string
+          id: string
+          telegram_chat_id: number
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          id?: string
+          telegram_chat_id: number
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          id?: string
+          telegram_chat_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telegram_links_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
