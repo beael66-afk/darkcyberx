@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Copy, Trash2, Edit, FileSpreadsheet, FileText } from "lucide-react";
+import { Plus, Search, Copy, Trash2, Edit, FileSpreadsheet, FileText, RefreshCw } from "lucide-react";
+import { RenewalTokenDialog } from "@/components/licenses/RenewalTokenDialog";
 import { exportToExcel, exportToCSV } from "@/lib/exportUtils";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -69,6 +70,7 @@ const Licenses = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [licenseToDelete, setLicenseToDelete] = useState<{ id: string; key: string } | null>(null);
   const [editingLicense, setEditingLicense] = useState<License | null>(null);
+  const [renewalLicense, setRenewalLicense] = useState<License | null>(null);
   const [formData, setFormData] = useState<{
     customer_id: string;
     product_id: string;
@@ -521,6 +523,7 @@ const Licenses = () => {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleEdit(license)}
+                          title="تعديل"
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -528,8 +531,17 @@ const Licenses = () => {
                           variant="ghost"
                           size="icon"
                           onClick={() => copyLicenseKey(license.license_key)}
+                          title="نسخ المفتاح"
                         >
                           <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setRenewalLicense(license)}
+                          title="رموز التجديد"
+                        >
+                          <RefreshCw className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
@@ -538,6 +550,7 @@ const Licenses = () => {
                             setLicenseToDelete({ id: license.id, key: license.license_key });
                             setIsDeleteDialogOpen(true);
                           }}
+                          title="حذف"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -568,6 +581,16 @@ const Licenses = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {renewalLicense && (
+        <RenewalTokenDialog
+          open={!!renewalLicense}
+          onOpenChange={(open) => !open && setRenewalLicense(null)}
+          licenseId={renewalLicense.id}
+          licenseKey={renewalLicense.license_key}
+          customerName={renewalLicense.customer?.name || null}
+        />
+      )}
     </div>
   );
 };
