@@ -12,6 +12,7 @@ import {
   KeySquare,
   Code2,
   Bell,
+  Bot,
 } from "lucide-react";
 import {
   Sidebar,
@@ -39,6 +40,7 @@ const menuItems = [
   { title: "السجلات", url: "/logs", icon: ScrollText },
   { title: "بيانات الاعتماد", url: "/api-credentials", icon: Code2 },
   { title: "إعدادات الإشعارات", url: "/notification-settings", icon: Bell },
+  { title: "بوت التليجرام", url: "/telegram-settings", icon: Bot },
   { title: "الإعدادات", url: "/settings", icon: Settings },
 ];
 

@@ -20,6 +20,7 @@ const Reports = lazy(() => import("./pages/Reports"));
 const Settings = lazy(() => import("./pages/Settings"));
 const ApiCredentials = lazy(() => import("./pages/ApiCredentials"));
 const NotificationSettings = lazy(() => import("./pages/NotificationSettings"));
+const TelegramSettings = lazy(() => import("./pages/TelegramSettings"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Customer Portal Pages
@@ -78,6 +79,7 @@ const App = () => (
               <Route path="/reports" element={<Reports />} />
               <Route path="/api-credentials" element={<ApiCredentials />} />
               <Route path="/notification-settings" element={<NotificationSettings />} />
+              <Route path="/telegram-settings" element={<TelegramSettings />} />
               <Route path="/settings" element={<Settings />} />
             </Route>
             
