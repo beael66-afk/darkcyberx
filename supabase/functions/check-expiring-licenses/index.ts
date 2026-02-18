@@ -6,6 +6,25 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const TELEGRAM_API = "https://api.telegram.org/bot";
+
+async function sendTelegramMessage(token: string, chatId: number, text: string, parseMode?: string) {
+  const body: any = { chat_id: chatId, text };
+  if (parseMode) body.parse_mode = parseMode;
+
+  const res = await fetch(`${TELEGRAM_API}${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    console.error("Telegram sendMessage failed:", await res.text());
+    return false;
+  }
+  return true;
+}
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -14,11 +33,12 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const telegramToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     console.log("Starting check for expiring licenses...");
 
-    // Fetch notification settings from database
+    // Fetch notification settings
     const { data: settingsData, error: settingsError } = await supabase
       .from("notification_settings")
       .select("*")
@@ -32,18 +52,23 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    if (!settingsData.email_enabled) {
-      console.log("Email notifications are disabled");
-      return new Response(
-        JSON.stringify({ success: true, message: "الإشعارات البريدية معطلة" }),
-        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
     const notificationDays = settingsData.notification_days as number[];
     const today = new Date();
     
-    let totalSent = 0;
+    let emailsSent = 0;
+    let telegramSent = 0;
+
+    // Fetch all telegram links for quick lookup
+    const { data: telegramLinks } = await supabase
+      .from("telegram_links")
+      .select("customer_id, telegram_chat_id");
+
+    const telegramMap = new Map<string, number>();
+    if (telegramLinks) {
+      for (const link of telegramLinks) {
+        telegramMap.set(link.customer_id, link.telegram_chat_id);
+      }
+    }
 
     for (const days of notificationDays) {
       const targetDate = new Date(today);
@@ -55,7 +80,6 @@ const handler = async (req: Request): Promise<Response> => {
 
       console.log(`Checking licenses expiring in ${days} days...`);
 
-      // Fetch licenses expiring on the target date
       const { data: licenses, error } = await supabase
         .from("licenses")
         .select(`
@@ -78,47 +102,72 @@ const handler = async (req: Request): Promise<Response> => {
 
       if (licenses && licenses.length > 0) {
         for (const license of licenses) {
-          try {
-            // Send notification email
-            const notificationResponse = await supabase.functions.invoke("send-expiry-notification", {
-              body: {
-                customerEmail: license.customer.email,
-                customerName: license.customer.name,
-                licenseKey: license.license_key,
-                productName: license.product.name,
-                expiryDate: license.expire_at,
-                daysRemaining: days,
-              },
-            });
+          const customerName = license.customer?.name || "عميل";
+          const customerEmail = license.customer?.email;
+          const customerId = license.customer?.id;
+          const productName = license.product?.name || "منتج";
+          const expiryDate = new Date(license.expire_at!).toLocaleDateString("ar-EG");
 
-            if (notificationResponse.error) {
-              console.error(`Failed to send notification for license ${license.license_key}:`, notificationResponse.error);
-            } else {
-              console.log(`Notification sent successfully for license ${license.license_key}`);
-              totalSent++;
-
-              // Log the notification
-              await supabase.from("logs").insert({
-                action: "email_sent",
-                details: `إشعار انتهاء الترخيص تم إرساله إلى ${license.customer.email} (${days} أيام متبقية)`,
-                entity_type: "license",
-                entity_id: license.id,
+          // 1) Send email notification if enabled
+          if (settingsData.email_enabled && customerEmail) {
+            try {
+              const notificationResponse = await supabase.functions.invoke("send-expiry-notification", {
+                body: {
+                  customerEmail,
+                  customerName,
+                  licenseKey: license.license_key,
+                  productName,
+                  expiryDate: license.expire_at,
+                  daysRemaining: days,
+                },
               });
+
+              if (!notificationResponse.error) {
+                emailsSent++;
+                console.log(`Email sent for license ${license.license_key}`);
+              }
+            } catch (e) {
+              console.error(`Email error for ${license.license_key}:`, e);
             }
-          } catch (notifError) {
-            console.error(`Error processing license ${license.license_key}:`, notifError);
+          }
+
+          // 2) Send Telegram notification if linked
+          if (telegramToken && customerId && telegramMap.has(customerId)) {
+            const chatId = telegramMap.get(customerId)!;
+            const urgencyEmoji = days <= 1 ? "🚨" : days <= 3 ? "⚠️" : "📢";
+
+            const msg =
+              `━━━━━━━━━━━━━━━━━━━━━\n` +
+              `${urgencyEmoji} *تنبيه انتهاء ترخيص*\n` +
+              `━━━━━━━━━━━━━━━━━━━━━\n\n` +
+              `مرحباً *${customerName}*\n\n` +
+              `ترخيصك لمنتج *${productName}* سينتهي قريباً!\n\n` +
+              `🔑 المفتاح: \`${license.license_key}\`\n` +
+              `📅 تاريخ الانتهاء: ${expiryDate}\n` +
+              `⏰ الأيام المتبقية: *${days} يوم*\n\n` +
+              `━━━━━━━━━━━━━━━━━━━━━\n` +
+              `🔄 لتجديد الترخيص أرسل:\n` +
+              `/renew ${license.license_key}\n` +
+              `━━━━━━━━━━━━━━━━━━━━━`;
+
+            const sent = await sendTelegramMessage(telegramToken, chatId, msg, "Markdown");
+            if (sent) {
+              telegramSent++;
+              console.log(`Telegram sent for license ${license.license_key} to chat ${chatId}`);
+            }
           }
         }
       }
     }
 
-    console.log(`Total notifications sent: ${totalSent}`);
+    console.log(`Total: ${emailsSent} emails, ${telegramSent} telegram messages`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `تم إرسال ${totalSent} إشعار بنجاح`,
-        totalSent 
+        message: `تم إرسال ${emailsSent} إيميل و ${telegramSent} رسالة تليجرام`,
+        emailsSent,
+        telegramSent,
       }),
       {
         status: 200,
