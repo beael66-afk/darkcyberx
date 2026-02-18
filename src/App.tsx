@@ -23,11 +23,6 @@ const NotificationSettings = lazy(() => import("./pages/NotificationSettings"));
 const TelegramSettings = lazy(() => import("./pages/TelegramSettings"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-// Customer Portal Pages
-const CustomerAuth = lazy(() => import("./pages/customer/CustomerAuth"));
-const CustomerDashboard = lazy(() => import("./pages/customer/CustomerDashboard"));
-const CustomerInvoices = lazy(() => import("./pages/customer/CustomerInvoices"));
-const CustomerLayout = lazy(() => import("./pages/customer/CustomerLayout").then(m => ({ default: m.CustomerLayout })));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -61,12 +56,6 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             
-            {/* Customer Portal Routes */}
-            <Route path="/customer" element={<CustomerAuth />} />
-            <Route element={<CustomerLayout />}>
-              <Route path="/customer/dashboard" element={<CustomerDashboard />} />
-              <Route path="/customer/invoices" element={<CustomerInvoices />} />
-            </Route>
             
             {/* Admin Dashboard Routes */}
             <Route element={<DashboardLayout />}>
