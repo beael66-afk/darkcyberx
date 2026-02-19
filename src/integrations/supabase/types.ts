@@ -375,6 +375,63 @@ export type Database = {
         }
         Relationships: []
       }
+      renewal_requests: {
+        Row: {
+          admin_note: string | null
+          amount: number
+          created_at: string
+          customer_id: string
+          days: number
+          id: string
+          license_id: string
+          receipt_note: string | null
+          status: string
+          telegram_chat_id: number | null
+          updated_at: string
+        }
+        Insert: {
+          admin_note?: string | null
+          amount: number
+          created_at?: string
+          customer_id: string
+          days: number
+          id?: string
+          license_id: string
+          receipt_note?: string | null
+          status?: string
+          telegram_chat_id?: number | null
+          updated_at?: string
+        }
+        Update: {
+          admin_note?: string | null
+          amount?: number
+          created_at?: string
+          customer_id?: string
+          days?: number
+          id?: string
+          license_id?: string
+          receipt_note?: string | null
+          status?: string
+          telegram_chat_id?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "renewal_requests_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "renewal_requests_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "licenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       renewal_tokens: {
         Row: {
           created_at: string
