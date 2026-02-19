@@ -7,6 +7,11 @@ const corsHeaders = {
 };
 
 const TELEGRAM_API = "https://api.telegram.org/bot";
+const PRICE_PER_DAY = 10; // EGP per day
+const PAYMENT_NUMBER = "01009046911";
+
+// Track user states for multi-step flows
+const userStates = new Map<number, { step: string; licenseKey?: string }>();
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -36,6 +41,20 @@ Deno.serve(async (req) => {
     const command = text.split(" ")[0].toLowerCase();
     const args = text.split(" ").slice(1).join(" ").trim();
 
+    // Check if user is in a multi-step flow
+    const state = userStates.get(chatId);
+
+    if (state?.step === "awaiting_days" && /^\d+$/.test(text)) {
+      await handleDaysInput(supabase, chatId, parseInt(text), state.licenseKey!, TELEGRAM_BOT_TOKEN);
+      userStates.delete(chatId);
+      return new Response("OK", { status: 200 });
+    }
+
+    // Clear state on new command
+    if (text.startsWith("/")) {
+      userStates.delete(chatId);
+    }
+
     switch (command) {
       case "/start":
         await handleStart(supabase, chatId, args, TELEGRAM_BOT_TOKEN);
@@ -53,7 +72,6 @@ Deno.serve(async (req) => {
         await handleHelp(chatId, TELEGRAM_BOT_TOKEN);
         break;
       default:
-        // Treat plain text as email input for linking
         if (text.includes("@") && text.includes(".")) {
           await handleStart(supabase, chatId, text, TELEGRAM_BOT_TOKEN);
         } else {
@@ -71,12 +89,7 @@ Deno.serve(async (req) => {
   return new Response("OK", { status: 200 });
 });
 
-async function handleStart(
-  supabase: any,
-  chatId: number,
-  email: string,
-  token: string
-) {
+async function handleStart(supabase: any, chatId: number, email: string, token: string) {
   if (!email) {
     await sendMessage(chatId, token,
       "━━━━━━━━━━━━━━━━━━━━━\n" +
@@ -85,8 +98,10 @@ async function handleStart(
       "🤖 أنا بوت إدارة التراخيص الخاص بك\n" +
       "أقدر أساعدك في:\n\n" +
       "📋 عرض تراخيصك ومتابعة حالتها\n" +
-      "🔄 تجديد التراخيص المنتهية\n" +
+      "🔄 تجديد التراخيص\n" +
       "📊 معرفة تفاصيل اشتراكاتك\n\n" +
+      "💰 سعر الاشتراك: 300 جنيه / 30 يوم\n" +
+      "📌 سعر اليوم: 10 جنيه\n\n" +
       "━━━━━━━━━━━━━━━━━━━━━\n" +
       "✉️ *للبدء، أدخل بريدك الإلكتروني*\n" +
       "المسجّل في النظام:\n\n" +
@@ -97,7 +112,6 @@ async function handleStart(
     return;
   }
 
-  // Check if already linked
   const { data: existingLink } = await supabase
     .from("telegram_links")
     .select("id, customer_id")
@@ -109,7 +123,6 @@ async function handleStart(
     return;
   }
 
-  // Find customer by email
   const { data: customer } = await supabase
     .from("customers")
     .select("id, name")
@@ -124,7 +137,6 @@ async function handleStart(
     return;
   }
 
-  // Link telegram to customer
   const { error } = await supabase
     .from("telegram_links")
     .insert({ customer_id: customer.id, telegram_chat_id: chatId });
@@ -152,9 +164,7 @@ async function handleStart(
 async function handleLicenses(supabase: any, chatId: number, token: string) {
   const customer = await getCustomerByChatId(supabase, chatId);
   if (!customer) {
-    await sendMessage(chatId, token,
-      "⚠️ حسابك غير مربوط. أرسل:\n/start your@email.com"
-    );
+    await sendMessage(chatId, token, "⚠️ حسابك غير مربوط. أرسل:\n/start your@email.com");
     return;
   }
 
@@ -168,30 +178,15 @@ async function handleLicenses(supabase: any, chatId: number, token: string) {
     return;
   }
 
-  const statusEmoji: Record<string, string> = {
-    active: "🟢",
-    expired: "🔴",
-    suspended: "🟡",
-    pending: "⚪",
-  };
-
-  const statusAr: Record<string, string> = {
-    active: "نشط",
-    expired: "منتهي",
-    suspended: "معلق",
-    pending: "قيد الانتظار",
-  };
+  const statusEmoji: Record<string, string> = { active: "🟢", expired: "🔴", suspended: "🟡", pending: "⚪" };
+  const statusAr: Record<string, string> = { active: "نشط", expired: "منتهي", suspended: "معلق", pending: "قيد الانتظار" };
 
   let msg = "📋 *تراخيصك:*\n\n";
   licenses.forEach((l: any, i: number) => {
     const emoji = statusEmoji[l.status] || "⚪";
     const status = statusAr[l.status] || l.status;
-    const expiry = l.expire_at
-      ? new Date(l.expire_at).toLocaleDateString("ar-EG")
-      : "غير محدد";
-    const daysLeft = l.expire_at
-      ? Math.ceil((new Date(l.expire_at).getTime() - Date.now()) / 86400000)
-      : null;
+    const expiry = l.expire_at ? new Date(l.expire_at).toLocaleDateString("ar-EG") : "غير محدد";
+    const daysLeft = l.expire_at ? Math.ceil((new Date(l.expire_at).getTime() - Date.now()) / 86400000) : null;
 
     msg += `${i + 1}. ${emoji} *${l.products?.name || "منتج"}*\n`;
     msg += `   🔑 \`${l.license_key}\`\n`;
@@ -203,33 +198,24 @@ async function handleLicenses(supabase: any, chatId: number, token: string) {
     msg += "\n\n";
   });
 
+  msg += "💰 *التجديد:* 10 جنيه/يوم (300 جنيه/شهر)\n";
   msg += "لتجديد ترخيص أرسل:\n/renew XXXX-XXXX-XXXX-XXXX";
 
   await sendMessage(chatId, token, msg, "Markdown");
 }
 
-async function handleRenew(
-  supabase: any,
-  chatId: number,
-  licenseKey: string,
-  token: string
-) {
+async function handleRenew(supabase: any, chatId: number, licenseKey: string, token: string) {
   const customer = await getCustomerByChatId(supabase, chatId);
   if (!customer) {
-    await sendMessage(chatId, token,
-      "⚠️ حسابك غير مربوط. أرسل:\n/start your@email.com"
-    );
+    await sendMessage(chatId, token, "⚠️ حسابك غير مربوط. أرسل:\n/start your@email.com");
     return;
   }
 
   if (!licenseKey) {
-    await sendMessage(chatId, token,
-      "⚠️ يرجى إرسال مفتاح الترخيص:\n/renew XXXX-XXXX-XXXX-XXXX"
-    );
+    await sendMessage(chatId, token, "⚠️ يرجى إرسال مفتاح الترخيص:\n/renew XXXX-XXXX-XXXX-XXXX");
     return;
   }
 
-  // Find the license
   const { data: license } = await supabase
     .from("licenses")
     .select("id, license_key, status, expire_at, products(name)")
@@ -244,57 +230,86 @@ async function handleRenew(
     return;
   }
 
-  // Check for existing unused renewal token
-  const { data: existingToken } = await supabase
-    .from("renewal_tokens")
-    .select("id, token, expires_at")
-    .eq("license_id", license.id)
-    .eq("is_used", false)
-    .gt("expires_at", new Date().toISOString())
-    .maybeSingle();
+  // Set state to await days input
+  userStates.set(chatId, { step: "awaiting_days", licenseKey: license.license_key });
 
-  if (existingToken) {
-    // Use existing token - auto renew
-    const newExpiry = new Date(license.expire_at || Date.now());
-    if (newExpiry < new Date()) {
-      newExpiry.setTime(Date.now());
-    }
-    newExpiry.setDate(newExpiry.getDate() + 30);
+  await sendMessage(chatId, token,
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "🔄 *تجديد الترخيص*\n" +
+    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+    `🔑 المنتج: *${license.products?.name || "منتج"}*\n` +
+    `📅 ينتهي: ${license.expire_at ? new Date(license.expire_at).toLocaleDateString("ar-EG") : "منتهي"}\n\n` +
+    "💰 *الأسعار:*\n" +
+    "• اليوم الواحد = 10 جنيه\n" +
+    "• 30 يوم (شهر) = 300 جنيه\n\n" +
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "📝 *كم يوم تريد تجديد؟*\n" +
+    "أرسل عدد الأيام (مثال: `30`)\n" +
+    "━━━━━━━━━━━━━━━━━━━━━",
+    "Markdown"
+  );
+}
 
-    const { error: updateError } = await supabase
-      .from("licenses")
-      .update({
-        status: "active",
-        expire_at: newExpiry.toISOString(),
-      })
-      .eq("id", license.id);
-
-    if (updateError) {
-      console.error("Error renewing license:", updateError);
-      await sendMessage(chatId, token, "❌ حدث خطأ أثناء التجديد. حاول لاحقاً.");
-      return;
-    }
-
-    // Mark token as used
-    await supabase
-      .from("renewal_tokens")
-      .update({ is_used: true, used_at: new Date().toISOString() })
-      .eq("id", existingToken.id);
-
-    await sendMessage(chatId, token,
-      `✅ *تم تجديد الترخيص بنجاح!*\n\n` +
-      `🔑 المنتج: ${license.products?.name || "منتج"}\n` +
-      `📅 تاريخ الانتهاء الجديد: ${newExpiry.toLocaleDateString("ar-EG")}\n` +
-      `📊 الحالة: نشط 🟢`,
-      "Markdown"
-    );
+async function handleDaysInput(supabase: any, chatId: number, days: number, licenseKey: string, token: string) {
+  if (days < 1 || days > 365) {
+    await sendMessage(chatId, token, "⚠️ يرجى إدخال عدد أيام بين 1 و 365.");
     return;
   }
 
-  // No renewal token available - notify
+  const customer = await getCustomerByChatId(supabase, chatId);
+  if (!customer) return;
+
+  const amount = days * PRICE_PER_DAY;
+
+  const { data: license } = await supabase
+    .from("licenses")
+    .select("id, products(name)")
+    .eq("customer_id", customer.customer_id)
+    .eq("license_key", licenseKey.toUpperCase())
+    .maybeSingle();
+
+  if (!license) {
+    await sendMessage(chatId, token, "❌ حدث خطأ. حاول مرة أخرى.");
+    return;
+  }
+
+  // Create renewal request
+  const { error } = await supabase
+    .from("renewal_requests")
+    .insert({
+      customer_id: customer.customer_id,
+      license_id: license.id,
+      days: days,
+      amount: amount,
+      status: "pending",
+      telegram_chat_id: chatId,
+    });
+
+  if (error) {
+    console.error("Error creating renewal request:", error);
+    await sendMessage(chatId, token, "❌ حدث خطأ. حاول لاحقاً.");
+    return;
+  }
+
   await sendMessage(chatId, token,
-    "⚠️ لا يوجد رمز تجديد متاح لهذا الترخيص حالياً.\n" +
-    "يرجى التواصل مع الإدارة لإصدار رمز تجديد."
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "💰 *تفاصيل طلب التجديد*\n" +
+    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+    `🔑 المنتج: *${license.products?.name || "منتج"}*\n` +
+    `📅 عدد الأيام: *${days} يوم*\n` +
+    `💵 المبلغ المطلوب: *${amount} جنيه*\n\n` +
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "📱 *خطوات الدفع:*\n\n" +
+    `1️⃣ حوّل المبلغ (*${amount} جنيه*) على الرقم:\n` +
+    `📞 \`${PAYMENT_NUMBER}\`\n\n` +
+    "2️⃣ بعد التحويل، أرسل صورة الإيصال أو رقم العملية هنا\n\n" +
+    "3️⃣ سيتم مراجعة طلبك وتأكيده من الإدارة\n\n" +
+    "4️⃣ بمجرد التأكيد، سيتم تجديد ترخيصك تلقائياً ✅\n\n" +
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "⏳ *تم تسجيل طلبك بنجاح!*\n" +
+    "سيتم إبلاغك فور تأكيد التجديد.\n" +
+    "━━━━━━━━━━━━━━━━━━━━━",
+    "Markdown"
   );
 }
 
@@ -305,6 +320,9 @@ async function handleHelp(chatId: number, token: string) {
     "/licenses - عرض جميع تراخيصك\n" +
     "/renew KEY - تجديد ترخيص\n" +
     "/help - عرض هذه المساعدة\n\n" +
+    "💰 *الأسعار:*\n" +
+    "• 10 جنيه / يوم\n" +
+    "• 300 جنيه / 30 يوم\n\n" +
     "🌐 يمكنك أيضاً استخدام الأوامر بالعربية:\n" +
     "/تراخيصي - عرض التراخيص\n" +
     "/تجديد KEY - تجديد ترخيص\n" +
@@ -322,12 +340,7 @@ async function getCustomerByChatId(supabase: any, chatId: number) {
   return data;
 }
 
-async function sendMessage(
-  chatId: number,
-  token: string,
-  text: string,
-  parseMode?: string
-) {
+async function sendMessage(chatId: number, token: string, text: string, parseMode?: string) {
   const body: any = { chat_id: chatId, text };
   if (parseMode) body.parse_mode = parseMode;
 

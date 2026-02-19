@@ -13,6 +13,7 @@ import {
   Code2,
   Bell,
   Bot,
+  ShoppingCart,
 } from "lucide-react";
 import {
   Sidebar,
@@ -41,6 +42,7 @@ const menuItems = [
   { title: "بيانات الاعتماد", url: "/api-credentials", icon: Code2 },
   { title: "إعدادات الإشعارات", url: "/notification-settings", icon: Bell },
   { title: "بوت التليجرام", url: "/telegram-settings", icon: Bot },
+  { title: "طلبات التجديد", url: "/renewal-orders", icon: ShoppingCart },
   { title: "الإعدادات", url: "/settings", icon: Settings },
 ];
 
