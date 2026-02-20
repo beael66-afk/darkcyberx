@@ -375,6 +375,39 @@ export type Database = {
         }
         Relationships: []
       }
+      registration_requests: {
+        Row: {
+          admin_note: string | null
+          created_at: string
+          email: string
+          id: string
+          name: string
+          status: string
+          telegram_chat_id: number
+          updated_at: string
+        }
+        Insert: {
+          admin_note?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          status?: string
+          telegram_chat_id: number
+          updated_at?: string
+        }
+        Update: {
+          admin_note?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          status?: string
+          telegram_chat_id?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       renewal_requests: {
         Row: {
           admin_note: string | null
