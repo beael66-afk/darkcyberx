@@ -7,11 +7,11 @@ const corsHeaders = {
 };
 
 const TELEGRAM_API = "https://api.telegram.org/bot";
-const PRICE_PER_DAY = 10; // EGP per day
+const PRICE_PER_DAY = 10;
 const PAYMENT_NUMBER = "01009046911";
 
 // Track user states for multi-step flows
-const userStates = new Map<number, { step: string; licenseKey?: string }>();
+const userStates = new Map<number, { step: string; data?: any }>();
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -31,6 +31,13 @@ Deno.serve(async (req) => {
 
   try {
     const update = await req.json();
+
+    // Handle callback queries (button presses)
+    if (update?.callback_query) {
+      await handleCallbackQuery(supabase, update.callback_query, TELEGRAM_BOT_TOKEN);
+      return new Response("OK", { status: 200 });
+    }
+
     const message = update?.message;
     if (!message?.text) {
       return new Response("OK", { status: 200 });
@@ -38,15 +45,46 @@ Deno.serve(async (req) => {
 
     const chatId = message.chat.id;
     const text = message.text.trim();
-    const command = text.split(" ")[0].toLowerCase();
-    const args = text.split(" ").slice(1).join(" ").trim();
 
-    // Check if user is in a multi-step flow
+    // Check multi-step flows
     const state = userStates.get(chatId);
 
-    if (state?.step === "awaiting_days" && /^\d+$/.test(text)) {
-      await handleDaysInput(supabase, chatId, parseInt(text), state.licenseKey!, TELEGRAM_BOT_TOKEN);
+    if (state?.step === "awaiting_name") {
+      userStates.set(chatId, { step: "awaiting_email", data: { name: text } });
+      await sendMessage(chatId, TELEGRAM_BOT_TOKEN,
+        "📧 *أدخل بريدك الإلكتروني:*\n\nمثال: `example@email.com`",
+        "Markdown"
+      );
+      return new Response("OK", { status: 200 });
+    }
+
+    if (state?.step === "awaiting_email") {
+      if (!text.includes("@") || !text.includes(".")) {
+        await sendMessage(chatId, TELEGRAM_BOT_TOKEN, "❌ بريد إلكتروني غير صحيح. حاول مرة أخرى:");
+        return new Response("OK", { status: 200 });
+      }
+      await handleRegistrationSubmit(supabase, chatId, state.data.name, text.toLowerCase(), TELEGRAM_BOT_TOKEN);
       userStates.delete(chatId);
+      return new Response("OK", { status: 200 });
+    }
+
+    if (state?.step === "awaiting_link_email") {
+      if (!text.includes("@") || !text.includes(".")) {
+        await sendMessage(chatId, TELEGRAM_BOT_TOKEN, "❌ بريد إلكتروني غير صحيح. حاول مرة أخرى:");
+        return new Response("OK", { status: 200 });
+      }
+      await handleLinkAccount(supabase, chatId, text.toLowerCase(), TELEGRAM_BOT_TOKEN);
+      userStates.delete(chatId);
+      return new Response("OK", { status: 200 });
+    }
+
+    if (state?.step === "awaiting_days") {
+      if (/^\d+$/.test(text)) {
+        await handleDaysInput(supabase, chatId, parseInt(text), state.data.licenseKey, TELEGRAM_BOT_TOKEN);
+        userStates.delete(chatId);
+        return new Response("OK", { status: 200 });
+      }
+      await sendMessage(chatId, TELEGRAM_BOT_TOKEN, "⚠️ أدخل رقم صحيح (عدد الأيام):");
       return new Response("OK", { status: 200 });
     }
 
@@ -55,32 +93,12 @@ Deno.serve(async (req) => {
       userStates.delete(chatId);
     }
 
-    switch (command) {
-      case "/start":
-        await handleStart(supabase, chatId, args, TELEGRAM_BOT_TOKEN);
-        break;
-      case "/licenses":
-      case "/تراخيصي":
-        await handleLicenses(supabase, chatId, TELEGRAM_BOT_TOKEN);
-        break;
-      case "/renew":
-      case "/تجديد":
-        await handleRenew(supabase, chatId, args, TELEGRAM_BOT_TOKEN);
-        break;
-      case "/help":
-      case "/مساعدة":
-        await handleHelp(chatId, TELEGRAM_BOT_TOKEN);
-        break;
-      default:
-        if (text.includes("@") && text.includes(".")) {
-          await handleStart(supabase, chatId, text, TELEGRAM_BOT_TOKEN);
-        } else {
-          await sendMessage(chatId, TELEGRAM_BOT_TOKEN,
-            "❓ أمر غير معروف.\n\n" +
-            "📧 إذا تريد ربط حسابك، أرسل بريدك الإلكتروني مباشرة.\n" +
-            "📋 أرسل /help لعرض الأوامر المتاحة."
-          );
-        }
+    if (text === "/start") {
+      await sendMainMenu(chatId, TELEGRAM_BOT_TOKEN);
+    } else {
+      await sendMessage(chatId, TELEGRAM_BOT_TOKEN,
+        "❓ أمر غير معروف.\nاضغط /start لعرض القائمة الرئيسية."
+      );
     }
   } catch (error) {
     console.error("Telegram bot error:", error);
@@ -89,50 +107,176 @@ Deno.serve(async (req) => {
   return new Response("OK", { status: 200 });
 });
 
-async function handleStart(supabase: any, chatId: number, email: string, token: string) {
-  if (!email) {
-    await sendMessage(chatId, token,
-      "━━━━━━━━━━━━━━━━━━━━━\n" +
-      "🎉 *أهلاً وسهلاً بك!*\n" +
-      "━━━━━━━━━━━━━━━━━━━━━\n\n" +
-      "🤖 أنا بوت إدارة التراخيص الخاص بك\n" +
-      "أقدر أساعدك في:\n\n" +
-      "📋 عرض تراخيصك ومتابعة حالتها\n" +
-      "🔄 تجديد التراخيص\n" +
-      "📊 معرفة تفاصيل اشتراكاتك\n\n" +
-      "💰 سعر الاشتراك: 300 جنيه / 30 يوم\n" +
-      "📌 سعر اليوم: 10 جنيه\n\n" +
-      "━━━━━━━━━━━━━━━━━━━━━\n" +
-      "✉️ *للبدء، أدخل بريدك الإلكتروني*\n" +
-      "المسجّل في النظام:\n\n" +
-      "مثال: `example@email.com`\n" +
-      "━━━━━━━━━━━━━━━━━━━━━",
-      "Markdown"
+// ─── Main Menu ─────────────────────────────────────────
+async function sendMainMenu(chatId: number, token: string) {
+  const keyboard = {
+    inline_keyboard: [
+      [{ text: "📝 تسجيل مستخدم جديد", callback_data: "register" }],
+      [{ text: "🔗 ربط حساب موجود", callback_data: "link_account" }],
+      [{ text: "📋 عرض تراخيصي", callback_data: "my_licenses" }],
+      [{ text: "🔄 تجديد ترخيص", callback_data: "renew" }],
+      [{ text: "❓ المساعدة", callback_data: "help" }],
+    ],
+  };
+
+  await sendMessageWithKeyboard(chatId, token,
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "🤖 *أهلاً وسهلاً بك!*\n" +
+    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+    "اختر من القائمة أدناه:\n",
+    keyboard,
+    "Markdown"
+  );
+}
+
+// ─── Callback Query Handler ────────────────────────────
+async function handleCallbackQuery(supabase: any, query: any, token: string) {
+  const chatId = query.message.chat.id;
+  const data = query.data;
+
+  // Answer callback to remove loading state
+  await fetch(`${TELEGRAM_API}${token}/answerCallbackQuery`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ callback_query_id: query.id }),
+  });
+
+  switch (data) {
+    case "register":
+      await handleRegisterStart(chatId, token);
+      break;
+    case "link_account":
+      await handleLinkStart(chatId, token);
+      break;
+    case "my_licenses":
+      await handleLicenses(supabase, chatId, token);
+      break;
+    case "renew":
+      await handleRenewStart(supabase, chatId, token);
+      break;
+    case "help":
+      await handleHelp(chatId, token);
+      break;
+    case "main_menu":
+      await sendMainMenu(chatId, token);
+      break;
+    default:
+      // Handle dynamic callbacks like renew_LICENSE_KEY
+      if (data.startsWith("renew_")) {
+        const licenseKey = data.replace("renew_", "");
+        await handleRenewLicense(supabase, chatId, licenseKey, token);
+      }
+      break;
+  }
+}
+
+// ─── Registration Flow ─────────────────────────────────
+async function handleRegisterStart(chatId: number, token: string) {
+  userStates.set(chatId, { step: "awaiting_name" });
+  await sendMessage(chatId, token,
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "📝 *تسجيل مستخدم جديد*\n" +
+    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+    "👤 *أدخل اسمك الكامل:*",
+    "Markdown"
+  );
+}
+
+async function handleRegistrationSubmit(supabase: any, chatId: number, name: string, email: string, token: string) {
+  // Check if already registered
+  const { data: existingCustomer } = await supabase
+    .from("customers")
+    .select("id")
+    .eq("email", email)
+    .maybeSingle();
+
+  if (existingCustomer) {
+    await sendMessageWithKeyboard(chatId, token,
+      "⚠️ يوجد حساب بالفعل بهذا البريد الإلكتروني.\n\n" +
+      "إذا كنت تريد ربط حسابك، اضغط الزر أدناه:",
+      { inline_keyboard: [[{ text: "🔗 ربط حساب موجود", callback_data: "link_account" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
     );
     return;
   }
 
+  // Check for duplicate pending request
+  const { data: existingReq } = await supabase
+    .from("registration_requests")
+    .select("id")
+    .eq("email", email)
+    .eq("status", "pending")
+    .maybeSingle();
+
+  if (existingReq) {
+    await sendMessageWithKeyboard(chatId, token,
+      "⏳ يوجد طلب تسجيل قيد المراجعة بالفعل لهذا البريد.\nسيتم إبلاغك فور الموافقة.",
+      { inline_keyboard: [[{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
+    );
+    return;
+  }
+
+  const { error } = await supabase
+    .from("registration_requests")
+    .insert({ telegram_chat_id: chatId, name, email, status: "pending" });
+
+  if (error) {
+    console.error("Registration request error:", error);
+    await sendMessage(chatId, token, "❌ حدث خطأ. حاول لاحقاً.");
+    return;
+  }
+
+  await sendMessageWithKeyboard(chatId, token,
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "✅ *تم إرسال طلب التسجيل بنجاح!*\n" +
+    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+    `👤 الاسم: *${name}*\n` +
+    `📧 البريد: *${email}*\n\n` +
+    "⏳ سيتم مراجعة طلبك من الإدارة.\n" +
+    "سيتم إبلاغك فور التفعيل ✅",
+    { inline_keyboard: [[{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
+    "Markdown"
+  );
+}
+
+// ─── Link Account Flow ─────────────────────────────────
+async function handleLinkStart(chatId: number, token: string) {
+  // Check if already linked
+  userStates.set(chatId, { step: "awaiting_link_email" });
+  await sendMessage(chatId, token,
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "🔗 *ربط حساب موجود*\n" +
+    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+    "📧 *أدخل بريدك الإلكتروني المسجّل:*\n\n" +
+    "مثال: `example@email.com`",
+    "Markdown"
+  );
+}
+
+async function handleLinkAccount(supabase: any, chatId: number, email: string, token: string) {
   const { data: existingLink } = await supabase
     .from("telegram_links")
-    .select("id, customer_id")
+    .select("id")
     .eq("telegram_chat_id", chatId)
     .maybeSingle();
 
   if (existingLink) {
-    await sendMessage(chatId, token, "✅ حسابك مربوط بالفعل! أرسل /licenses لعرض تراخيصك.");
+    await sendMessageWithKeyboard(chatId, token,
+      "✅ حسابك مربوط بالفعل!",
+      { inline_keyboard: [[{ text: "📋 عرض تراخيصي", callback_data: "my_licenses" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
+    );
     return;
   }
 
   const { data: customer } = await supabase
     .from("customers")
     .select("id, name")
-    .eq("email", email.toLowerCase())
+    .eq("email", email)
     .maybeSingle();
 
   if (!customer) {
-    await sendMessage(chatId, token,
-      "❌ لم يتم العثور على حساب بهذا البريد الإلكتروني.\n" +
-      "تأكد من استخدام نفس البريد المسجل في النظام."
+    await sendMessageWithKeyboard(chatId, token,
+      "❌ لم يتم العثور على حساب بهذا البريد.\n\nيمكنك التسجيل كمستخدم جديد:",
+      { inline_keyboard: [[{ text: "📝 تسجيل مستخدم جديد", callback_data: "register" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
     );
     return;
   }
@@ -142,29 +286,29 @@ async function handleStart(supabase: any, chatId: number, email: string, token: 
     .insert({ customer_id: customer.id, telegram_chat_id: chatId });
 
   if (error) {
-    console.error("Error linking telegram:", error);
-    await sendMessage(chatId, token, "❌ حدث خطأ أثناء ربط الحساب. حاول مرة أخرى.");
+    console.error("Error linking:", error);
+    await sendMessage(chatId, token, "❌ حدث خطأ. حاول مرة أخرى.");
     return;
   }
 
-  await sendMessage(chatId, token,
+  await sendMessageWithKeyboard(chatId, token,
     "━━━━━━━━━━━━━━━━━━━━━\n" +
     `✅ *تم ربط حسابك بنجاح!*\n\n` +
-    `👤 مرحباً *${customer.name}*\n\n` +
-    "━━━━━━━━━━━━━━━━━━━━━\n" +
-    "📋 الأوامر المتاحة:\n\n" +
-    "/licenses - 📄 عرض تراخيصك\n" +
-    "/renew - 🔄 تجديد ترخيص\n" +
-    "/help - ❓ المساعدة\n" +
+    `👤 مرحباً *${customer.name}*\n` +
     "━━━━━━━━━━━━━━━━━━━━━",
+    { inline_keyboard: [[{ text: "📋 عرض تراخيصي", callback_data: "my_licenses" }], [{ text: "🔄 تجديد ترخيص", callback_data: "renew" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
     "Markdown"
   );
 }
 
+// ─── View Licenses ─────────────────────────────────────
 async function handleLicenses(supabase: any, chatId: number, token: string) {
   const customer = await getCustomerByChatId(supabase, chatId);
   if (!customer) {
-    await sendMessage(chatId, token, "⚠️ حسابك غير مربوط. أرسل:\n/start your@email.com");
+    await sendMessageWithKeyboard(chatId, token,
+      "⚠️ حسابك غير مربوط بعد.",
+      { inline_keyboard: [[{ text: "🔗 ربط حساب", callback_data: "link_account" }], [{ text: "📝 تسجيل جديد", callback_data: "register" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
+    );
     return;
   }
 
@@ -174,14 +318,17 @@ async function handleLicenses(supabase: any, chatId: number, token: string) {
     .eq("customer_id", customer.customer_id);
 
   if (!licenses || licenses.length === 0) {
-    await sendMessage(chatId, token, "📋 لا توجد تراخيص مسجلة على حسابك.");
+    await sendMessageWithKeyboard(chatId, token,
+      "📋 لا توجد تراخيص مسجلة على حسابك.",
+      { inline_keyboard: [[{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
+    );
     return;
   }
 
   const statusEmoji: Record<string, string> = { active: "🟢", expired: "🔴", suspended: "🟡", pending: "⚪" };
   const statusAr: Record<string, string> = { active: "نشط", expired: "منتهي", suspended: "معلق", pending: "قيد الانتظار" };
 
-  let msg = "📋 *تراخيصك:*\n\n";
+  let msg = "━━━━━━━━━━━━━━━━━━━━━\n📋 *تراخيصك:*\n━━━━━━━━━━━━━━━━━━━━━\n\n";
   licenses.forEach((l: any, i: number) => {
     const emoji = statusEmoji[l.status] || "⚪";
     const status = statusAr[l.status] || l.status;
@@ -189,32 +336,68 @@ async function handleLicenses(supabase: any, chatId: number, token: string) {
     const daysLeft = l.expire_at ? Math.ceil((new Date(l.expire_at).getTime() - Date.now()) / 86400000) : null;
 
     msg += `${i + 1}. ${emoji} *${l.products?.name || "منتج"}*\n`;
-    msg += `   🔑 \`${l.license_key}\`\n`;
     msg += `   📊 الحالة: ${status}\n`;
     msg += `   📅 ينتهي: ${expiry}`;
     if (daysLeft !== null && daysLeft > 0 && daysLeft <= 30) {
       msg += ` ⚠️ (${daysLeft} يوم)`;
     }
     msg += "\n\n";
+    msg += `   🔑 انسخ المفتاح:\n   \`${l.license_key}\`\n\n`;
   });
 
-  msg += "💰 *التجديد:* 10 جنيه/يوم (300 جنيه/شهر)\n";
-  msg += "لتجديد ترخيص أرسل:\n/renew XXXX-XXXX-XXXX-XXXX";
+  const buttons = licenses
+    .filter((l: any) => l.status === "active" || l.status === "expired")
+    .map((l: any) => [{ text: `🔄 تجديد ${l.products?.name || "ترخيص"}`, callback_data: `renew_${l.license_key}` }]);
 
-  await sendMessage(chatId, token, msg, "Markdown");
+  buttons.push([{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]);
+
+  await sendMessageWithKeyboard(chatId, token, msg, { inline_keyboard: buttons }, "Markdown");
 }
 
-async function handleRenew(supabase: any, chatId: number, licenseKey: string, token: string) {
+// ─── Renew Flow ────────────────────────────────────────
+async function handleRenewStart(supabase: any, chatId: number, token: string) {
   const customer = await getCustomerByChatId(supabase, chatId);
   if (!customer) {
-    await sendMessage(chatId, token, "⚠️ حسابك غير مربوط. أرسل:\n/start your@email.com");
+    await sendMessageWithKeyboard(chatId, token,
+      "⚠️ حسابك غير مربوط بعد.",
+      { inline_keyboard: [[{ text: "🔗 ربط حساب", callback_data: "link_account" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
+    );
     return;
   }
 
-  if (!licenseKey) {
-    await sendMessage(chatId, token, "⚠️ يرجى إرسال مفتاح الترخيص:\n/renew XXXX-XXXX-XXXX-XXXX");
+  const { data: licenses } = await supabase
+    .from("licenses")
+    .select("id, license_key, status, expire_at, products(name)")
+    .eq("customer_id", customer.customer_id);
+
+  if (!licenses || licenses.length === 0) {
+    await sendMessageWithKeyboard(chatId, token,
+      "📋 لا توجد تراخيص لتجديدها.",
+      { inline_keyboard: [[{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
+    );
     return;
   }
+
+  const buttons = licenses.map((l: any) => {
+    const statusEmoji = l.status === "active" ? "🟢" : l.status === "expired" ? "🔴" : "⚪";
+    return [{ text: `${statusEmoji} ${l.products?.name || "ترخيص"} - ${l.license_key}`, callback_data: `renew_${l.license_key}` }];
+  });
+  buttons.push([{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]);
+
+  await sendMessageWithKeyboard(chatId, token,
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "🔄 *اختر الترخيص للتجديد:*\n" +
+    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+    "💰 السعر: *10 جنيه / يوم*\n" +
+    "📦 الشهر (30 يوم): *300 جنيه*",
+    { inline_keyboard: buttons },
+    "Markdown"
+  );
+}
+
+async function handleRenewLicense(supabase: any, chatId: number, licenseKey: string, token: string) {
+  const customer = await getCustomerByChatId(supabase, chatId);
+  if (!customer) return;
 
   const { data: license } = await supabase
     .from("licenses")
@@ -224,14 +407,11 @@ async function handleRenew(supabase: any, chatId: number, licenseKey: string, to
     .maybeSingle();
 
   if (!license) {
-    await sendMessage(chatId, token,
-      "❌ لم يتم العثور على ترخيص بهذا المفتاح.\nتأكد من المفتاح وأرسل /licenses لعرض تراخيصك."
-    );
+    await sendMessage(chatId, token, "❌ لم يتم العثور على الترخيص.");
     return;
   }
 
-  // Set state to await days input
-  userStates.set(chatId, { step: "awaiting_days", licenseKey: license.license_key });
+  userStates.set(chatId, { step: "awaiting_days", data: { licenseKey: license.license_key } });
 
   await sendMessage(chatId, token,
     "━━━━━━━━━━━━━━━━━━━━━\n" +
@@ -240,8 +420,8 @@ async function handleRenew(supabase: any, chatId: number, licenseKey: string, to
     `🔑 المنتج: *${license.products?.name || "منتج"}*\n` +
     `📅 ينتهي: ${license.expire_at ? new Date(license.expire_at).toLocaleDateString("ar-EG") : "منتهي"}\n\n` +
     "💰 *الأسعار:*\n" +
-    "• اليوم الواحد = 10 جنيه\n" +
-    "• 30 يوم (شهر) = 300 جنيه\n\n" +
+    "• اليوم = 10 جنيه\n" +
+    "• 30 يوم = 300 جنيه\n\n" +
     "━━━━━━━━━━━━━━━━━━━━━\n" +
     "📝 *كم يوم تريد تجديد؟*\n" +
     "أرسل عدد الأيام (مثال: `30`)\n" +
@@ -273,64 +453,66 @@ async function handleDaysInput(supabase: any, chatId: number, days: number, lice
     return;
   }
 
-  // Create renewal request
   const { error } = await supabase
     .from("renewal_requests")
     .insert({
       customer_id: customer.customer_id,
       license_id: license.id,
-      days: days,
-      amount: amount,
+      days,
+      amount,
       status: "pending",
       telegram_chat_id: chatId,
     });
 
   if (error) {
-    console.error("Error creating renewal request:", error);
+    console.error("Renewal request error:", error);
     await sendMessage(chatId, token, "❌ حدث خطأ. حاول لاحقاً.");
     return;
   }
 
-  await sendMessage(chatId, token,
+  await sendMessageWithKeyboard(chatId, token,
     "━━━━━━━━━━━━━━━━━━━━━\n" +
     "💰 *تفاصيل طلب التجديد*\n" +
     "━━━━━━━━━━━━━━━━━━━━━\n\n" +
     `🔑 المنتج: *${license.products?.name || "منتج"}*\n` +
     `📅 عدد الأيام: *${days} يوم*\n` +
-    `💵 المبلغ المطلوب: *${amount} جنيه*\n\n` +
+    `💵 المبلغ: *${amount} جنيه*\n\n` +
     "━━━━━━━━━━━━━━━━━━━━━\n" +
     "📱 *خطوات الدفع:*\n\n" +
-    `1️⃣ حوّل المبلغ (*${amount} جنيه*) على الرقم:\n` +
-    `📞 \`${PAYMENT_NUMBER}\`\n\n` +
-    "2️⃣ بعد التحويل، أرسل صورة الإيصال أو رقم العملية هنا\n\n" +
-    "3️⃣ سيتم مراجعة طلبك وتأكيده من الإدارة\n\n" +
-    "4️⃣ بمجرد التأكيد، سيتم تجديد ترخيصك تلقائياً ✅\n\n" +
+    `1️⃣ حوّل *${amount} جنيه* على:\n` +
+    `📞 \`${PAYMENT_NUMBER}\`\n` +
+    "_(فودافون كاش)_\n\n" +
+    "2️⃣ أرسل صورة الإيصال أو رقم العملية\n\n" +
+    "3️⃣ سيتم مراجعة طلبك وتأكيده\n\n" +
+    "4️⃣ بمجرد التأكيد، يتم التجديد تلقائياً ✅\n\n" +
     "━━━━━━━━━━━━━━━━━━━━━\n" +
     "⏳ *تم تسجيل طلبك بنجاح!*\n" +
-    "سيتم إبلاغك فور تأكيد التجديد.\n" +
     "━━━━━━━━━━━━━━━━━━━━━",
+    { inline_keyboard: [[{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
     "Markdown"
   );
 }
 
+// ─── Help ──────────────────────────────────────────────
 async function handleHelp(chatId: number, token: string) {
-  await sendMessage(chatId, token,
-    "🤖 *أوامر البوت:*\n\n" +
-    "/start email - ربط حسابك بالبريد الإلكتروني\n" +
-    "/licenses - عرض جميع تراخيصك\n" +
-    "/renew KEY - تجديد ترخيص\n" +
-    "/help - عرض هذه المساعدة\n\n" +
+  await sendMessageWithKeyboard(chatId, token,
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "❓ *المساعدة*\n" +
+    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+    "📝 *تسجيل جديد* - إنشاء حساب جديد\n" +
+    "🔗 *ربط حساب* - ربط حساب موجود\n" +
+    "📋 *تراخيصي* - عرض تراخيصك ونسخ المفتاح\n" +
+    "🔄 *تجديد* - تجديد ترخيص\n\n" +
     "💰 *الأسعار:*\n" +
     "• 10 جنيه / يوم\n" +
     "• 300 جنيه / 30 يوم\n\n" +
-    "🌐 يمكنك أيضاً استخدام الأوامر بالعربية:\n" +
-    "/تراخيصي - عرض التراخيص\n" +
-    "/تجديد KEY - تجديد ترخيص\n" +
-    "/مساعدة - المساعدة",
+    "📞 الدفع عبر فودافون كاش: `" + PAYMENT_NUMBER + "`",
+    { inline_keyboard: [[{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
     "Markdown"
   );
 }
 
+// ─── Helpers ───────────────────────────────────────────
 async function getCustomerByChatId(supabase: any, chatId: number) {
   const { data } = await supabase
     .from("telegram_links")
@@ -351,6 +533,21 @@ async function sendMessage(chatId: number, token: string, text: string, parseMod
   });
 
   if (!res.ok) {
-    console.error("Telegram sendMessage failed:", await res.text());
+    console.error("sendMessage failed:", await res.text());
+  }
+}
+
+async function sendMessageWithKeyboard(chatId: number, token: string, text: string, keyboard: any, parseMode?: string) {
+  const body: any = { chat_id: chatId, text, reply_markup: keyboard };
+  if (parseMode) body.parse_mode = parseMode;
+
+  const res = await fetch(`${TELEGRAM_API}${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    console.error("sendMessageWithKeyboard failed:", await res.text());
   }
 }
