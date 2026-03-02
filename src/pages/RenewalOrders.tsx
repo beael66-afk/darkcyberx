@@ -324,10 +324,11 @@ const RenewalOrders = () => {
               <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
                   <TableHead className="font-semibold">العميل</TableHead>
-                  <TableHead className="font-semibold">الترخيص</TableHead>
-                  <TableHead className="font-semibold">الأيام</TableHead>
-                  <TableHead className="font-semibold">المبلغ</TableHead>
-                  <TableHead className="font-semibold">الحالة</TableHead>
+                   <TableHead className="font-semibold">الترخيص</TableHead>
+                   <TableHead className="font-semibold">الأيام</TableHead>
+                   <TableHead className="font-semibold">المبلغ</TableHead>
+                   <TableHead className="font-semibold">إيصال الدفع</TableHead>
+                   <TableHead className="font-semibold">الحالة</TableHead>
                   <TableHead className="font-semibold">التاريخ</TableHead>
                   <TableHead className="font-semibold text-left">الإجراءات</TableHead>
                 </TableRow>
@@ -361,9 +362,26 @@ const RenewalOrders = () => {
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className="font-semibold">{req.days} يوم</TableCell>
-                        <TableCell className="font-semibold">{req.amount} جنيه</TableCell>
-                        <TableCell><Badge variant={config.variant} className="gap-1"><StatusIcon className="h-3 w-3" />{config.label}</Badge></TableCell>
+                         <TableCell className="font-semibold">{req.days} يوم</TableCell>
+                         <TableCell className="font-semibold">{req.amount} جنيه</TableCell>
+                         <TableCell>
+                           {req.receipt_note ? (
+                             <div className="max-w-[180px]">
+                               {req.receipt_note.startsWith("[صورة إيصال]") ? (
+                                 <Badge variant="outline" className="gap-1 text-xs text-green-600 border-green-300">
+                                   🖼️ صورة إيصال مرفقة
+                                 </Badge>
+                               ) : (
+                                 <p className="text-xs text-muted-foreground truncate" title={req.receipt_note}>
+                                   📝 {req.receipt_note}
+                                 </p>
+                               )}
+                             </div>
+                           ) : (
+                             <span className="text-xs text-muted-foreground">—</span>
+                           )}
+                         </TableCell>
+                         <TableCell><Badge variant={config.variant} className="gap-1"><StatusIcon className="h-3 w-3" />{config.label}</Badge></TableCell>
                         <TableCell className="text-muted-foreground text-sm">
                           <div className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{new Date(req.created_at).toLocaleDateString("ar-EG", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</div>
                         </TableCell>
