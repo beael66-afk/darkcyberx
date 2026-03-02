@@ -36,12 +36,13 @@ Deno.serve(async (req) => {
     }
 
     const message = update?.message;
-    if (!message?.text) {
+    if (!message) {
       return new Response("OK", { status: 200 });
     }
 
     const chatId = message.chat.id;
-    const text = message.text.trim();
+    const text = message.text?.trim() || "";
+    const photo = message.photo; // array of photo sizes or undefined
 
     // Clear state on new command
     if (text.startsWith("/")) {
@@ -60,6 +61,10 @@ Deno.serve(async (req) => {
     const state = await getState(supabase, chatId);
 
     if (state?.step === "awaiting_name") {
+      if (!text) {
+        await sendMessage(chatId, TELEGRAM_BOT_TOKEN, "⚠️ أدخل اسمك الكامل:");
+        return new Response("OK", { status: 200 });
+      }
       await setState(supabase, chatId, "awaiting_email", { name: text });
       await sendMessage(chatId, TELEGRAM_BOT_TOKEN,
         "📧 *أدخل بريدك الإلكتروني:*\n\nمثال: `example@email.com`",
@@ -91,10 +96,16 @@ Deno.serve(async (req) => {
     if (state?.step === "awaiting_days") {
       if (/^\d+$/.test(text)) {
         await handleDaysInput(supabase, chatId, parseInt(text), state.data?.licenseKey, TELEGRAM_BOT_TOKEN);
-        await clearState(supabase, chatId);
+        // Don't clear state yet - next step is awaiting_receipt (set inside handleDaysInput)
         return new Response("OK", { status: 200 });
       }
       await sendMessage(chatId, TELEGRAM_BOT_TOKEN, "⚠️ أدخل رقم صحيح (عدد الأيام):");
+      return new Response("OK", { status: 200 });
+    }
+
+    if (state?.step === "awaiting_receipt") {
+      await handleReceiptSubmit(supabase, chatId, text, photo, state.data?.renewalRequestId, TELEGRAM_BOT_TOKEN);
+      await clearState(supabase, chatId);
       return new Response("OK", { status: 200 });
     }
 
@@ -475,7 +486,7 @@ async function handleDaysInput(supabase: any, chatId: number, days: number, lice
     return;
   }
 
-  const { error } = await supabase
+  const { data: renewalData, error } = await supabase
     .from("renewal_requests")
     .insert({
       customer_id: customer.customer_id,
@@ -484,7 +495,9 @@ async function handleDaysInput(supabase: any, chatId: number, days: number, lice
       amount,
       status: "pending",
       telegram_chat_id: chatId,
-    });
+    })
+    .select("id")
+    .single();
 
   if (error) {
     console.error("Renewal request error:", error);
@@ -492,7 +505,10 @@ async function handleDaysInput(supabase: any, chatId: number, days: number, lice
     return;
   }
 
-  await sendMessageWithKeyboard(chatId, token,
+  // Set state to awaiting receipt
+  await setState(supabase, chatId, "awaiting_receipt", { renewalRequestId: renewalData.id });
+
+  await sendMessage(chatId, token,
     "━━━━━━━━━━━━━━━━━━━━━\n" +
     "💰 *تفاصيل طلب التجديد*\n" +
     "━━━━━━━━━━━━━━━━━━━━━\n\n" +
@@ -504,12 +520,58 @@ async function handleDaysInput(supabase: any, chatId: number, days: number, lice
     `1️⃣ حوّل *${amount} جنيه* على:\n` +
     `📞 \`${PAYMENT_NUMBER}\`\n` +
     "_(فودافون كاش)_\n\n" +
-    "2️⃣ أرسل صورة الإيصال أو رقم العملية\n\n" +
+    "2️⃣ أرسل *صورة الإيصال* أو *رقم العملية* الآن 👇\n\n" +
     "3️⃣ سيتم مراجعة طلبك وتأكيده\n\n" +
     "4️⃣ بمجرد التأكيد، يتم التجديد تلقائياً ✅\n\n" +
-    "━━━━━━━━━━━━━━━━━━━━━\n" +
-    "⏳ *تم تسجيل طلبك بنجاح!*\n" +
     "━━━━━━━━━━━━━━━━━━━━━",
+    "Markdown"
+  );
+}
+
+async function handleReceiptSubmit(
+  supabase: any,
+  chatId: number,
+  text: string,
+  photo: any[] | undefined,
+  renewalRequestId: string,
+  token: string
+) {
+  if (!renewalRequestId) {
+    await sendMessage(chatId, token, "❌ حدث خطأ. حاول /start من جديد.");
+    return;
+  }
+
+  let receiptNote = "";
+
+  if (photo && photo.length > 0) {
+    // Get the largest photo file_id
+    const bestPhoto = photo[photo.length - 1];
+    receiptNote = `[صورة إيصال] file_id: ${bestPhoto.file_id}`;
+    if (text) receiptNote += `\nملاحظة: ${text}`;
+  } else if (text) {
+    receiptNote = text;
+  } else {
+    await sendMessage(chatId, token, "⚠️ أرسل صورة الإيصال أو رقم العملية:");
+    return;
+  }
+
+  const { error } = await supabase
+    .from("renewal_requests")
+    .update({ receipt_note: receiptNote })
+    .eq("id", renewalRequestId);
+
+  if (error) {
+    console.error("Receipt update error:", error);
+    await sendMessage(chatId, token, "❌ حدث خطأ في حفظ الإيصال. حاول مرة أخرى.");
+    return;
+  }
+
+  await sendMessageWithKeyboard(chatId, token,
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "✅ *تم استلام إيصال الدفع!*\n" +
+    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+    "📨 سيتم مراجعة طلبك من الإدارة\n" +
+    "وسيصلك إشعار بالتأكيد قريباً ✅",
     { inline_keyboard: [[{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
     "Markdown"
   );
