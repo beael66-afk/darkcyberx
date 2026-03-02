@@ -10,9 +10,6 @@ const TELEGRAM_API = "https://api.telegram.org/bot";
 const PRICE_PER_DAY = 10;
 const PAYMENT_NUMBER = "01009046911";
 
-// Track user states for multi-step flows
-const userStates = new Map<number, { step: string; data?: any }>();
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -46,11 +43,24 @@ Deno.serve(async (req) => {
     const chatId = message.chat.id;
     const text = message.text.trim();
 
-    // Check multi-step flows
-    const state = userStates.get(chatId);
+    // Clear state on new command
+    if (text.startsWith("/")) {
+      await clearState(supabase, chatId);
+      if (text === "/start") {
+        await sendMainMenu(chatId, TELEGRAM_BOT_TOKEN);
+      } else {
+        await sendMessage(chatId, TELEGRAM_BOT_TOKEN,
+          "❓ أمر غير معروف.\nاضغط /start لعرض القائمة الرئيسية."
+        );
+      }
+      return new Response("OK", { status: 200 });
+    }
+
+    // Check multi-step flows from DB
+    const state = await getState(supabase, chatId);
 
     if (state?.step === "awaiting_name") {
-      userStates.set(chatId, { step: "awaiting_email", data: { name: text } });
+      await setState(supabase, chatId, "awaiting_email", { name: text });
       await sendMessage(chatId, TELEGRAM_BOT_TOKEN,
         "📧 *أدخل بريدك الإلكتروني:*\n\nمثال: `example@email.com`",
         "Markdown"
@@ -63,8 +73,8 @@ Deno.serve(async (req) => {
         await sendMessage(chatId, TELEGRAM_BOT_TOKEN, "❌ بريد إلكتروني غير صحيح. حاول مرة أخرى:");
         return new Response("OK", { status: 200 });
       }
-      await handleRegistrationSubmit(supabase, chatId, state.data.name, text.toLowerCase(), TELEGRAM_BOT_TOKEN);
-      userStates.delete(chatId);
+      await handleRegistrationSubmit(supabase, chatId, state.data?.name, text.toLowerCase(), TELEGRAM_BOT_TOKEN);
+      await clearState(supabase, chatId);
       return new Response("OK", { status: 200 });
     }
 
@@ -74,38 +84,53 @@ Deno.serve(async (req) => {
         return new Response("OK", { status: 200 });
       }
       await handleLinkAccount(supabase, chatId, text.toLowerCase(), TELEGRAM_BOT_TOKEN);
-      userStates.delete(chatId);
+      await clearState(supabase, chatId);
       return new Response("OK", { status: 200 });
     }
 
     if (state?.step === "awaiting_days") {
       if (/^\d+$/.test(text)) {
-        await handleDaysInput(supabase, chatId, parseInt(text), state.data.licenseKey, TELEGRAM_BOT_TOKEN);
-        userStates.delete(chatId);
+        await handleDaysInput(supabase, chatId, parseInt(text), state.data?.licenseKey, TELEGRAM_BOT_TOKEN);
+        await clearState(supabase, chatId);
         return new Response("OK", { status: 200 });
       }
       await sendMessage(chatId, TELEGRAM_BOT_TOKEN, "⚠️ أدخل رقم صحيح (عدد الأيام):");
       return new Response("OK", { status: 200 });
     }
 
-    // Clear state on new command
-    if (text.startsWith("/")) {
-      userStates.delete(chatId);
-    }
-
-    if (text === "/start") {
-      await sendMainMenu(chatId, TELEGRAM_BOT_TOKEN);
-    } else {
-      await sendMessage(chatId, TELEGRAM_BOT_TOKEN,
-        "❓ أمر غير معروف.\nاضغط /start لعرض القائمة الرئيسية."
-      );
-    }
+    // No state - unknown message
+    await sendMessage(chatId, TELEGRAM_BOT_TOKEN,
+      "❓ أمر غير معروف.\nاضغط /start لعرض القائمة الرئيسية."
+    );
   } catch (error) {
     console.error("Telegram bot error:", error);
   }
 
   return new Response("OK", { status: 200 });
 });
+
+// ─── State Management (DB-backed) ─────────────────────
+async function getState(supabase: any, chatId: number) {
+  const { data } = await supabase
+    .from("telegram_user_states")
+    .select("step, data")
+    .eq("telegram_chat_id", chatId)
+    .maybeSingle();
+  return data;
+}
+
+async function setState(supabase: any, chatId: number, step: string, data: any = {}) {
+  await supabase
+    .from("telegram_user_states")
+    .upsert({ telegram_chat_id: chatId, step, data, updated_at: new Date().toISOString() });
+}
+
+async function clearState(supabase: any, chatId: number) {
+  await supabase
+    .from("telegram_user_states")
+    .delete()
+    .eq("telegram_chat_id", chatId);
+}
 
 // ─── Main Menu ─────────────────────────────────────────
 async function sendMainMenu(chatId: number, token: string) {
@@ -143,10 +168,10 @@ async function handleCallbackQuery(supabase: any, query: any, token: string) {
 
   switch (data) {
     case "register":
-      await handleRegisterStart(chatId, token);
+      await handleRegisterStart(supabase, chatId, token);
       break;
     case "link_account":
-      await handleLinkStart(chatId, token);
+      await handleLinkStart(supabase, chatId, token);
       break;
     case "my_licenses":
       await handleLicenses(supabase, chatId, token);
@@ -158,10 +183,10 @@ async function handleCallbackQuery(supabase: any, query: any, token: string) {
       await handleHelp(chatId, token);
       break;
     case "main_menu":
+      await clearState(supabase, chatId);
       await sendMainMenu(chatId, token);
       break;
     default:
-      // Handle dynamic callbacks like renew_LICENSE_KEY
       if (data.startsWith("renew_")) {
         const licenseKey = data.replace("renew_", "");
         await handleRenewLicense(supabase, chatId, licenseKey, token);
@@ -171,8 +196,8 @@ async function handleCallbackQuery(supabase: any, query: any, token: string) {
 }
 
 // ─── Registration Flow ─────────────────────────────────
-async function handleRegisterStart(chatId: number, token: string) {
-  userStates.set(chatId, { step: "awaiting_name" });
+async function handleRegisterStart(supabase: any, chatId: number, token: string) {
+  await setState(supabase, chatId, "awaiting_name");
   await sendMessage(chatId, token,
     "━━━━━━━━━━━━━━━━━━━━━\n" +
     "📝 *تسجيل مستخدم جديد*\n" +
@@ -183,7 +208,6 @@ async function handleRegisterStart(chatId: number, token: string) {
 }
 
 async function handleRegistrationSubmit(supabase: any, chatId: number, name: string, email: string, token: string) {
-  // Check if already registered
   const { data: existingCustomer } = await supabase
     .from("customers")
     .select("id")
@@ -199,7 +223,6 @@ async function handleRegistrationSubmit(supabase: any, chatId: number, name: str
     return;
   }
 
-  // Check for duplicate pending request
   const { data: existingReq } = await supabase
     .from("registration_requests")
     .select("id")
@@ -239,9 +262,8 @@ async function handleRegistrationSubmit(supabase: any, chatId: number, name: str
 }
 
 // ─── Link Account Flow ─────────────────────────────────
-async function handleLinkStart(chatId: number, token: string) {
-  // Check if already linked
-  userStates.set(chatId, { step: "awaiting_link_email" });
+async function handleLinkStart(supabase: any, chatId: number, token: string) {
+  await setState(supabase, chatId, "awaiting_link_email");
   await sendMessage(chatId, token,
     "━━━━━━━━━━━━━━━━━━━━━\n" +
     "🔗 *ربط حساب موجود*\n" +
@@ -411,7 +433,7 @@ async function handleRenewLicense(supabase: any, chatId: number, licenseKey: str
     return;
   }
 
-  userStates.set(chatId, { step: "awaiting_days", data: { licenseKey: license.license_key } });
+  await setState(supabase, chatId, "awaiting_days", { licenseKey: license.license_key });
 
   await sendMessage(chatId, token,
     "━━━━━━━━━━━━━━━━━━━━━\n" +
