@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -50,6 +50,60 @@ const statusConfig: Record<string, { label: string; variant: "default" | "second
   approved: { label: "مفعّل", variant: "default", icon: CheckCircle2 },
 };
 
+// ─── Receipt Viewer Dialog ─────────────────────────────
+const ReceiptDialog = ({ fileId, onClose }: { fileId: string; onClose: () => void }) => {
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    const fetchImage = async () => {
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data, error: fnErr } = await supabase.functions.invoke("telegram-bot", {
+          body: { action: "get_file", file_id: fileId },
+        });
+        if (fnErr || !data?.file_url) {
+          setError(true);
+        } else {
+          setImageUrl(data.file_url);
+        }
+      } catch {
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchImage();
+  }, [fileId]);
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>صورة الإيصال</DialogTitle>
+          <DialogDescription>إيصال الدفع المرسل من العميل عبر البوت</DialogDescription>
+        </DialogHeader>
+        <div className="flex items-center justify-center min-h-[300px] bg-muted/30 rounded-lg overflow-hidden">
+          {loading && <p className="text-muted-foreground text-sm">جاري تحميل الصورة...</p>}
+          {error && <p className="text-destructive text-sm">تعذّر تحميل الصورة. قد تكون منتهية الصلاحية.</p>}
+          {imageUrl && !loading && (
+            <img src={imageUrl} alt="إيصال الدفع" className="max-w-full max-h-[500px] object-contain rounded-lg" />
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>إغلاق</Button>
+          {imageUrl && (
+            <Button asChild>
+              <a href={imageUrl} target="_blank" rel="noreferrer">فتح في تبويب جديد</a>
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 // ─── Main Component ────────────────────────────────────
 const RenewalOrders = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -58,6 +112,7 @@ const RenewalOrders = () => {
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
   const [rejectType, setRejectType] = useState<"renewal" | "registration">("renewal");
+  const [receiptFileId, setReceiptFileId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   // ─── Renewal Requests Query ────────────────────────
@@ -365,12 +420,25 @@ const RenewalOrders = () => {
                          <TableCell className="font-semibold">{req.days} يوم</TableCell>
                          <TableCell className="font-semibold">{req.amount} جنيه</TableCell>
                          <TableCell>
-                           {req.receipt_note ? (
-                             <div className="max-w-[180px]">
+                         {req.receipt_note ? (
+                             <div className="max-w-[200px] flex flex-col gap-1">
                                {req.receipt_note.startsWith("[صورة إيصال]") ? (
-                                 <Badge variant="outline" className="gap-1 text-xs text-green-600 border-green-300">
-                                   🖼️ صورة إيصال مرفقة
-                                 </Badge>
+                                 <>
+                                   <Badge variant="outline" className="gap-1 text-xs">
+                                     🖼️ صورة إيصال مرفقة
+                                   </Badge>
+                                   <Button
+                                     size="sm"
+                                     variant="outline"
+                                     className="h-7 text-xs gap-1"
+                                     onClick={() => {
+                                       const fileId = req.receipt_note!.replace("[صورة إيصال] ", "").trim();
+                                       setReceiptFileId(fileId);
+                                     }}
+                                   >
+                                     🔍 عرض الصورة
+                                   </Button>
+                                 </>
                                ) : (
                                  <p className="text-xs text-muted-foreground truncate" title={req.receipt_note}>
                                    📝 {req.receipt_note}
@@ -510,6 +578,11 @@ const RenewalOrders = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Receipt Image Dialog */}
+      {receiptFileId && (
+        <ReceiptDialog fileId={receiptFileId} onClose={() => setReceiptFileId(null)} />
+      )}
     </div>
   );
 };
