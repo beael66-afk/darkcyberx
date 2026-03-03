@@ -273,6 +273,17 @@ async function handleRegistrationSubmit(supabase: any, chatId: number, name: str
     return;
   }
 
+  // Notify admin about new registration
+  await notifyAdmin(token,
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "🆕 *طلب تسجيل جديد!*\n" +
+    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+    `👤 الاسم: *${name}*\n` +
+    `📧 البريد: *${email}*\n\n` +
+    "⚡ افتح لوحة التحكم للموافقة أو الرفض\n" +
+    "━━━━━━━━━━━━━━━━━━━━━"
+  );
+
   await sendMessageWithKeyboard(chatId, token,
     "━━━━━━━━━━━━━━━━━━━━━\n" +
     "✅ *تم إرسال طلب التسجيل بنجاح!*\n" +
@@ -522,6 +533,20 @@ async function handleDaysInput(supabase: any, chatId: number, days: number, lice
   // Set state to awaiting receipt
   await setState(supabase, chatId, "awaiting_receipt", { renewalRequestId: renewalData.id });
 
+  // Notify admin
+  const { data: customerInfo } = await supabase.from("customers").select("name").eq("id", customer.customer_id).maybeSingle();
+  await notifyAdmin(token,
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "🔔 *طلب تجديد جديد!*\n" +
+    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+    `👤 العميل: *${customerInfo?.name || "غير معروف"}*\n` +
+    `🔑 المنتج: *${license.products?.name || "منتج"}*\n` +
+    `📅 الأيام: *${days} يوم*\n` +
+    `💵 المبلغ: *${amount} جنيه*\n\n` +
+    "⏳ في انتظار إيصال الدفع...\n" +
+    "━━━━━━━━━━━━━━━━━━━━━"
+  );
+
   await sendMessage(chatId, token,
     "━━━━━━━━━━━━━━━━━━━━━\n" +
     "💰 *تفاصيل طلب التجديد*\n" +
@@ -580,6 +605,27 @@ async function handleReceiptSubmit(
     return;
   }
 
+  // Fetch renewal request details for admin notification
+  const { data: renewalReq } = await supabase
+    .from("renewal_requests")
+    .select("days, amount, licenses(products(name)), customers(name)")
+    .eq("id", renewalRequestId)
+    .maybeSingle();
+
+  const isPhoto = photo && photo.length > 0;
+  await notifyAdmin(token,
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "💳 *تم استلام إيصال دفع!*\n" +
+    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+    `👤 العميل: *${renewalReq?.customers?.name || "غير معروف"}*\n` +
+    `🔑 المنتج: *${renewalReq?.licenses?.products?.name || "منتج"}*\n` +
+    `📅 الأيام: *${renewalReq?.days || "?"} يوم*\n` +
+    `💵 المبلغ: *${renewalReq?.amount || "?"} جنيه*\n` +
+    `📎 نوع الإيصال: ${isPhoto ? "صورة 🖼️" : "نص 📝"}\n\n` +
+    "⚡ افتح لوحة التحكم لمراجعة الطلب والتأكيد\n" +
+    "━━━━━━━━━━━━━━━━━━━━━"
+  );
+
   await sendMessageWithKeyboard(chatId, token,
     "━━━━━━━━━━━━━━━━━━━━━\n" +
     "✅ *تم استلام إيصال الدفع!*\n" +
@@ -608,6 +654,17 @@ async function handleHelp(chatId: number, token: string) {
     { inline_keyboard: [[{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
     "Markdown"
   );
+}
+
+// ─── Admin Notification ────────────────────────────────
+async function notifyAdmin(token: string, message: string) {
+  const adminChatId = Deno.env.get("ADMIN_TELEGRAM_CHAT_ID");
+  if (!adminChatId) return;
+  await fetch(`${TELEGRAM_API}${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: adminChatId, text: message, parse_mode: "Markdown" }),
+  });
 }
 
 // ─── Helpers ───────────────────────────────────────────
