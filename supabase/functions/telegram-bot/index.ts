@@ -27,7 +27,21 @@ Deno.serve(async (req) => {
   );
 
   try {
-    const update = await req.json();
+    const body = await req.json();
+
+    // Handle admin action: get file URL from Telegram
+    if (body?.action === "get_file" && body?.file_id) {
+      const fileRes = await fetch(`${TELEGRAM_API}${TELEGRAM_BOT_TOKEN}/getFile?file_id=${body.file_id}`);
+      const fileData = await fileRes.json();
+      if (!fileData.ok) {
+        return new Response(JSON.stringify({ error: "File not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const filePath = fileData.result.file_path;
+      const fileUrl = `https://api.telegram.org/file/bot${TELEGRAM_BOT_TOKEN}/${filePath}`;
+      return new Response(JSON.stringify({ file_url: fileUrl }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const update = body;
 
     // Handle callback queries (button presses)
     if (update?.callback_query) {
