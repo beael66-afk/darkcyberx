@@ -431,10 +431,11 @@ const RenewalOrders = () => {
                                      size="sm"
                                      variant="outline"
                                      className="h-7 text-xs gap-1"
-                                     onClick={() => {
-                                       const fileId = req.receipt_note!.replace("[صورة إيصال] ", "").trim();
-                                       setReceiptFileId(fileId);
-                                     }}
+                                      onClick={() => {
+                                        const match = req.receipt_note!.match(/file_id:\s*(\S+)/);
+                                        const fileId = match ? match[1] : req.receipt_note!.replace("[صورة إيصال] ", "").trim();
+                                        setReceiptFileId(fileId);
+                                      }}
                                    >
                                      🔍 عرض الصورة
                                    </Button>
