@@ -96,7 +96,7 @@ Deno.serve(async (req) => {
     if (text.startsWith("/")) {
       await clearState(supabase, chatId);
       if (text === "/start") {
-        await sendMainMenu(chatId, TELEGRAM_BOT_TOKEN);
+        await sendMainMenu(chatId, TELEGRAM_BOT_TOKEN, supabase);
       } else {
         await sendMessage(chatId, TELEGRAM_BOT_TOKEN,
           "❓ أمر غير معروف.\nاضغط /start لعرض القائمة الرئيسية."
@@ -192,25 +192,57 @@ async function clearState(supabase: any, chatId: number) {
 }
 
 // ─── Main Menu ─────────────────────────────────────────
-async function sendMainMenu(chatId: number, token: string) {
-  const keyboard = {
-    inline_keyboard: [
-      [{ text: "📝 تسجيل مستخدم جديد", callback_data: "register" }],
-      [{ text: "🔗 ربط حساب موجود", callback_data: "link_account" }],
-      [{ text: "📋 عرض تراخيصي", callback_data: "my_licenses" }],
-      [{ text: "🔄 تجديد ترخيص", callback_data: "renew" }],
-      [{ text: "❓ المساعدة", callback_data: "help" }],
-    ],
-  };
+async function sendMainMenu(chatId: number, token: string, supabase?: any) {
+  // Check if this chat is already linked to a customer
+  let isLinked = false;
+  let customerName = "";
+  if (supabase) {
+    const { data: link } = await supabase
+      .from("telegram_links")
+      .select("customer_id, customers(name)")
+      .eq("telegram_chat_id", chatId)
+      .maybeSingle();
+    if (link) {
+      isLinked = true;
+      customerName = link.customers?.name || "";
+    }
+  }
 
-  await sendMessageWithKeyboard(chatId, token,
-    "━━━━━━━━━━━━━━━━━━━━━\n" +
-    "🤖 *أهلاً وسهلاً بك!*\n" +
-    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
-    "اختر من القائمة أدناه:\n",
-    keyboard,
-    "Markdown"
-  );
+  if (isLinked) {
+    // Registered user menu - no register/link buttons
+    const keyboard = {
+      inline_keyboard: [
+        [{ text: "📋 عرض تراخيصي", callback_data: "my_licenses" }],
+        [{ text: "🔄 تجديد ترخيص", callback_data: "renew" }],
+        [{ text: "❓ المساعدة", callback_data: "help" }],
+      ],
+    };
+    await sendMessageWithKeyboard(chatId, token,
+      "━━━━━━━━━━━━━━━━━━━━━\n" +
+      `🤖 *أهلاً ${customerName}!*\n` +
+      "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+      "اختر من القائمة أدناه:\n",
+      keyboard,
+      "Markdown"
+    );
+  } else {
+    // Unregistered user menu
+    const keyboard = {
+      inline_keyboard: [
+        [{ text: "📝 تسجيل مستخدم جديد", callback_data: "register" }],
+        [{ text: "🔗 ربط حساب موجود", callback_data: "link_account" }],
+        [{ text: "❓ المساعدة", callback_data: "help" }],
+      ],
+    };
+    await sendMessageWithKeyboard(chatId, token,
+      "━━━━━━━━━━━━━━━━━━━━━\n" +
+      "🤖 *أهلاً وسهلاً بك!*\n" +
+      "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+      "اختر من القائمة أدناه:\n",
+      keyboard,
+      "Markdown"
+    );
+  }
 }
 
 // ─── Callback Query Handler ────────────────────────────
@@ -243,7 +275,7 @@ async function handleCallbackQuery(supabase: any, query: any, token: string) {
       break;
     case "main_menu":
       await clearState(supabase, chatId);
-      await sendMainMenu(chatId, token);
+      await sendMainMenu(chatId, token, supabase);
       break;
     default:
       if (data.startsWith("renew_")) {
