@@ -29,6 +29,40 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json();
 
+    // Handle admin action: notify customer of approval with optional license key
+    if (body?.action === "notify_approval") {
+      const { chat_id, name, license_key, max_devices } = body;
+      let msg = "━━━━━━━━━━━━━━━━━━━━━\n✅ *تم تفعيل حسابك بنجاح!*\n━━━━━━━━━━━━━━━━━━━━━\n\n";
+      msg += `👤 مرحباً *${name}*!\n\n`;
+      if (license_key) {
+        msg += `🔑 *مفتاح الترخيص الخاص بك:*\n\`${license_key}\`\n\n`;
+        msg += `💻 عدد الأجهزة المسموح بها: *${max_devices}*\n\n`;
+      }
+      msg += "يمكنك الآن استخدام البوت لعرض تراخيصك والتجديد.\n\nاضغط /start للبدء 🚀";
+      await fetch(`${TELEGRAM_API}${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id, text: msg, parse_mode: "Markdown" }),
+      });
+      return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // Handle admin action: notify customer of rejection
+    if (body?.action === "notify_rejection") {
+      const { chat_id, reason } = body;
+      const reasonText = reason ? `\n📝 السبب: ${reason}` : "";
+      await fetch(`${TELEGRAM_API}${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id,
+          text: `❌ *تم رفض طلب التسجيل*${reasonText}\n\nيمكنك المحاولة مرة أخرى أو التواصل مع الدعم.`,
+          parse_mode: "Markdown",
+        }),
+      });
+      return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     // Handle admin action: get file URL from Telegram
     if (body?.action === "get_file" && body?.file_id) {
       const fileRes = await fetch(`${TELEGRAM_API}${TELEGRAM_BOT_TOKEN}/getFile?file_id=${body.file_id}`);

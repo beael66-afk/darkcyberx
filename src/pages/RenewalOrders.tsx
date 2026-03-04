@@ -8,9 +8,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
-  Search, ShoppingCart, Clock, CheckCircle2, XCircle, Calendar, User, Key, DollarSign, UserPlus,
+  Search, ShoppingCart, Clock, CheckCircle2, XCircle, Calendar, User, Key, DollarSign, UserPlus, Trash2,
 } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -43,6 +44,11 @@ interface RegistrationRequest {
   created_at: string;
 }
 
+interface Product {
+  id: string;
+  name: string;
+}
+
 const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: any }> = {
   pending: { label: "قيد الانتظار", variant: "outline", icon: Clock },
   confirmed: { label: "مؤكد", variant: "default", icon: CheckCircle2 },
@@ -59,7 +65,6 @@ const ReceiptDialog = ({ fileId, onClose }: { fileId: string; onClose: () => voi
   useEffect(() => {
     const fetchImage = async () => {
       try {
-        const { supabase } = await import("@/integrations/supabase/client");
         const { data, error: fnErr } = await supabase.functions.invoke("telegram-bot", {
           body: { action: "get_file", file_id: fileId },
         });
@@ -104,6 +109,110 @@ const ReceiptDialog = ({ fileId, onClose }: { fileId: string; onClose: () => voi
   );
 };
 
+// ─── Approve Registration Dialog ───────────────────────
+const ApproveRegDialog = ({
+  request,
+  onClose,
+  onApprove,
+}: {
+  request: RegistrationRequest;
+  onClose: () => void;
+  onApprove: (data: { requestId: string; maxDevices: number; productId: string | null; renewalDays: number | null }) => void;
+}) => {
+  const [maxDevices, setMaxDevices] = useState(1);
+  const [selectedProduct, setSelectedProduct] = useState<string>("");
+  const [renewalDays, setRenewalDays] = useState<string>("");
+  const [createLicense, setCreateLicense] = useState(true);
+
+  const { data: products } = useQuery({
+    queryKey: ["products-active"],
+    queryFn: async () => {
+      const { data } = await supabase.from("products").select("id, name").eq("is_active", true);
+      return data as Product[];
+    },
+  });
+
+  const handleSubmit = () => {
+    onApprove({
+      requestId: request.id,
+      maxDevices,
+      productId: createLicense && selectedProduct ? selectedProduct : null,
+      renewalDays: createLicense && renewalDays ? parseInt(renewalDays) : null,
+    });
+    onClose();
+  };
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>تفعيل حساب العميل</DialogTitle>
+          <DialogDescription>
+            سيتم إنشاء عميل جديد لـ <strong>{request.name}</strong> وإبلاغه عبر التليجرام.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="createLicense"
+              checked={createLicense}
+              onChange={(e) => setCreateLicense(e.target.checked)}
+              className="rounded"
+            />
+            <Label htmlFor="createLicense" className="font-medium cursor-pointer">إنشاء ترخيص للعميل وإرسال المفتاح</Label>
+          </div>
+
+          {createLicense && (
+            <div className="space-y-3 border rounded-lg p-3 bg-muted/20">
+              <div className="space-y-1.5">
+                <Label>المنتج</Label>
+                <select
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  value={selectedProduct}
+                  onChange={(e) => setSelectedProduct(e.target.value)}
+                >
+                  <option value="">بدون منتج محدد</option>
+                  {products?.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>عدد الأجهزة المسموح بها</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={maxDevices}
+                  onChange={(e) => setMaxDevices(parseInt(e.target.value) || 1)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>مدة الترخيص (أيام) — اتركه فارغاً لترخيص بلا انتهاء</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  placeholder="مثال: 30"
+                  value={renewalDays}
+                  onChange={(e) => setRenewalDays(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>إلغاء</Button>
+          <Button onClick={handleSubmit}>
+            <CheckCircle2 className="h-4 w-4 mr-1" />
+            تفعيل الحساب
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 // ─── Main Component ────────────────────────────────────
 const RenewalOrders = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -113,6 +222,7 @@ const RenewalOrders = () => {
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
   const [rejectType, setRejectType] = useState<"renewal" | "registration">("renewal");
   const [receiptFileId, setReceiptFileId] = useState<string | null>(null);
+  const [approveRegRequest, setApproveRegRequest] = useState<RegistrationRequest | null>(null);
   const queryClient = useQueryClient();
 
   // ─── Renewal Requests Query ────────────────────────
@@ -157,9 +267,40 @@ const RenewalOrders = () => {
     onError: (error: any) => toast.error("حدث خطأ: " + (error.message || "فشل العملية")),
   });
 
-  // ─── Registration Mutations ────────────────────────
+  // ─── Delete Renewal Request ────────────────────────
+  const deleteRenewalMutation = useMutation({
+    mutationFn: async (requestId: string) => {
+      const { error } = await supabase.from("renewal_requests").delete().eq("id", requestId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["renewal-requests"] });
+      toast.success("تم حذف طلب التجديد");
+    },
+    onError: () => toast.error("فشل حذف الطلب"),
+  });
+
+  // ─── Delete Registration Request ──────────────────
+  const deleteRegMutation = useMutation({
+    mutationFn: async (requestId: string) => {
+      const { error } = await supabase.from("registration_requests").delete().eq("id", requestId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["registration-requests"] });
+      toast.success("تم حذف طلب التسجيل");
+    },
+    onError: () => toast.error("فشل حذف الطلب"),
+  });
+
+  // ─── Approve Registration with License ────────────
   const approveRegMutation = useMutation({
-    mutationFn: async ({ requestId }: { requestId: string }) => {
+    mutationFn: async ({ requestId, maxDevices, productId, renewalDays }: {
+      requestId: string;
+      maxDevices: number;
+      productId: string | null;
+      renewalDays: number | null;
+    }) => {
       // Get the request details
       const { data: req, error: fetchErr } = await supabase
         .from("registration_requests")
@@ -187,26 +328,54 @@ const RenewalOrders = () => {
         .update({ status: "approved" })
         .eq("id", requestId);
 
-      // Notify via Telegram
-      const TELEGRAM_BOT_TOKEN = await getSecretForNotification();
-      if (TELEGRAM_BOT_TOKEN) {
-        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: req.telegram_chat_id,
-            text: "━━━━━━━━━━━━━━━━━━━━━\n✅ *تم تفعيل حسابك بنجاح!*\n━━━━━━━━━━━━━━━━━━━━━\n\nيمكنك الآن استخدام البوت لعرض تراخيصك والتجديد.\n\nاضغط /start للبدء.",
-            parse_mode: "Markdown",
-          }),
-        });
+      let licenseKey: string | null = null;
+
+      // Create license if requested
+      if (productId !== null || renewalDays !== null) {
+        const expireAt = renewalDays
+          ? new Date(Date.now() + renewalDays * 24 * 60 * 60 * 1000).toISOString()
+          : null;
+
+        const { data: licData, error: licErr } = await supabase
+          .from("licenses")
+          .insert({
+            customer_id: customer.id,
+            product_id: productId || null,
+            max_devices: maxDevices,
+            expire_at: expireAt,
+            status: "active",
+            license_key: "", // will be generated by DB trigger or we call rpc
+          })
+          .select()
+          .single();
+
+        if (!licErr && licData) {
+          licenseKey = licData.license_key;
+        }
       }
 
-      return customer;
+      // Notify via Telegram through edge function
+      await supabase.functions.invoke("telegram-bot", {
+        body: {
+          action: "notify_approval",
+          chat_id: req.telegram_chat_id,
+          name: req.name,
+          license_key: licenseKey,
+          max_devices: maxDevices,
+        },
+      });
+
+      return { customer, licenseKey };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["registration-requests"] });
       queryClient.invalidateQueries({ queryKey: ["customers"] });
-      toast.success("تم تفعيل الحساب وربطه بالبوت بنجاح");
+      queryClient.invalidateQueries({ queryKey: ["licenses"] });
+      if (data.licenseKey) {
+        toast.success(`تم تفعيل الحساب وإنشاء ترخيص: ${data.licenseKey}`);
+      } else {
+        toast.success("تم تفعيل الحساب وإبلاغ العميل عبر التليجرام");
+      }
     },
     onError: (error: any) => toast.error("حدث خطأ: " + (error.message || "فشل")),
   });
@@ -215,7 +384,7 @@ const RenewalOrders = () => {
     mutationFn: async ({ requestId, adminNote }: { requestId: string; adminNote?: string }) => {
       const { data: req } = await supabase
         .from("registration_requests")
-        .select("telegram_chat_id")
+        .select("telegram_chat_id, name")
         .eq("id", requestId)
         .single();
 
@@ -225,19 +394,13 @@ const RenewalOrders = () => {
         .eq("id", requestId);
 
       if (req?.telegram_chat_id) {
-        const TELEGRAM_BOT_TOKEN = await getSecretForNotification();
-        if (TELEGRAM_BOT_TOKEN) {
-          const reason = adminNote ? `\n📝 السبب: ${adminNote}` : "";
-          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: req.telegram_chat_id,
-              text: `❌ *تم رفض طلب التسجيل*${reason}\n\nيمكنك المحاولة مرة أخرى أو التواصل مع الدعم.`,
-              parse_mode: "Markdown",
-            }),
-          });
-        }
+        await supabase.functions.invoke("telegram-bot", {
+          body: {
+            action: "notify_rejection",
+            chat_id: req.telegram_chat_id,
+            reason: adminNote || null,
+          },
+        });
       }
     },
     onSuccess: () => {
@@ -246,16 +409,6 @@ const RenewalOrders = () => {
     },
     onError: (error: any) => toast.error("حدث خطأ: " + (error.message || "فشل")),
   });
-
-  // Helper to get bot token for notifications from edge function
-  async function getSecretForNotification(): Promise<string | null> {
-    try {
-      // We'll use the edge function to send notifications instead
-      return null;
-    } catch {
-      return null;
-    }
-  }
 
   // ─── Stats ─────────────────────────────────────────
   const pendingCount = requests?.filter((r) => r.status === "pending").length || 0;
@@ -379,20 +532,20 @@ const RenewalOrders = () => {
               <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
                   <TableHead className="font-semibold">العميل</TableHead>
-                   <TableHead className="font-semibold">الترخيص</TableHead>
-                   <TableHead className="font-semibold">الأيام</TableHead>
-                   <TableHead className="font-semibold">المبلغ</TableHead>
-                   <TableHead className="font-semibold">إيصال الدفع</TableHead>
-                   <TableHead className="font-semibold">الحالة</TableHead>
+                  <TableHead className="font-semibold">الترخيص</TableHead>
+                  <TableHead className="font-semibold">الأيام</TableHead>
+                  <TableHead className="font-semibold">المبلغ</TableHead>
+                  <TableHead className="font-semibold">إيصال الدفع</TableHead>
+                  <TableHead className="font-semibold">الحالة</TableHead>
                   <TableHead className="font-semibold">التاريخ</TableHead>
                   <TableHead className="font-semibold text-left">الإجراءات</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow><TableCell colSpan={7} className="text-center py-12 text-muted-foreground">جاري التحميل...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="text-center py-12 text-muted-foreground">جاري التحميل...</TableCell></TableRow>
                 ) : filteredRequests?.length === 0 ? (
-                  <TableRow><TableCell colSpan={7} className="text-center py-12"><div className="flex flex-col items-center gap-2 text-muted-foreground"><ShoppingCart className="h-10 w-10 opacity-30" /><p>لا توجد طلبات</p></div></TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="text-center py-12"><div className="flex flex-col items-center gap-2 text-muted-foreground"><ShoppingCart className="h-10 w-10 opacity-30" /><p>لا توجد طلبات</p></div></TableCell></TableRow>
                 ) : (
                   filteredRequests?.map((req) => {
                     const config = statusConfig[req.status] || statusConfig.pending;
@@ -417,71 +570,90 @@ const RenewalOrders = () => {
                             </div>
                           </div>
                         </TableCell>
-                         <TableCell className="font-semibold">{req.days} يوم</TableCell>
-                         <TableCell className="font-semibold">{req.amount} جنيه</TableCell>
-                         <TableCell>
-                         {req.receipt_note ? (
-                             <div className="max-w-[200px] flex flex-col gap-1">
-                               {req.receipt_note.startsWith("[صورة إيصال]") ? (
-                                 <>
-                                   <Badge variant="outline" className="gap-1 text-xs">
-                                     🖼️ صورة إيصال مرفقة
-                                   </Badge>
-                                   <Button
-                                     size="sm"
-                                     variant="outline"
-                                     className="h-7 text-xs gap-1"
-                                      onClick={() => {
-                                        const match = req.receipt_note!.match(/file_id:\s*(\S+)/);
-                                        const fileId = match ? match[1] : req.receipt_note!.replace("[صورة إيصال] ", "").trim();
-                                        setReceiptFileId(fileId);
-                                      }}
-                                   >
-                                     🔍 عرض الصورة
-                                   </Button>
-                                 </>
-                               ) : (
-                                 <p className="text-xs text-muted-foreground truncate" title={req.receipt_note}>
-                                   📝 {req.receipt_note}
-                                 </p>
-                               )}
-                             </div>
-                           ) : (
-                             <span className="text-xs text-muted-foreground">—</span>
-                           )}
-                         </TableCell>
-                         <TableCell><Badge variant={config.variant} className="gap-1"><StatusIcon className="h-3 w-3" />{config.label}</Badge></TableCell>
+                        <TableCell className="font-semibold">{req.days} يوم</TableCell>
+                        <TableCell className="font-semibold">{req.amount} جنيه</TableCell>
+                        <TableCell>
+                          {req.receipt_note ? (
+                            <div className="max-w-[200px] flex flex-col gap-1">
+                              {req.receipt_note.startsWith("[صورة إيصال]") ? (
+                                <>
+                                  <Badge variant="outline" className="gap-1 text-xs">🖼️ صورة إيصال مرفقة</Badge>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 text-xs gap-1"
+                                    onClick={() => {
+                                      const match = req.receipt_note!.match(/file_id:\s*(\S+)/);
+                                      const fileId = match ? match[1] : req.receipt_note!.replace("[صورة إيصال] ", "").trim();
+                                      setReceiptFileId(fileId);
+                                    }}
+                                  >
+                                    🔍 عرض الصورة
+                                  </Button>
+                                </>
+                              ) : (
+                                <p className="text-xs text-muted-foreground truncate" title={req.receipt_note}>
+                                  📝 {req.receipt_note}
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell><Badge variant={config.variant} className="gap-1"><StatusIcon className="h-3 w-3" />{config.label}</Badge></TableCell>
                         <TableCell className="text-muted-foreground text-sm">
                           <div className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{new Date(req.created_at).toLocaleDateString("ar-EG", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</div>
                         </TableCell>
                         <TableCell>
-                          {req.status === "pending" ? (
-                            <div className="flex gap-1">
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button size="sm" className="h-8 gap-1"><CheckCircle2 className="h-4 w-4" />تأكيد</Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>تأكيد طلب التجديد</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      سيتم إضافة <strong>{req.days} يوم</strong> للترخيص وإبلاغ العميل <strong>{req.customers?.name}</strong>.
-                                      <br /><br />المبلغ: <strong>{req.amount} جنيه</strong>
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => confirmMutation.mutate({ requestId: req.id, action: "confirm" })} disabled={confirmMutation.isPending}>تأكيد التجديد</AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                              <Button size="sm" variant="ghost" className="h-8 gap-1 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => { setSelectedRequestId(req.id); setRejectType("renewal"); setRejectDialogOpen(true); }}>
-                                <XCircle className="h-4 w-4" />رفض
-                              </Button>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">{req.admin_note && `📝 ${req.admin_note}`}</span>
-                          )}
+                          <div className="flex gap-1 flex-wrap">
+                            {req.status === "pending" && (
+                              <>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button size="sm" className="h-8 gap-1"><CheckCircle2 className="h-4 w-4" />تأكيد</Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>تأكيد طلب التجديد</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        سيتم إضافة <strong>{req.days} يوم</strong> للترخيص وإبلاغ العميل <strong>{req.customers?.name}</strong>.
+                                        <br /><br />المبلغ: <strong>{req.amount} جنيه</strong>
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => confirmMutation.mutate({ requestId: req.id, action: "confirm" })} disabled={confirmMutation.isPending}>تأكيد التجديد</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                                <Button size="sm" variant="ghost" className="h-8 gap-1 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => { setSelectedRequestId(req.id); setRejectType("renewal"); setRejectDialogOpen(true); }}>
+                                  <XCircle className="h-4 w-4" />رفض
+                                </Button>
+                              </>
+                            )}
+                            {req.status !== "pending" && (
+                              <span className="text-xs text-muted-foreground">{req.admin_note && `📝 ${req.admin_note}`}</span>
+                            )}
+                            {/* Delete button */}
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>حذف طلب التجديد</AlertDialogTitle>
+                                  <AlertDialogDescription>هل أنت متأكد من حذف هذا الطلب؟ لا يمكن التراجع.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                  <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteRenewalMutation.mutate(req.id)}>حذف</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -528,32 +700,43 @@ const RenewalOrders = () => {
                           <div className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{new Date(req.created_at).toLocaleDateString("ar-EG", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</div>
                         </TableCell>
                         <TableCell>
-                          {req.status === "pending" ? (
-                            <div className="flex gap-1">
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button size="sm" className="h-8 gap-1"><CheckCircle2 className="h-4 w-4" />تفعيل</Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>تفعيل حساب العميل</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      سيتم إنشاء عميل جديد باسم <strong>{req.name}</strong> وربط حسابه بالبوت تلقائياً.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => approveRegMutation.mutate({ requestId: req.id })} disabled={approveRegMutation.isPending}>تفعيل الحساب</AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                              <Button size="sm" variant="ghost" className="h-8 gap-1 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => { setSelectedRequestId(req.id); setRejectType("registration"); setRejectDialogOpen(true); }}>
-                                <XCircle className="h-4 w-4" />رفض
-                              </Button>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">{req.admin_note && `📝 ${req.admin_note}`}</span>
-                          )}
+                          <div className="flex gap-1 flex-wrap items-center">
+                            {req.status === "pending" && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  className="h-8 gap-1"
+                                  onClick={() => setApproveRegRequest(req)}
+                                >
+                                  <CheckCircle2 className="h-4 w-4" />تفعيل
+                                </Button>
+                                <Button size="sm" variant="ghost" className="h-8 gap-1 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => { setSelectedRequestId(req.id); setRejectType("registration"); setRejectDialogOpen(true); }}>
+                                  <XCircle className="h-4 w-4" />رفض
+                                </Button>
+                              </>
+                            )}
+                            {req.status !== "pending" && (
+                              <span className="text-xs text-muted-foreground">{req.admin_note && `📝 ${req.admin_note}`}</span>
+                            )}
+                            {/* Delete button */}
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>حذف طلب التسجيل</AlertDialogTitle>
+                                  <AlertDialogDescription>هل أنت متأكد من حذف طلب تسجيل <strong>{req.name}</strong>؟</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                  <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteRegMutation.mutate(req.id)}>حذف</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -583,6 +766,15 @@ const RenewalOrders = () => {
       {/* Receipt Image Dialog */}
       {receiptFileId && (
         <ReceiptDialog fileId={receiptFileId} onClose={() => setReceiptFileId(null)} />
+      )}
+
+      {/* Approve Registration Dialog */}
+      {approveRegRequest && (
+        <ApproveRegDialog
+          request={approveRegRequest}
+          onClose={() => setApproveRegRequest(null)}
+          onApprove={(data) => approveRegMutation.mutate(data)}
+        />
       )}
     </div>
   );
