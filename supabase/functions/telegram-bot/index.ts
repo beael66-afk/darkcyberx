@@ -302,7 +302,7 @@ async function handleRegistrationSubmit(supabase: any, chatId: number, name: str
   const { data: existingCustomer } = await supabase
     .from("customers")
     .select("id")
-    .eq("email", email)
+    .ilike("email", email)
     .maybeSingle();
 
   if (existingCustomer) {
@@ -391,11 +391,11 @@ async function handleLinkAccount(supabase: any, chatId: number, email: string, t
     return;
   }
 
-  // Search in customers table first
+  // Search in customers table first (case-insensitive)
   const { data: customer } = await supabase
     .from("customers")
     .select("id, name")
-    .eq("email", email)
+    .ilike("email", email)
     .maybeSingle();
 
   if (customer) {
