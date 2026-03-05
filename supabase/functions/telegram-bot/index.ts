@@ -391,36 +391,87 @@ async function handleLinkAccount(supabase: any, chatId: number, email: string, t
     return;
   }
 
+  // Search in customers table first
   const { data: customer } = await supabase
     .from("customers")
     .select("id, name")
     .eq("email", email)
     .maybeSingle();
 
-  if (!customer) {
+  if (customer) {
+    // Check if already linked to another chat
+    const { data: existingCustLink } = await supabase
+      .from("telegram_links")
+      .select("id")
+      .eq("customer_id", customer.id)
+      .maybeSingle();
+
+    if (existingCustLink) {
+      await sendMessageWithKeyboard(chatId, token,
+        "⚠️ هذا الحساب مربوط بمستخدم آخر بالفعل.\n\nإذا كنت تواجه مشكلة، تواصل مع الدعم.",
+        { inline_keyboard: [[{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
+      );
+      return;
+    }
+
+    const { error } = await supabase
+      .from("telegram_links")
+      .insert({ customer_id: customer.id, telegram_chat_id: chatId });
+
+    if (error) {
+      console.error("Error linking:", error);
+      await sendMessage(chatId, token, "❌ حدث خطأ. حاول مرة أخرى.");
+      return;
+    }
+
     await sendMessageWithKeyboard(chatId, token,
-      "❌ لم يتم العثور على حساب بهذا البريد.\n\nيمكنك التسجيل كمستخدم جديد:",
-      { inline_keyboard: [[{ text: "📝 تسجيل مستخدم جديد", callback_data: "register" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
+      "━━━━━━━━━━━━━━━━━━━━━\n" +
+      `✅ *تم ربط حسابك بنجاح!*\n\n` +
+      `👤 مرحباً *${customer.name}*\n` +
+      "━━━━━━━━━━━━━━━━━━━━━",
+      { inline_keyboard: [[{ text: "📋 عرض تراخيصي", callback_data: "my_licenses" }], [{ text: "🔄 تجديد ترخيص", callback_data: "renew" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
+      "Markdown"
     );
     return;
   }
 
-  const { error } = await supabase
-    .from("telegram_links")
-    .insert({ customer_id: customer.id, telegram_chat_id: chatId });
+  // Not found in customers - check if there's a pending/approved registration request
+  const { data: regReq } = await supabase
+    .from("registration_requests")
+    .select("id, name, status")
+    .eq("email", email)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
-  if (error) {
-    console.error("Error linking:", error);
-    await sendMessage(chatId, token, "❌ حدث خطأ. حاول مرة أخرى.");
+  if (regReq) {
+    if (regReq.status === "pending") {
+      await sendMessageWithKeyboard(chatId, token,
+        "⏳ *طلب تسجيلك قيد المراجعة*\n\nسيتم إبلاغك فور الموافقة عليه من الإدارة.",
+        { inline_keyboard: [[{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
+        "Markdown"
+      );
+    } else if (regReq.status === "rejected") {
+      await sendMessageWithKeyboard(chatId, token,
+        "❌ *تم رفض طلب تسجيلك سابقاً*\n\nيمكنك التسجيل مجدداً أو التواصل مع الدعم.",
+        { inline_keyboard: [[{ text: "📝 تسجيل مستخدم جديد", callback_data: "register" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
+        "Markdown"
+      );
+    } else {
+      // Approved but customer not yet created - shouldn't happen, inform admin
+      await sendMessageWithKeyboard(chatId, token,
+        "✅ تمت الموافقة على طلبك لكن الحساب لم يُنشأ بعد.\nتواصل مع الدعم.",
+        { inline_keyboard: [[{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
+      );
+    }
     return;
   }
 
+  // No record found at all
   await sendMessageWithKeyboard(chatId, token,
-    "━━━━━━━━━━━━━━━━━━━━━\n" +
-    `✅ *تم ربط حسابك بنجاح!*\n\n` +
-    `👤 مرحباً *${customer.name}*\n` +
-    "━━━━━━━━━━━━━━━━━━━━━",
-    { inline_keyboard: [[{ text: "📋 عرض تراخيصي", callback_data: "my_licenses" }], [{ text: "🔄 تجديد ترخيص", callback_data: "renew" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
+    "❌ *لم يتم العثور على حساب بهذا البريد*\n\n" +
+    "تأكد من البريد الإلكتروني أو سجّل كمستخدم جديد:",
+    { inline_keyboard: [[{ text: "📝 تسجيل مستخدم جديد", callback_data: "register" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
     "Markdown"
   );
 }
