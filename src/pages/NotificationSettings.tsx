@@ -5,9 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Bell, Mail, Clock, Calendar, Save, Plus, X, Send } from "lucide-react";
+import { Loader2, Bell, Clock, Calendar, Save, Plus, X, Send, Bot, CheckCircle2 } from "lucide-react";
 
 interface NotificationSettings {
   id: string;
@@ -20,6 +19,7 @@ interface NotificationSettings {
 export default function NotificationSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
   const [settings, setSettings] = useState<NotificationSettings | null>(null);
   const [newDay, setNewDay] = useState("");
   const { toast } = useToast();
@@ -68,7 +68,7 @@ export default function NotificationSettings() {
       if (error) throw error;
 
       toast({
-        title: "تم الحفظ",
+        title: "تم الحفظ ✅",
         description: "تم حفظ إعدادات الإشعارات بنجاح",
       });
     } catch (error: any) {
@@ -80,6 +80,29 @@ export default function NotificationSettings() {
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSendTest = async () => {
+    try {
+      setTesting(true);
+      const { data, error } = await supabase.functions.invoke("check-expiring-licenses");
+
+      if (error) throw error;
+
+      toast({
+        title: "تم الإرسال ✅",
+        description: `${data?.message || "تم إرسال الإشعارات التجريبية بنجاح عبر التليجرام"}`,
+      });
+    } catch (error: any) {
+      console.error("Error sending test:", error);
+      toast({
+        title: "خطأ في الإرسال",
+        description: "فشل في إرسال الإشعار التجريبي. تأكد من ضبط إعدادات البوت.",
+        variant: "destructive",
+      });
+    } finally {
+      setTesting(false);
     }
   };
 
@@ -135,6 +158,7 @@ export default function NotificationSettings() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-3">
@@ -142,69 +166,66 @@ export default function NotificationSettings() {
             إعدادات الإشعارات
           </h1>
           <p className="text-muted-foreground mt-2">
-            تحكم في تنبيهات انتهاء التراخيص التي تُرسل تلقائياً عبر بوت التليجرام والبريد الإلكتروني
+            تحكم في توقيت إرسال تنبيهات انتهاء التراخيص عبر بوت التليجرام
+          </p>
+        </div>
+
+        {/* Test Button */}
+        <Button
+          onClick={handleSendTest}
+          disabled={testing}
+          variant="outline"
+          size="lg"
+          className="gap-2 border-primary/40 text-primary hover:bg-primary/10"
+        >
+          {testing ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            <Send className="h-5 w-5" />
+          )}
+          {testing ? "جاري الإرسال..." : "إرسال تجريبي"}
+        </Button>
+      </div>
+
+      {/* Telegram Info Banner */}
+      <div className="flex items-start gap-3 rounded-lg border border-primary/30 bg-primary/10 p-4">
+        <Bot className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+        <div>
+          <p className="font-medium text-primary">الإشعارات تُرسل حصرياً عبر بوت التليجرام</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            يتلقى العملاء المرتبطون بالبوت تنبيهاً تلقائياً قبل انتهاء ترخيصهم بالأيام المحددة أدناه.
+            العملاء غير المرتبطين يتلقون الإشعار عبر البريد الإلكتروني كبديل تلقائي.
           </p>
         </div>
       </div>
 
-      {/* Telegram Notice Banner */}
-      <div className="flex items-start gap-3 rounded-lg border border-primary/30 bg-primary/10 p-4">
-        <Send className="h-5 w-5 text-primary mt-0.5 shrink-0" />
-        <div>
-          <p className="font-medium text-primary">نظام الإشعارات عبر بوت التليجرام</p>
-          <p className="text-sm text-muted-foreground mt-1">
-            يتم إرسال التنبيهات تلقائياً للعملاء المرتبطين ببوت التليجرام في الأيام المحددة أدناه قبل انتهاء ترخيصهم. العملاء غير المرتبطين يتلقون الإشعار عبر البريد الإلكتروني فقط.
-          </p>
-        </div>
-      </div>
+      {/* How it works */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <CheckCircle2 className="h-5 w-5 text-green-500" />
+            كيف يعمل النظام؟
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div className="flex flex-col gap-1 p-3 rounded-lg bg-muted/50">
+              <span className="font-medium text-primary">① الفحص اليومي</span>
+              <span className="text-muted-foreground">يفحص النظام يومياً التراخيص التي ستنتهي في الأيام المحددة</span>
+            </div>
+            <div className="flex flex-col gap-1 p-3 rounded-lg bg-muted/50">
+              <span className="font-medium text-primary">② إرسال عبر التليجرام</span>
+              <span className="text-muted-foreground">يُرسل رسالة تنبيه للعميل مباشرة عبر بوت التليجرام</span>
+            </div>
+            <div className="flex flex-col gap-1 p-3 rounded-lg bg-muted/50">
+              <span className="font-medium text-primary">③ رابط التجديد</span>
+              <span className="text-muted-foreground">تتضمن الرسالة أمر /renew جاهز لبدء عملية التجديد فوراً</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6">
-        {/* Email Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Mail className="h-5 w-5" />
-              إعدادات البريد الإلكتروني
-            </CardTitle>
-            <CardDescription>
-              تفعيل وتخصيص رسائل البريد الإلكتروني
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="email-enabled">تفعيل الإشعارات بالبريد</Label>
-                <p className="text-sm text-muted-foreground">
-                  إرسال إشعارات انتهاء التراخيص عبر البريد الإلكتروني
-                </p>
-              </div>
-              <Switch
-                id="email-enabled"
-                checked={settings.email_enabled}
-                onCheckedChange={(checked) =>
-                  setSettings({ ...settings, email_enabled: checked })
-                }
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email-subject">عنوان البريد الإلكتروني</Label>
-              <Input
-                id="email-subject"
-                value={settings.email_subject}
-                onChange={(e) =>
-                  setSettings({ ...settings, email_subject: e.target.value })
-                }
-                placeholder="تنبيه: اقتراب انتهاء ترخيصك"
-                disabled={!settings.email_enabled}
-              />
-              <p className="text-sm text-muted-foreground">
-                عنوان الرسالة الذي سيراه العملاء
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Notification Days */}
         <Card>
           <CardHeader>
@@ -213,7 +234,7 @@ export default function NotificationSettings() {
               أيام الإشعار
             </CardTitle>
             <CardDescription>
-              الأيام قبل انتهاء الترخيص التي يتم فيها إرسال الإشعارات
+              الأيام قبل انتهاء الترخيص التي يتم فيها إرسال تنبيه للعميل عبر التليجرام
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -224,7 +245,8 @@ export default function NotificationSettings() {
                   variant="secondary"
                   className="text-base py-2 px-4 gap-2"
                 >
-                  {day} يوم
+                  <Bot className="h-3.5 w-3.5 text-primary" />
+                  {day} {day === 1 ? "يوم" : "أيام"}
                   <button
                     onClick={() => removeNotificationDay(day)}
                     className="hover:text-destructive transition-colors"
@@ -233,6 +255,9 @@ export default function NotificationSettings() {
                   </button>
                 </Badge>
               ))}
+              {settings.notification_days.length === 0 && (
+                <p className="text-sm text-muted-foreground">لا توجد أيام محددة. أضف يوماً واحداً على الأقل.</p>
+              )}
             </div>
 
             <div className="flex gap-2">
@@ -251,8 +276,7 @@ export default function NotificationSettings() {
               </Button>
             </div>
             <p className="text-sm text-muted-foreground">
-              سيتم إرسال إشعار للعملاء في كل يوم من الأيام المحددة قبل انتهاء
-              الترخيص
+              مثال: أضف <strong>7</strong> و <strong>3</strong> و <strong>1</strong> لإرسال تنبيه قبل أسبوع وثلاثة أيام ويوم واحد من الانتهاء
             </p>
           </CardContent>
         </Card>
@@ -262,10 +286,10 @@ export default function NotificationSettings() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Clock className="h-5 w-5" />
-              وقت الإرسال
+              وقت الإرسال اليومي
             </CardTitle>
             <CardDescription>
-              الوقت اليومي لفحص وإرسال الإشعارات
+              الوقت الذي يتم فيه فحص التراخيص وإرسال التنبيهات عبر التليجرام يومياً
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -278,16 +302,32 @@ export default function NotificationSettings() {
                 onChange={(e) =>
                   setSettings({ ...settings, notification_time: e.target.value })
                 }
+                className="max-w-xs"
               />
               <p className="text-sm text-muted-foreground">
-                سيتم فحص التراخيص وإرسال الإشعارات يومياً في هذا الوقت
+                سيتم إرسال الإشعارات يومياً عند هذا الوقت (توقيت الخادم)
               </p>
             </div>
           </CardContent>
         </Card>
 
         {/* Save Button */}
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-3">
+          <Button
+            onClick={handleSendTest}
+            disabled={testing}
+            variant="outline"
+            size="lg"
+            className="gap-2"
+          >
+            {testing ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Send className="h-5 w-5" />
+            )}
+            {testing ? "جاري الإرسال..." : "اختبار الإرسال الآن"}
+          </Button>
+
           <Button onClick={handleSave} disabled={saving} size="lg">
             {saving ? (
               <>
