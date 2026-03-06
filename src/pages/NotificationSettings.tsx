@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Bell, Mail, Clock, Calendar, Save, Plus, X } from "lucide-react";
+import { Loader2, Bell, Mail, Clock, Calendar, Save, Plus, X, Send } from "lucide-react";
 
 interface NotificationSettings {
   id: string;
@@ -142,7 +142,18 @@ export default function NotificationSettings() {
             إعدادات الإشعارات
           </h1>
           <p className="text-muted-foreground mt-2">
-            تحكم في أوقات إرسال الإشعارات والرسائل المخصصة
+            تحكم في تنبيهات انتهاء التراخيص التي تُرسل تلقائياً عبر بوت التليجرام والبريد الإلكتروني
+          </p>
+        </div>
+      </div>
+
+      {/* Telegram Notice Banner */}
+      <div className="flex items-start gap-3 rounded-lg border border-primary/30 bg-primary/10 p-4">
+        <Send className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+        <div>
+          <p className="font-medium text-primary">نظام الإشعارات عبر بوت التليجرام</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            يتم إرسال التنبيهات تلقائياً للعملاء المرتبطين ببوت التليجرام في الأيام المحددة أدناه قبل انتهاء ترخيصهم. العملاء غير المرتبطين يتلقون الإشعار عبر البريد الإلكتروني فقط.
           </p>
         </div>
       </div>
