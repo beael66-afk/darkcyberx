@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Bell, Mail, Clock, Calendar, Save, Plus, X } from "lucide-react";
+import { Loader2, Bell, Mail, Clock, Calendar, Save, Plus, X, Send } from "lucide-react";
 
 interface NotificationSettings {
   id: string;
