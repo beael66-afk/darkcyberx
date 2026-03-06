@@ -296,6 +296,7 @@ export type Database = {
           id: string
           notification_days: number[]
           notification_time: string
+          telegram_message_template: string | null
           updated_at: string
         }
         Insert: {
@@ -305,6 +306,7 @@ export type Database = {
           id?: string
           notification_days?: number[]
           notification_time?: string
+          telegram_message_template?: string | null
           updated_at?: string
         }
         Update: {
@@ -314,6 +316,7 @@ export type Database = {
           id?: string
           notification_days?: number[]
           notification_time?: string
+          telegram_message_template?: string | null
           updated_at?: string
         }
         Relationships: []
