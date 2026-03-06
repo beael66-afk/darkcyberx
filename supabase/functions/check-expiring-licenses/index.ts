@@ -25,6 +25,40 @@ async function sendTelegramMessage(token: string, chatId: number, text: string, 
   return true;
 }
 
+function buildMessage(
+  template: string,
+  vars: {
+    urgencyEmoji: string;
+    customerName: string;
+    productName: string;
+    licenseKey: string;
+    expiryDate: string;
+    daysRemaining: number;
+  }
+): string {
+  return template
+    .replace(/{urgencyEmoji}/g, vars.urgencyEmoji)
+    .replace(/{customerName}/g, vars.customerName)
+    .replace(/{productName}/g, vars.productName)
+    .replace(/{licenseKey}/g, vars.licenseKey)
+    .replace(/{expiryDate}/g, vars.expiryDate)
+    .replace(/{daysRemaining}/g, String(vars.daysRemaining));
+}
+
+const DEFAULT_TEMPLATE =
+  `━━━━━━━━━━━━━━━━━━━━━\n` +
+  `{urgencyEmoji} *تنبيه انتهاء ترخيص*\n` +
+  `━━━━━━━━━━━━━━━━━━━━━\n\n` +
+  `مرحباً *{customerName}*\n\n` +
+  `ترخيصك لمنتج *{productName}* سينتهي قريباً!\n\n` +
+  `🔑 المفتاح: \`{licenseKey}\`\n` +
+  `📅 تاريخ الانتهاء: {expiryDate}\n` +
+  `⏰ الأيام المتبقية: *{daysRemaining} يوم*\n\n` +
+  `━━━━━━━━━━━━━━━━━━━━━\n` +
+  `🔄 لتجديد الترخيص أرسل:\n` +
+  `/renew {licenseKey}\n` +
+  `━━━━━━━━━━━━━━━━━━━━━`;
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -53,6 +87,8 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const notificationDays = settingsData.notification_days as number[];
+    // Use custom template if set, otherwise fall back to default
+    const messageTemplate = (settingsData as any).telegram_message_template || DEFAULT_TEMPLATE;
     const today = new Date();
     
     let emailsSent = 0;
@@ -107,6 +143,7 @@ const handler = async (req: Request): Promise<Response> => {
           const customerId = license.customer?.id;
           const productName = license.product?.name || "منتج";
           const expiryDate = new Date(license.expire_at!).toLocaleDateString("ar-EG");
+          const urgencyEmoji = days <= 1 ? "🚨" : days <= 3 ? "⚠️" : "📢";
 
           // 1) Send email notification if enabled
           if (settingsData.email_enabled && customerEmail) {
@@ -134,21 +171,15 @@ const handler = async (req: Request): Promise<Response> => {
           // 2) Send Telegram notification if linked
           if (telegramToken && customerId && telegramMap.has(customerId)) {
             const chatId = telegramMap.get(customerId)!;
-            const urgencyEmoji = days <= 1 ? "🚨" : days <= 3 ? "⚠️" : "📢";
 
-            const msg =
-              `━━━━━━━━━━━━━━━━━━━━━\n` +
-              `${urgencyEmoji} *تنبيه انتهاء ترخيص*\n` +
-              `━━━━━━━━━━━━━━━━━━━━━\n\n` +
-              `مرحباً *${customerName}*\n\n` +
-              `ترخيصك لمنتج *${productName}* سينتهي قريباً!\n\n` +
-              `🔑 المفتاح: \`${license.license_key}\`\n` +
-              `📅 تاريخ الانتهاء: ${expiryDate}\n` +
-              `⏰ الأيام المتبقية: *${days} يوم*\n\n` +
-              `━━━━━━━━━━━━━━━━━━━━━\n` +
-              `🔄 لتجديد الترخيص أرسل:\n` +
-              `/renew ${license.license_key}\n` +
-              `━━━━━━━━━━━━━━━━━━━━━`;
+            const msg = buildMessage(messageTemplate, {
+              urgencyEmoji,
+              customerName,
+              productName,
+              licenseKey: license.license_key,
+              expiryDate,
+              daysRemaining: days,
+            });
 
             const sent = await sendTelegramMessage(telegramToken, chatId, msg, "Markdown");
             if (sent) {
