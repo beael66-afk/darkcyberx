@@ -69,14 +69,26 @@ Deno.serve(async (req) => {
     // Fetch license with customer and product info
     const { data: license, error: fetchError } = await supabase
       .from("licenses")
-      .select("*, customers(id, name, email), products(name), telegram_links:telegram_links(telegram_chat_id)")
+      .select("*, customers(id, name, email), products(name)")
       .eq("id", licenseId)
       .maybeSingle();
 
     if (fetchError || !license) {
+      console.error("License fetch error:", fetchError, "licenseId:", licenseId);
       return new Response(JSON.stringify({ error: "License not found" }), {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Separately fetch telegram link via customer_id
+    let chatId: number | null = null;
+    if (license.customer_id) {
+      const { data: telegramLink } = await supabase
+        .from("telegram_links")
+        .select("telegram_chat_id")
+        .eq("customer_id", license.customer_id)
+        .maybeSingle();
+      chatId = telegramLink?.telegram_chat_id ?? null;
     }
 
     const oldKey = license.license_key;
@@ -121,8 +133,6 @@ Deno.serve(async (req) => {
 
     // Send Telegram notification if customer is linked
     const telegramToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
-    const telegramLinks = license.telegram_links as { telegram_chat_id: number }[] | null;
-    const chatId = telegramLinks && telegramLinks.length > 0 ? telegramLinks[0].telegram_chat_id : null;
 
     if (telegramToken && chatId) {
       const customerName = license.customers?.name || "عزيزي العميل";
