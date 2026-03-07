@@ -133,8 +133,6 @@ Deno.serve(async (req) => {
 
     // Send Telegram notification if customer is linked
     const telegramToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
-    const telegramLinks = license.telegram_links as { telegram_chat_id: number }[] | null;
-    const chatId = telegramLinks && telegramLinks.length > 0 ? telegramLinks[0].telegram_chat_id : null;
 
     if (telegramToken && chatId) {
       const customerName = license.customers?.name || "عزيزي العميل";
