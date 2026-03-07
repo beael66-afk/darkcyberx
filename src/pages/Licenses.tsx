@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Copy, Trash2, Edit, FileSpreadsheet, FileText, RefreshCw } from "lucide-react";
+import { Plus, Search, Copy, Trash2, Edit, FileSpreadsheet, FileText, RefreshCw, KeyRound, Loader2 } from "lucide-react";
 import { RenewalTokenDialog } from "@/components/licenses/RenewalTokenDialog";
 import { exportToExcel, exportToCSV } from "@/lib/exportUtils";
 import { Input } from "@/components/ui/input";
@@ -71,6 +71,9 @@ const Licenses = () => {
   const [licenseToDelete, setLicenseToDelete] = useState<{ id: string; key: string } | null>(null);
   const [editingLicense, setEditingLicense] = useState<License | null>(null);
   const [renewalLicense, setRenewalLicense] = useState<License | null>(null);
+  const [regenerateLicense, setRegenerateLicense] = useState<License | null>(null);
+  const [isRegenerateDialogOpen, setIsRegenerateDialogOpen] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
   const [formData, setFormData] = useState<{
     customer_id: string;
     product_id: string;
@@ -283,6 +286,42 @@ const Licenses = () => {
     } finally {
       setIsDeleteDialogOpen(false);
       setLicenseToDelete(null);
+    }
+  };
+
+  const handleRegenerate = async () => {
+    if (!regenerateLicense) return;
+    setIsRegenerating(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const { data, error } = await supabase.functions.invoke("regenerate-license-key", {
+        body: { licenseId: regenerateLicense.id },
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      });
+      if (error) throw error;
+      toast({
+        title: "✅ تم تجديد المفتاح",
+        description: data.notified
+          ? `المفتاح الجديد: ${data.newKey} — تم إرسال إشعار للعميل عبر التليجرام`
+          : `المفتاح الجديد: ${data.newKey} — العميل غير مرتبط بالبوت`,
+      });
+      await logActivity({
+        action: "updated",
+        entityType: "license",
+        entityId: regenerateLicense.id,
+        description: `تم تجديد مفتاح الترخيص من ${data.oldKey} إلى ${data.newKey}`,
+      });
+      setIsRegenerateDialogOpen(false);
+      setRegenerateLicense(null);
+      fetchLicenses();
+    } catch (error: any) {
+      toast({
+        title: "خطأ",
+        description: error.message || "فشل تجديد المفتاح",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRegenerating(false);
     }
   };
 
@@ -546,6 +585,15 @@ const Licenses = () => {
                         <Button
                           variant="ghost"
                           size="icon"
+                          onClick={() => { setRegenerateLicense(license); setIsRegenerateDialogOpen(true); }}
+                          title="تجديد مفتاح الترخيص"
+                          className="text-warning hover:text-warning/80 hover:bg-warning/10"
+                        >
+                          <KeyRound className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={() => {
                             setLicenseToDelete({ id: license.id, key: license.license_key });
                             setIsDeleteDialogOpen(true);
@@ -577,6 +625,42 @@ const Licenses = () => {
             <AlertDialogCancel>إلغاء</AlertDialogCancel>
             <AlertDialogAction onClick={deleteLicense} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               حذف
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Regenerate License Key Confirmation Dialog */}
+      <AlertDialog open={isRegenerateDialogOpen} onOpenChange={setIsRegenerateDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <KeyRound className="h-5 w-5" />
+              تجديد مفتاح الترخيص
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2 text-right">
+              <p>سيتم إنشاء مفتاح جديد للترخيص:</p>
+              {regenerateLicense && (
+                <p className="font-mono bg-muted px-2 py-1 rounded text-sm">{regenerateLicense.license_key}</p>
+              )}
+              <p className="mt-2">⚠️ المفتاح القديم سيصبح غير صالح فوراً، وستُعطَّل جميع الأجهزة المرتبطة حتى يتم إعادة التفعيل بالمفتاح الجديد.</p>
+              {regenerateLicense?.customer && (
+                <p className="text-sm">📱 سيصل إشعار تلقائي للعميل <strong>{regenerateLicense.customer.name}</strong> عبر بوت التليجرام (إن كان مرتبطاً).</p>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isRegenerating}>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleRegenerate(); }}
+              disabled={isRegenerating}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              {isRegenerating ? (
+                <><Loader2 className="h-4 w-4 animate-spin ml-2" />جارٍ التجديد...</>
+              ) : (
+                <><KeyRound className="h-4 w-4 ml-2" />تجديد المفتاح</>
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
