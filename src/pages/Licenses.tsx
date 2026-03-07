@@ -289,6 +289,42 @@ const Licenses = () => {
     }
   };
 
+  const handleRegenerate = async () => {
+    if (!regenerateLicense) return;
+    setIsRegenerating(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const { data, error } = await supabase.functions.invoke("regenerate-license-key", {
+        body: { licenseId: regenerateLicense.id },
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      });
+      if (error) throw error;
+      toast({
+        title: "✅ تم تجديد المفتاح",
+        description: data.notified
+          ? `المفتاح الجديد: ${data.newKey} — تم إرسال إشعار للعميل عبر التليجرام`
+          : `المفتاح الجديد: ${data.newKey} — العميل غير مرتبط بالبوت`,
+      });
+      await logActivity({
+        action: "updated",
+        entityType: "license",
+        entityId: regenerateLicense.id,
+        description: `تم تجديد مفتاح الترخيص من ${data.oldKey} إلى ${data.newKey}`,
+      });
+      setIsRegenerateDialogOpen(false);
+      setRegenerateLicense(null);
+      fetchLicenses();
+    } catch (error: any) {
+      toast({
+        title: "خطأ",
+        description: error.message || "فشل تجديد المفتاح",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       active: "default",
