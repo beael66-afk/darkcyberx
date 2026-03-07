@@ -179,6 +179,15 @@ const Licenses = () => {
     if (!editingLicense) return;
 
     try {
+      // Auto-set status to active if expire_at is in the future (or no expiry) and current status is expired
+      let resolvedStatus = formData.status;
+      if (formData.status === "expired") {
+        const newExpiry = formData.expire_at ? new Date(formData.expire_at) : null;
+        if (!newExpiry || newExpiry > new Date()) {
+          resolvedStatus = "active";
+        }
+      }
+
       const { error } = await supabase
         .from("licenses")
         .update({
@@ -186,7 +195,7 @@ const Licenses = () => {
           product_id: formData.product_id || null,
           max_devices: parseInt(formData.max_devices),
           expire_at: formData.expire_at || null,
-          status: formData.status,
+          status: resolvedStatus,
           notes: formData.notes || null
         })
         .eq("id", editingLicense.id);
@@ -197,12 +206,14 @@ const Licenses = () => {
         action: "updated",
         entityType: "license",
         entityId: editingLicense.id,
-        description: `تم تحديث الترخيص: ${editingLicense.license_key}`
+        description: `تم تحديث الترخيص: ${editingLicense.license_key}${resolvedStatus !== formData.status ? " (تم تفعيله تلقائياً)" : ""}`
       });
 
       toast({
         title: "تم التحديث",
-        description: "تم تحديث الترخيص بنجاح",
+        description: resolvedStatus !== formData.status
+          ? "تم تحديث الترخيص وتفعيله تلقائياً لأن التاريخ في المستقبل"
+          : "تم تحديث الترخيص بنجاح",
       });
       handleCloseDialog();
       fetchLicenses();
