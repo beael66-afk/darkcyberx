@@ -99,6 +99,9 @@ const Licenses = () => {
 
   const fetchLicenses = async () => {
     try {
+      // تحديث حالة التراخيص المنتهية تلقائياً قبل الجلب
+      await supabase.rpc("auto_expire_licenses");
+
       const { data, error } = await supabase
         .from("licenses")
         .select(`
