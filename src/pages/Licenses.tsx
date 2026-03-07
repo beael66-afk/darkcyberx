@@ -630,6 +630,42 @@ const Licenses = () => {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Regenerate License Key Confirmation Dialog */}
+      <AlertDialog open={isRegenerateDialogOpen} onOpenChange={setIsRegenerateDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <KeyRound className="h-5 w-5" />
+              تجديد مفتاح الترخيص
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2 text-right">
+              <p>سيتم إنشاء مفتاح جديد للترخيص:</p>
+              {regenerateLicense && (
+                <p className="font-mono bg-muted px-2 py-1 rounded text-sm">{regenerateLicense.license_key}</p>
+              )}
+              <p className="mt-2">⚠️ المفتاح القديم سيصبح غير صالح فوراً، وستُعطَّل جميع الأجهزة المرتبطة حتى يتم إعادة التفعيل بالمفتاح الجديد.</p>
+              {regenerateLicense?.customer && (
+                <p className="text-sm">📱 سيصل إشعار تلقائي للعميل <strong>{regenerateLicense.customer.name}</strong> عبر بوت التليجرام (إن كان مرتبطاً).</p>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isRegenerating}>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleRegenerate(); }}
+              disabled={isRegenerating}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              {isRegenerating ? (
+                <><Loader2 className="h-4 w-4 animate-spin ml-2" />جارٍ التجديد...</>
+              ) : (
+                <><KeyRound className="h-4 w-4 ml-2" />تجديد المفتاح</>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {renewalLicense && (
         <RenewalTokenDialog
           open={!!renewalLicense}
