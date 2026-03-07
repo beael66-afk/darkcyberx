@@ -585,6 +585,15 @@ const Licenses = () => {
                         <Button
                           variant="ghost"
                           size="icon"
+                          onClick={() => { setRegenerateLicense(license); setIsRegenerateDialogOpen(true); }}
+                          title="تجديد مفتاح الترخيص"
+                          className="text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950"
+                        >
+                          <KeyRound className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={() => {
                             setLicenseToDelete({ id: license.id, key: license.license_key });
                             setIsDeleteDialogOpen(true);
