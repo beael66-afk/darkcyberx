@@ -587,7 +587,7 @@ const Licenses = () => {
                           size="icon"
                           onClick={() => { setRegenerateLicense(license); setIsRegenerateDialogOpen(true); }}
                           title="تجديد مفتاح الترخيص"
-                          className="text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950"
+                          className="text-warning hover:text-warning/80 hover:bg-warning/10"
                         >
                           <KeyRound className="h-4 w-4" />
                         </Button>
