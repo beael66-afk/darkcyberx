@@ -281,16 +281,17 @@ serve(async (req) => {
 
     if (licenseError || !license) {
       console.log('License validation failed: key not found');
-      await supabase.from('logs').insert({
+      // Fire log + auto-block in background — don't await to respond immediately
+      supabase.from('logs').insert({
         entity_type: 'security',
         action: 'verified',
         description: `محاولة تفعيل بمفتاح غير موجود: ${license_key}`,
         ip_address: clientIp,
-      });
-      const { forceShutdown } = await checkAndAutoBlock(supabase, clientIp);
+      }).then(() => checkAndAutoBlock(supabase, clientIp)).catch(() => {});
+      // Immediate force_shutdown for any unknown key — no delay
       return new Response(
-        JSON.stringify({ error: 'License not found', valid: false, force_shutdown: forceShutdown }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'License not found', valid: false, force_shutdown: true }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
