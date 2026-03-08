@@ -55,12 +55,17 @@ const TelegramSettings = () => {
   const { data: links, isLoading } = useQuery({
     queryKey: ["telegram-links"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("telegram_links")
-        .select("*, customers(id, name, email, company)")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data as TelegramLink[];
+      // Fetch links and customers separately to avoid RLS join issues
+      const [{ data: linksData, error: linksError }, { data: customersData }] = await Promise.all([
+        supabase.from("telegram_links").select("id, telegram_chat_id, created_at, customer_id").order("created_at", { ascending: false }),
+        supabase.from("customers").select("id, name, email, company"),
+      ]);
+      if (linksError) throw linksError;
+      const customersMap = new Map((customersData || []).map((c) => [c.id, c]));
+      return (linksData || []).map((link) => ({
+        ...link,
+        customers: customersMap.get(link.customer_id) || null,
+      })) as TelegramLink[];
     },
   });
 
