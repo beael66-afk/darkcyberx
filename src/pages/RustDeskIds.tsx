@@ -81,7 +81,7 @@ const RustDeskIds = () => {
 
   const openRustDeskWeb = (rustdeskId: string) => {
     const cleanId = rustdeskId.replace(/\s+/g, "");
-    window.open(`https://web.rustdesk.com/?id=${cleanId}&password=${RUSTDESK_PASSWORD}`, "_blank");
+    window.open(`https://rustdesk.com/web/#id=${cleanId}&password=${RUSTDESK_PASSWORD}`, "_blank");
   };
 
   const filtered = entries?.filter(e =>
