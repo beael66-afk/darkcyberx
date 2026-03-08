@@ -121,33 +121,32 @@ function IpDetailDrawer({ ip, isOpen, onClose }: { ip: IpActivity | null; isOpen
     },
   });
 
-  // Fetch geo info via ipwho.is (HTTPS, free, no key needed)
+  // Fetch geo info via ipapi.co (HTTPS + CORS supported, free, no key needed)
   const { data: geoInfo, isLoading: geoLoading } = useQuery({
     queryKey: ["geo-info", ip?.ip_address],
     enabled: isOpen && !!ip?.ip_address,
     staleTime: 1000 * 60 * 60,
-    retry: 2,
+    retry: 1,
     queryFn: async () => {
       try {
-        const res = await fetch(`https://ipwho.is/${ip!.ip_address}`);
+        const res = await fetch(`https://ipapi.co/${ip!.ip_address}/json/`);
         if (!res.ok) return null;
         const d = await res.json();
-        if (!d.success) return null;
-        // Map ipwho.is response to GeoInfo shape
+        if (d.error) return null;
         return {
-          country: d.country ?? "—",
+          country: d.country_name ?? "—",
           countryCode: d.country_code ?? "—",
           city: d.city ?? "—",
           regionName: d.region ?? "—",
-          isp: d.connection?.isp ?? d.connection?.org ?? "—",
-          org: d.connection?.org ?? "—",
-          as: d.connection?.asn ? `AS${d.connection.asn}` : "—",
-          timezone: d.timezone?.id ?? "—",
+          isp: d.org ?? "—",
+          org: d.org ?? "—",
+          as: d.asn ?? "—",
+          timezone: d.timezone ?? "—",
           lat: d.latitude ?? 0,
           lon: d.longitude ?? 0,
           mobile: false,
-          proxy: d.type === "proxy" || d.type === "vpn",
-          hosting: d.type === "hosting" || d.type === "datacenter",
+          proxy: false,
+          hosting: false,
         } as GeoInfo;
       } catch { return null; }
     },
