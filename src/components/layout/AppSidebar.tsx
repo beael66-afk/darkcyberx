@@ -16,6 +16,7 @@ import {
   ShoppingCart,
   Shield,
   MonitorPlay,
+  ShieldAlert,
 } from "lucide-react";
 import {
   Sidebar,
@@ -47,6 +48,7 @@ const menuItems = [
   { title: "بوت التليجرام", url: "/telegram-settings", icon: Bot },
   { title: "الطلبات", url: "/renewal-orders", icon: ShoppingCart },
   { title: "إدارة الـ IP", url: "/ip-management", icon: Shield },
+  { title: "التنبيهات الأمنية", url: "/alerts", icon: ShieldAlert },
   { title: "الإعدادات", url: "/settings", icon: Settings },
 ];
 
