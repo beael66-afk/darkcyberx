@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -329,20 +329,23 @@ function IpDetailDrawer({ ip, isOpen, onClose }: { ip: IpActivity | null; isOpen
                       </div>
                     </div>
                   )}
-                  {/* Coordinates */}
-                  <div className="flex items-center gap-2 pt-1 border-t">
-                    <p className="text-xs text-muted-foreground">
-                      📍 {geoInfo.lat.toFixed(4)}, {geoInfo.lon.toFixed(4)}
+                  {/* Coordinates + Embedded Map */}
+                  <div className="pt-1 border-t space-y-2">
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />
+                      {geoInfo.lat.toFixed(4)}, {geoInfo.lon.toFixed(4)}
                     </p>
-                    <a
-                      href={`https://maps.google.com/maps?q=${geoInfo.lat},${geoInfo.lon}&z=12`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-primary hover:underline"
-                    >
-                      عرض على الخريطة ↗
-                    </a>
+                    <div className="rounded-lg overflow-hidden border h-[220px] w-full">
+                      <iframe
+                        title="ip-map"
+                        src={`https://www.openstreetmap.org/export/embed.html?bbox=${geoInfo.lon - 0.05},${geoInfo.lat - 0.05},${geoInfo.lon + 0.05},${geoInfo.lat + 0.05}&layer=mapnik&marker=${geoInfo.lat},${geoInfo.lon}`}
+                        style={{ width: "100%", height: "100%", border: 0 }}
+                        loading="lazy"
+                        sandbox="allow-scripts allow-same-origin"
+                      />
+                    </div>
                   </div>
+
                 </div>
               )}
             </div>
