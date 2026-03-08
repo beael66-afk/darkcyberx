@@ -55,12 +55,17 @@ interface IpLog {
 interface GeoInfo {
   country: string;
   countryCode: string;
+  continent: string;
   city: string;
   regionName: string;
+  zip: string;
   isp: string;
   org: string;
   as: string;
+  asname: string;
+  reverse: string;
   timezone: string;
+  currency: string;
   lat: number;
   lon: number;
   mobile: boolean;
