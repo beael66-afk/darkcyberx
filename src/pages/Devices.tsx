@@ -221,104 +221,117 @@ const Devices = () => {
             const customerName = (firstDevice?.licenses as any)?.customers?.name;
             const isGroupSelected = groupDevices?.every(d => selectedDevices.has(d.id)) ?? false;
             const isGroupPartial = (groupDevices?.some(d => selectedDevices.has(d.id)) && !isGroupSelected) ?? false;
+            const isCollapsed = collapsedGroups.has(licenseId);
 
             return (
-              <div key={licenseId} className="rounded-lg border bg-card overflow-hidden">
-                {/* License Group Header */}
-                <div className="flex items-center gap-3 px-4 py-3 bg-muted/40 border-b">
-                  <Checkbox
-                    checked={isGroupSelected}
-                    ref={(el) => {
-                      if (el) (el as any).indeterminate = isGroupPartial;
-                    }}
-                    onCheckedChange={(checked) => handleSelectGroup(groupDevices, checked as boolean)}
-                  />
-                  <Monitor className="h-4 w-4 text-muted-foreground" />
-                  <div className="flex items-center gap-2 flex-1">
-                    {licenseKey ? (
-                      <>
-                        <span className="font-mono text-sm font-semibold">{licenseKey}</span>
-                        {customerName && (
-                          <span className="text-sm text-muted-foreground">— {customerName}</span>
-                        )}
-                      </>
-                    ) : (
-                      <span className="text-sm text-muted-foreground italic">بدون ترخيص</span>
-                    )}
+              <Collapsible key={licenseId} open={!isCollapsed} onOpenChange={() => toggleGroup(licenseId)}>
+                <div className="rounded-lg border bg-card overflow-hidden">
+                  {/* License Group Header */}
+                  <div className="flex items-center gap-3 px-4 py-3 bg-muted/40 border-b">
+                    <Checkbox
+                      checked={isGroupSelected}
+                      ref={(el) => {
+                        if (el) (el as any).indeterminate = isGroupPartial;
+                      }}
+                      onCheckedChange={(checked) => handleSelectGroup(groupDevices, checked as boolean)}
+                    />
+                    <CollapsibleTrigger asChild>
+                      <button className="flex items-center gap-2 flex-1 text-right hover:opacity-70 transition-opacity">
+                        {isCollapsed
+                          ? <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                          : <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                        }
+                        <Monitor className="h-4 w-4 text-muted-foreground" />
+                        <div className="flex items-center gap-2 flex-1">
+                          {licenseKey ? (
+                            <>
+                              <span className="font-mono text-sm font-semibold">{licenseKey}</span>
+                              {customerName && (
+                                <span className="text-sm text-muted-foreground">— {customerName}</span>
+                              )}
+                            </>
+                          ) : (
+                            <span className="text-sm text-muted-foreground italic">بدون ترخيص</span>
+                          )}
+                        </div>
+                      </button>
+                    </CollapsibleTrigger>
+                    <Badge variant="outline" className="text-xs">
+                      {groupDevices?.length} جهاز
+                    </Badge>
                   </div>
-                  <Badge variant="outline" className="text-xs">
-                    {groupDevices?.length} جهاز
-                  </Badge>
-                </div>
 
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-12" />
-                      <TableHead>اسم الجهاز</TableHead>
-                      <TableHead>HWID</TableHead>
-                      <TableHead>نظام التشغيل</TableHead>
-                      <TableHead>آخر تحقق</TableHead>
-                      <TableHead>الحالة</TableHead>
-                      <TableHead className="text-left">الإجراءات</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {groupDevices?.map((device) => (
-                      <TableRow key={device.id} className={selectedDevices.has(device.id) ? "bg-muted/50" : ""}>
-                        <TableCell>
-                          <Checkbox
-                            checked={selectedDevices.has(device.id)}
-                            onCheckedChange={(checked) => handleSelectDevice(device.id, checked as boolean)}
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium">{device.device_name || "-"}</TableCell>
-                        <TableCell className="font-mono text-sm">{device.hwid}</TableCell>
-                        <TableCell>{device.os_info || "-"}</TableCell>
-                        <TableCell>
-                          {device.last_verified
-                            ? format(new Date(device.last_verified), "dd MMM yyyy، HH:mm", { locale: ar })
-                            : "-"}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={device.is_active ? "default" : "secondary"}>
-                            {device.is_active ? "نشط" : "معطل"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => toggleActiveMutation.mutate({
-                                id: device.id,
-                                isActive: device.is_active ?? false,
-                                deviceName: device.device_name || device.hwid
-                              })}
-                            >
-                              {device.is_active ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => {
-                                if (confirm("هل أنت متأكد من حذف هذا الجهاز؟")) {
-                                  deleteMutation.mutate({
+                  <CollapsibleContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-12" />
+                          <TableHead>اسم الجهاز</TableHead>
+                          <TableHead>HWID</TableHead>
+                          <TableHead>نظام التشغيل</TableHead>
+                          <TableHead>آخر تحقق</TableHead>
+                          <TableHead>الحالة</TableHead>
+                          <TableHead className="text-left">الإجراءات</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {groupDevices?.map((device) => (
+                          <TableRow key={device.id} className={selectedDevices.has(device.id) ? "bg-muted/50" : ""}>
+                            <TableCell>
+                              <Checkbox
+                                checked={selectedDevices.has(device.id)}
+                                onCheckedChange={(checked) => handleSelectDevice(device.id, checked as boolean)}
+                              />
+                            </TableCell>
+                            <TableCell className="font-medium">{device.device_name || "-"}</TableCell>
+                            <TableCell className="font-mono text-sm">{device.hwid}</TableCell>
+                            <TableCell>{device.os_info || "-"}</TableCell>
+                            <TableCell>
+                              {device.last_verified
+                                ? format(new Date(device.last_verified), "dd MMM yyyy، HH:mm", { locale: ar })
+                                : "-"}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={device.is_active ? "default" : "secondary"}>
+                                {device.is_active ? "نشط" : "معطل"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => toggleActiveMutation.mutate({
                                     id: device.id,
+                                    isActive: device.is_active ?? false,
                                     deviceName: device.device_name || device.hwid
-                                  });
-                                }
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                                  })}
+                                >
+                                  {device.is_active ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    if (confirm("هل أنت متأكد من حذف هذا الجهاز؟")) {
+                                      deleteMutation.mutate({
+                                        id: device.id,
+                                        deviceName: device.device_name || device.hwid
+                                      });
+                                    }
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
             );
           })}
         </div>
