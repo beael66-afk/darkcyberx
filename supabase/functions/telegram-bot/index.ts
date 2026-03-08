@@ -1208,54 +1208,38 @@ async function handleDownloadRustDesk(chatId: number, token: string) {
     const version = release.tag_name || "غير معروف";
     const assets: any[] = release.assets || [];
 
-    // Find Windows installer (exe) and Android apk
+    // Windows only: prefer x86_64 exe, fallback to any exe
     const windowsExe = assets.find((a: any) =>
       a.name.toLowerCase().endsWith(".exe") && a.name.toLowerCase().includes("x86_64")
     ) || assets.find((a: any) => a.name.toLowerCase().endsWith(".exe"));
 
-    const androidApk = assets.find((a: any) =>
-      a.name.toLowerCase().endsWith(".apk") && a.name.toLowerCase().includes("arm64")
-    ) || assets.find((a: any) => a.name.toLowerCase().endsWith(".apk"));
-
-    const macDmg = assets.find((a: any) =>
-      a.name.toLowerCase().endsWith(".dmg")
-    );
-
-    let msg =
+    const msg =
       "━━━━━━━━━━━━━━━━━━━━━\n" +
       "⬇️ *تحميل RustDesk*\n" +
       "━━━━━━━━━━━━━━━━━━━━━\n\n" +
       `🏷️ الإصدار الأحدث: *${version}*\n\n` +
-      "اختر النظام المناسب لك:\n";
+      "🪟 اضغط الزر أدناه لتحميل النسخة على Windows:";
 
     const buttons: any[] = [];
 
     if (windowsExe) {
-      buttons.push([{ text: "🪟 Windows (.exe)", url: windowsExe.browser_download_url }]);
+      buttons.push([{ text: `🪟 تحميل Windows ${version}`, url: windowsExe.browser_download_url }]);
+    } else {
+      buttons.push([{ text: "🪟 تحميل من GitHub", url: `https://github.com/rustdesk/rustdesk/releases/tag/${version}` }]);
     }
-    if (androidApk) {
-      buttons.push([{ text: "🤖 Android (.apk)", url: androidApk.browser_download_url }]);
-    }
-    if (macDmg) {
-      buttons.push([{ text: "🍎 macOS (.dmg)", url: macDmg.browser_download_url }]);
-    }
-
-    // Add GitHub releases page as fallback
-    buttons.push([{ text: "📦 كل الإصدارات", url: `https://github.com/rustdesk/rustdesk/releases/tag/${version}` }]);
     buttons.push([{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]);
 
     await sendMessageWithKeyboard(chatId, token, msg, { inline_keyboard: buttons }, "Markdown");
   } catch (err) {
     console.error("Failed to fetch RustDesk release:", err);
-    // Fallback to releases page
     await sendMessageWithKeyboard(chatId, token,
       "━━━━━━━━━━━━━━━━━━━━━\n" +
       "⬇️ *تحميل RustDesk*\n" +
       "━━━━━━━━━━━━━━━━━━━━━\n\n" +
-      "اضغط الزر أدناه لتحميل أحدث إصدار:",
+      "اضغط الزر أدناه لتحميل أحدث إصدار Windows:",
       {
         inline_keyboard: [
-          [{ text: "⬇️ تحميل من GitHub", url: "https://github.com/rustdesk/rustdesk/releases/latest" }],
+          [{ text: "🪟 تحميل Windows", url: "https://github.com/rustdesk/rustdesk/releases/latest" }],
           [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }],
         ],
       },
