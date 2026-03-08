@@ -1001,6 +1001,82 @@ async function handleRustDeskDeleteDevice(supabase: any, chatId: number, deviceI
   );
 }
 
+async function handleRustDeskEditStart(supabase: any, chatId: number, deviceId: string, token: string) {
+  const customer = await getCustomerByChatId(supabase, chatId);
+  if (!customer) return;
+
+  const { data: device } = await supabase
+    .from("rustdesk_ids")
+    .select("rustdesk_id, device_label")
+    .eq("id", deviceId)
+    .eq("customer_id", customer.customer_id)
+    .maybeSingle();
+
+  if (!device) {
+    await sendMessage(chatId, token, "❌ الجهاز غير موجود.");
+    return;
+  }
+
+  await setState(supabase, chatId, "awaiting_rustdesk_edit_label", {
+    deviceId,
+    oldId: device.rustdesk_id,
+    oldLabel: device.device_label,
+  });
+
+  await sendMessage(chatId, token,
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "✏️ *تعديل بيانات الجهاز*\n" +
+    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+    `🔢 ID الحالي: \`${device.rustdesk_id}\`\n` +
+    `🏷️ الاسم الحالي: ${device.device_label || "—"}\n\n` +
+    "*أرسل الاسم الجديد للجهاز* (اختياري)\n" +
+    "_(أو أرسل `.` للإبقاء على نفس الاسم)_",
+    "Markdown"
+  );
+}
+
+async function handleRustDeskEditDevice(supabase: any, chatId: number, deviceId: string, newId: string, newLabel: string | null, token: string) {
+  const customer = await getCustomerByChatId(supabase, chatId);
+  if (!customer) return;
+
+  // Check if new ID conflicts with another device (not the same device)
+  if (newId) {
+    const { data: conflict } = await supabase
+      .from("rustdesk_ids")
+      .select("id, customer_id")
+      .eq("rustdesk_id", newId)
+      .neq("id", deviceId)
+      .maybeSingle();
+
+    if (conflict) {
+      await sendMessage(chatId, token, `⚠️ هذا الـ ID \`${newId}\` مسجّل مسبقاً لجهاز آخر.`, "Markdown");
+      return;
+    }
+  }
+
+  const { error } = await supabase
+    .from("rustdesk_ids")
+    .update({ rustdesk_id: newId, device_label: newLabel, updated_at: new Date().toISOString() })
+    .eq("id", deviceId)
+    .eq("customer_id", customer.customer_id);
+
+  if (error) {
+    await sendMessage(chatId, token, "❌ حدث خطأ أثناء التعديل. حاول مرة أخرى.");
+    return;
+  }
+
+  await sendMessageWithKeyboard(chatId, token,
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "✅ *تم تعديل بيانات الجهاز بنجاح!*\n" +
+    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+    `🔢 ID الجديد: \`${newId}\`\n` +
+    (newLabel ? `🏷️ الاسم الجديد: ${newLabel}\n` : "") +
+    "\n🔑 *كلمة المرور للاتصال:* `123456medoissaA`",
+    { inline_keyboard: [[{ text: "🖥️ إدارة الأجهزة", callback_data: "rustdesk_register" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
+    "Markdown"
+  );
+}
+
 async function handleRustDeskIdInput(supabase: any, chatId: number, rustdeskId: string, deviceLabel: string | null, token: string) {
   const customer = await getCustomerByChatId(supabase, chatId);
   if (!customer) return;
