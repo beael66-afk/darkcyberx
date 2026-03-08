@@ -351,7 +351,7 @@ function IpDetailDrawer({ ip, isOpen, onClose }: { ip: IpActivity | null; isOpen
                     <div className="rounded-lg overflow-hidden border h-[220px] w-full">
                       <MapContainer
                         key={`${geoInfo.lat}-${geoInfo.lon}`}
-                        center={[geoInfo.lat, geoInfo.lon]}
+                        center={[geoInfo.lat, geoInfo.lon] as [number, number]}
                         zoom={12}
                         style={{ height: "100%", width: "100%" }}
                         scrollWheelZoom={false}
