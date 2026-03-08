@@ -369,6 +369,21 @@ const RenewalOrders = () => {
 
         if (!licErr && licData) {
           licenseKey = licData.license_key;
+
+          // Create persistent invoice record so revenue is never lost on deletion
+          if (req.amount && Number(req.amount) > 0) {
+            const { data: invNum } = await supabase.rpc("generate_invoice_number");
+            await supabase.from("invoices").insert({
+              customer_id: customer.id,
+              license_id: licData.id,
+              amount: req.amount,
+              invoice_number: invNum || `INV-${Date.now()}`,
+              status: "paid",
+              paid_at: new Date().toISOString(),
+              payment_method: "vodafone_cash",
+              notes: `تسجيل جديد - ${req.requested_days ?? renewalDays} يوم`,
+            });
+          }
         }
       }
 
@@ -389,6 +404,7 @@ const RenewalOrders = () => {
       queryClient.invalidateQueries({ queryKey: ["registration-requests"] });
       queryClient.invalidateQueries({ queryKey: ["customers"] });
       queryClient.invalidateQueries({ queryKey: ["licenses"] });
+      queryClient.invalidateQueries({ queryKey: ["renewal-revenue"] });
       if (data.licenseKey) {
         toast.success(`تم تفعيل الحساب وإنشاء ترخيص: ${data.licenseKey}`);
       } else {
