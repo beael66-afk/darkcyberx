@@ -17,6 +17,7 @@ import {
   Calendar,
   Copy,
   ExternalLink,
+  MapPin,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -40,6 +41,9 @@ interface TelegramLink {
   telegram_chat_id: number;
   created_at: string;
   customer_id: string;
+  latitude: number | null;
+  longitude: number | null;
+  location_updated_at: string | null;
   customers: {
     id: string;
     name: string;
@@ -55,9 +59,8 @@ const TelegramSettings = () => {
   const { data: links, isLoading } = useQuery({
     queryKey: ["telegram-links"],
     queryFn: async () => {
-      // Fetch links and customers separately to avoid RLS join issues
       const [{ data: linksData, error: linksError }, { data: customersData }] = await Promise.all([
-        supabase.from("telegram_links").select("id, telegram_chat_id, created_at, customer_id").order("created_at", { ascending: false }),
+        supabase.from("telegram_links").select("id, telegram_chat_id, created_at, customer_id, latitude, longitude, location_updated_at").order("created_at", { ascending: false }),
         supabase.from("customers").select("id, name, email, company"),
       ]);
       if (linksError) throw linksError;
