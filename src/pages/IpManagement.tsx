@@ -342,20 +342,34 @@ function IpDetailDrawer({ ip, isOpen, onClose }: { ip: IpActivity | null; isOpen
                       </div>
                     </div>
                   )}
-                  {/* Coordinates */}
-                  <div className="flex items-center gap-2 pt-1 border-t">
-                    <p className="text-xs text-muted-foreground">
-                      📍 {geoInfo.lat.toFixed(4)}, {geoInfo.lon.toFixed(4)}
+                  {/* Coordinates + Embedded Map */}
+                  <div className="pt-1 border-t space-y-2">
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />
+                      {geoInfo.lat.toFixed(4)}, {geoInfo.lon.toFixed(4)}
                     </p>
-                    <a
-                      href={`https://maps.google.com/maps?q=${geoInfo.lat},${geoInfo.lon}&z=12`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-primary hover:underline"
-                    >
-                      عرض على الخريطة ↗
-                    </a>
+                    <div className="rounded-lg overflow-hidden border h-[220px] w-full">
+                      <MapContainer
+                        key={`${geoInfo.lat}-${geoInfo.lon}`}
+                        center={[geoInfo.lat, geoInfo.lon]}
+                        zoom={12}
+                        style={{ height: "100%", width: "100%" }}
+                        scrollWheelZoom={false}
+                        attributionControl={false}
+                      >
+                        <TileLayer
+                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        />
+                        <Marker position={[geoInfo.lat, geoInfo.lon]} icon={markerIcon}>
+                          <Popup>
+                            {ip?.ip_address}<br />
+                            {geoInfo.city}, {geoInfo.country}
+                          </Popup>
+                        </Marker>
+                      </MapContainer>
+                    </div>
                   </div>
+
                 </div>
               )}
             </div>
