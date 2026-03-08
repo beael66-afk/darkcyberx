@@ -620,6 +620,26 @@ const Licenses = () => {
                         <Button
                           variant="ghost"
                           size="icon"
+                          onClick={() => toggleSuspend(license)}
+                          disabled={suspendingId === license.id || license.status === "expired"}
+                          title={license.status === "suspended" ? "إعادة تفعيل" : "تعليق"}
+                          className={
+                            license.status === "suspended"
+                              ? "text-success hover:text-success/80 hover:bg-success/10"
+                              : "text-warning hover:text-warning/80 hover:bg-warning/10"
+                          }
+                        >
+                          {suspendingId === license.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : license.status === "suspended" ? (
+                            <PlayCircle className="h-4 w-4" />
+                          ) : (
+                            <PauseCircle className="h-4 w-4" />
+                          )}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={() => copyLicenseKey(license.license_key)}
                           title="نسخ المفتاح"
                         >
