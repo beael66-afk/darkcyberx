@@ -7,9 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, Edit, Trash2, FileSpreadsheet, FileText, Users, Building2, Mail, Phone, StickyNote } from "lucide-react";
-import { CreateAccountDialog } from "@/components/customers/CreateAccountDialog";
-import { ViewCredentialsDialog } from "@/components/customers/ViewCredentialsDialog";
+import { Plus, Search, Edit, Trash2, FileSpreadsheet, FileText, Users, Building2, Mail, Phone, StickyNote, MessageCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { exportToExcel, exportToCSV } from "@/lib/exportUtils";
