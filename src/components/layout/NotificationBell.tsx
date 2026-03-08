@@ -99,7 +99,7 @@ export function NotificationBell() {
               "absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] text-[10px] font-bold rounded-full flex items-center justify-center px-1",
               highCount > 0
                 ? "bg-destructive text-destructive-foreground"
-                : "bg-yellow-500 text-white"
+                : "bg-warning text-warning-foreground"
             )}
           >
             {totalCount > 9 ? "9+" : totalCount}
