@@ -263,9 +263,9 @@ serve(async (req) => {
         description: `محاولة تفعيل بمفتاح غير موجود: ${license_key}`,
         ip_address: clientIp,
       });
-      checkAndAutoBlock(supabase, clientIp);
+      const { forceShutdown } = await checkAndAutoBlock(supabase, clientIp);
       return new Response(
-        JSON.stringify({ error: 'License not found', valid: false }),
+        JSON.stringify({ error: 'License not found', valid: false, force_shutdown: forceShutdown }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
