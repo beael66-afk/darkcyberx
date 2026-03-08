@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Copy, Trash2, Edit, FileSpreadsheet, FileText, RefreshCw, KeyRound, Loader2 } from "lucide-react";
-import { RenewalTokenDialog } from "@/components/licenses/RenewalTokenDialog";
 import { exportToExcel, exportToCSV } from "@/lib/exportUtils";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
