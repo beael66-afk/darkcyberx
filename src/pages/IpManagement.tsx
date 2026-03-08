@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
   Shield, ShieldOff, Search, Ban, Globe, Activity, AlertTriangle, Clock,
-  Trash2, Plus, Copy, RefreshCw,
+  Trash2, Copy, RefreshCw, User,
 } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -34,7 +34,15 @@ interface IpActivity {
   request_count: number;
   last_seen: string;
   is_blocked: boolean;
+  customer_name: string | null;
 }
+
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return "—";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "—";
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+};
 
 const IpManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -56,43 +64,72 @@ const IpManagement = () => {
     },
   });
 
-  // Fetch IP activity from logs
+  // Fetch IP activity from logs — enriched with customer names via licenses
   const { data: ipActivity, isLoading: activityLoading, refetch: refetchActivity } = useQuery({
     queryKey: ["ip-activity"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("logs")
-        .select("ip_address, created_at")
-        .not("ip_address", "is", null)
-        .neq("ip_address", "unknown")
-        .order("created_at", { ascending: false })
-        .limit(1000);
-      if (error) throw error;
+      // Fetch logs, blocked IPs, and licenses+customers in parallel
+      const [logsRes, blockedRes, licensesRes] = await Promise.all([
+        supabase
+          .from("logs")
+          .select("ip_address, created_at, entity_id, entity_type")
+          .not("ip_address", "is", null)
+          .neq("ip_address", "unknown")
+          .order("created_at", { ascending: false })
+          .limit(1000),
+        supabase.from("blocked_ips").select("ip_address"),
+        supabase
+          .from("licenses")
+          .select("id, license_key, customers(id, name)"),
+      ]);
 
-      // Aggregate by IP
-      const ipMap = new Map<string, { count: number; lastSeen: string }>();
-      for (const log of data || []) {
+      const logs = logsRes.data || [];
+      const blockedSet = new Set((blockedRes.data || []).map(b => b.ip_address));
+
+      // Build a map: license_key -> customer_name
+      const licenseToCustomer = new Map<string, string>();
+      for (const lic of licensesRes.data || []) {
+        const customer = lic.customers as { id: string; name: string } | null;
+        if (customer?.name) {
+          licenseToCustomer.set(lic.id, customer.name);
+          licenseToCustomer.set(lic.license_key, customer.name);
+        }
+      }
+
+      // Aggregate logs by IP, track which entity_ids appeared for each IP
+      const ipMap = new Map<string, { count: number; lastSeen: string; entityIds: Set<string> }>();
+      for (const log of logs) {
         if (!log.ip_address) continue;
         const existing = ipMap.get(log.ip_address);
         if (!existing) {
-          ipMap.set(log.ip_address, { count: 1, lastSeen: log.created_at || "" });
+          const ids = new Set<string>();
+          if (log.entity_id) ids.add(log.entity_id);
+          ipMap.set(log.ip_address, { count: 1, lastSeen: log.created_at || "", entityIds: ids });
         } else {
           existing.count++;
+          if (log.entity_id) existing.entityIds.add(log.entity_id);
           if ((log.created_at || "") > existing.lastSeen) {
             existing.lastSeen = log.created_at || "";
           }
         }
       }
 
-      const blockedSet = new Set((await supabase.from("blocked_ips").select("ip_address")).data?.map(b => b.ip_address) || []);
-
       return Array.from(ipMap.entries())
-        .map(([ip, { count, lastSeen }]) => ({
-          ip_address: ip,
-          request_count: count,
-          last_seen: lastSeen,
-          is_blocked: blockedSet.has(ip),
-        }))
+        .map(([ip, { count, lastSeen, entityIds }]) => {
+          // Find customer name from any license entity seen from this IP
+          let customerName: string | null = null;
+          for (const id of entityIds) {
+            const name = licenseToCustomer.get(id);
+            if (name) { customerName = name; break; }
+          }
+          return {
+            ip_address: ip,
+            request_count: count,
+            last_seen: lastSeen,
+            is_blocked: blockedSet.has(ip),
+            customer_name: customerName,
+          };
+        })
         .sort((a, b) => b.request_count - a.request_count) as IpActivity[];
     },
   });
@@ -131,13 +168,6 @@ const IpManagement = () => {
     onError: () => toast.error("فشل رفع الحظر"),
   });
 
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return "—";
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return "—";
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-  };
-
   const copyIp = (ip: string) => {
     navigator.clipboard.writeText(ip);
     toast.success("تم نسخ الـ IP");
@@ -148,7 +178,8 @@ const IpManagement = () => {
   );
 
   const filteredActivity = ipActivity?.filter(a =>
-    a.ip_address.includes(searchTerm)
+    a.ip_address.includes(searchTerm) ||
+    (a.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const totalRequests = ipActivity?.reduce((s, a) => s + a.request_count, 0) || 0;
@@ -262,7 +293,7 @@ const IpManagement = () => {
       <div className="relative">
         <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="ابحث بعنوان IP..."
+          placeholder="ابحث بعنوان IP أو اسم العميل..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="pr-10"
@@ -290,6 +321,7 @@ const IpManagement = () => {
               <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
                   <TableHead className="font-semibold">عنوان IP</TableHead>
+                  <TableHead className="font-semibold">العميل</TableHead>
                   <TableHead className="font-semibold">عدد الطلبات</TableHead>
                   <TableHead className="font-semibold">آخر نشاط</TableHead>
                   <TableHead className="font-semibold">الحالة</TableHead>
@@ -298,10 +330,10 @@ const IpManagement = () => {
               </TableHeader>
               <TableBody>
                 {activityLoading ? (
-                  <TableRow><TableCell colSpan={5} className="text-center py-12 text-muted-foreground">جاري التحميل...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="text-center py-12 text-muted-foreground">جاري التحميل...</TableCell></TableRow>
                 ) : !filteredActivity?.length ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-12">
+                    <TableCell colSpan={6} className="text-center py-12">
                       <div className="flex flex-col items-center gap-2 text-muted-foreground">
                         <Globe className="h-10 w-10 opacity-30" />
                         <p>لا توجد بيانات IP بعد</p>
@@ -323,6 +355,19 @@ const IpManagement = () => {
                             <Copy className="h-3.5 w-3.5" />
                           </button>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        {item.customer_name ? (
+                          <div className="flex items-center gap-1.5">
+                            <User className="h-3.5 w-3.5 text-primary shrink-0" />
+                            <span className="text-sm font-medium">{item.customer_name}</span>
+                          </div>
+                        ) : (
+                          <Badge variant="outline" className="gap-1 text-xs text-destructive border-destructive/30 bg-destructive/5">
+                            <AlertTriangle className="h-3 w-3" />
+                            سبام
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1.5">
@@ -379,6 +424,7 @@ const IpManagement = () => {
                                   <AlertDialogTitle>حظر عنوان IP</AlertDialogTitle>
                                   <AlertDialogDescription>
                                     هل تريد حظر <code className="font-mono bg-muted px-1 rounded">{item.ip_address}</code>؟
+                                    {item.customer_name && <><br /><span className="text-orange-600">⚠️ هذا الـ IP مرتبط بالعميل: {item.customer_name}</span></>}
                                     <br />سيتم رفض جميع طلبات التفعيل من هذا الـ IP فوراً.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
