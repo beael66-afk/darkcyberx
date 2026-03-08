@@ -7,7 +7,8 @@ const corsHeaders = {
 };
 
 // ── Auto-block config ────────────────────────────────────────────────────────
-const AUTO_BLOCK_THRESHOLD = 30; // block after N failed attempts
+const AUTO_BLOCK_THRESHOLD = 30;    // block IP after N failed attempts
+const FORCE_SHUTDOWN_THRESHOLD = 15; // send force_shutdown:true after N failed attempts
 
 // ── Rate limiting ────────────────────────────────────────────────────────────
 const rateLimitWindow = 60000;
