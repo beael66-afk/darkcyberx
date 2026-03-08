@@ -880,6 +880,73 @@ async function handleReceiptSubmit(
   );
 }
 
+// ─── RustDesk ID Flow ──────────────────────────────────
+async function handleRustDeskRegister(supabase: any, chatId: number, token: string) {
+  const customer = await getCustomerByChatId(supabase, chatId);
+  if (!customer) {
+    await sendMessageWithKeyboard(chatId, token,
+      "⚠️ حسابك غير مربوط بعد.",
+      { inline_keyboard: [[{ text: "🔗 ربط حساب", callback_data: "link_account" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
+    );
+    return;
+  }
+
+  // Check if already has a RustDesk ID
+  const { data: existing } = await supabase
+    .from("rustdesk_ids")
+    .select("rustdesk_id, device_label")
+    .eq("customer_id", customer.customer_id)
+    .maybeSingle();
+
+  const existingMsg = existing
+    ? `📌 *ID الجهاز الحالي:* \`${existing.rustdesk_id}\`${existing.device_label ? `\n🏷️ الاسم: ${existing.device_label}` : ""}\n\n`
+    : "";
+
+  await setState(supabase, chatId, "awaiting_rustdesk_label");
+  await sendMessage(chatId, token,
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "🖥️ *تسجيل / تعديل ID جهاز RustDesk*\n" +
+    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+    existingMsg +
+    "✏️ *أدخل اسماً مميزاً للجهاز* (اختياري)\n" +
+    "مثال: `لابتوب المكتب` أو `جهاز البيت`\n\n" +
+    "_(أو أرسل `.` للتخطي)_",
+    "Markdown"
+  );
+}
+
+async function handleRustDeskIdInput(supabase: any, chatId: number, rustdeskId: string, deviceLabel: string | null, token: string) {
+  const customer = await getCustomerByChatId(supabase, chatId);
+  if (!customer) return;
+
+  const label = deviceLabel === "." ? null : deviceLabel;
+
+  const { error } = await supabase
+    .from("rustdesk_ids")
+    .upsert(
+      { customer_id: customer.customer_id, rustdesk_id: rustdeskId, device_label: label, updated_at: new Date().toISOString() },
+      { onConflict: "customer_id" }
+    );
+
+  if (error) {
+    console.error("RustDesk upsert error:", error);
+    await sendMessage(chatId, token, "❌ حدث خطأ. حاول مرة أخرى.");
+    return;
+  }
+
+  await sendMessageWithKeyboard(chatId, token,
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "✅ *تم حفظ ID الجهاز بنجاح!*\n" +
+    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+    `🖥️ *ID الجهاز:* \`${rustdeskId}\`\n` +
+    (label ? `🏷️ *اسم الجهاز:* ${label}\n` : "") +
+    "\n🔑 *كلمة المرور للاتصال:* `123456medoissaA`\n\n" +
+    "سيتمكن فريق الدعم من الاتصال بجهازك عند الحاجة ✅",
+    { inline_keyboard: [[{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
+    "Markdown"
+  );
+}
+
 // ─── Help ──────────────────────────────────────────────
 async function handleHelp(chatId: number, token: string) {
   await sendMessageWithKeyboard(chatId, token,
