@@ -18,6 +18,7 @@ import { z } from "zod";
 import { logActivity } from "@/lib/logger";
 
 type Customer = Tables<"customers">;
+type TelegramLink = { customer_id: string };
 
 const Customers = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -44,6 +45,17 @@ const Customers = () => {
       return data as Customer[];
     }
   });
+
+  // Fetch telegram links to show which customers are linked to the bot
+  const { data: telegramLinks } = useQuery({
+    queryKey: ["telegram-links"],
+    queryFn: async () => {
+      const { data } = await supabase.from("telegram_links").select("customer_id");
+      return (data || []) as TelegramLink[];
+    }
+  });
+
+  const linkedCustomerIds = new Set(telegramLinks?.map(l => l.customer_id) || []);
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -104,10 +116,8 @@ const Customers = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
     try {
       const validated = customerSchema.parse(formData);
-      
       if (editingCustomer) {
         updateMutation.mutate({ id: editingCustomer.id, data: validated as any, name: validated.name });
       } else {
@@ -145,7 +155,7 @@ const Customers = () => {
   );
 
   const totalCustomers = customers?.length || 0;
-  const withAccounts = customers?.filter(c => c.account_created).length || 0;
+  const linkedCount = linkedCustomerIds.size;
   const withCompany = customers?.filter(c => c.company).length || 0;
 
   return (
@@ -154,22 +164,14 @@ const Customers = () => {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">العملاء</h1>
-          <p className="text-muted-foreground mt-1">إدارة بيانات العملاء وحساباتهم</p>
+          <p className="text-muted-foreground mt-1">إدارة بيانات العملاء</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => exportToExcel(filteredCustomers, "customers")}
-          >
+          <Button variant="outline" size="sm" onClick={() => exportToExcel(filteredCustomers, "customers")}>
             <FileSpreadsheet className="ml-2 h-4 w-4" />
             Excel
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => exportToCSV(filteredCustomers, "customers")}
-          >
+          <Button variant="outline" size="sm" onClick={() => exportToCSV(filteredCustomers, "customers")}>
             <FileText className="ml-2 h-4 w-4" />
             CSV
           </Button>
@@ -281,11 +283,11 @@ const Customers = () => {
         <Card className="border-none shadow-sm bg-gradient-to-br from-green-500/10 to-green-500/5">
           <CardContent className="p-4 flex items-center gap-4">
             <div className="rounded-xl bg-green-500/15 p-3">
-              <Mail className="h-5 w-5 text-green-600 dark:text-green-400" />
+              <MessageCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">لديهم حسابات</p>
-              <p className="text-2xl font-bold">{withAccounts}</p>
+              <p className="text-sm text-muted-foreground">مربوطون بالبوت</p>
+              <p className="text-2xl font-bold">{linkedCount}</p>
             </div>
           </CardContent>
         </Card>
@@ -322,7 +324,7 @@ const Customers = () => {
               <TableHead className="font-semibold">البريد الإلكتروني</TableHead>
               <TableHead className="font-semibold">الهاتف</TableHead>
               <TableHead className="font-semibold">الشركة</TableHead>
-              <TableHead className="font-semibold">الحالة</TableHead>
+              <TableHead className="font-semibold">البوت</TableHead>
               <TableHead className="font-semibold text-left">الإجراءات</TableHead>
             </TableRow>
           </TableHeader>
@@ -357,32 +359,20 @@ const Customers = () => {
                   <TableCell className="text-muted-foreground">{customer.phone || "—"}</TableCell>
                   <TableCell className="text-muted-foreground">{customer.company || "—"}</TableCell>
                   <TableCell>
-                    {customer.account_created ? (
-                      <Badge variant="default" className="bg-green-500/15 text-green-700 dark:text-green-400 hover:bg-green-500/20 border-none text-xs">
-                        مفعّل
+                    {linkedCustomerIds.has(customer.id) ? (
+                      <Badge variant="default" className="bg-green-500/15 text-green-700 dark:text-green-400 hover:bg-green-500/20 border-none text-xs gap-1">
+                        <MessageCircle className="h-3 w-3" />
+                        مربوط
                       </Badge>
                     ) : (
-                      <Badge variant="secondary" className="text-xs">
-                        غير مفعّل
+                      <Badge variant="secondary" className="text-xs gap-1">
+                        <MessageCircle className="h-3 w-3 opacity-50" />
+                        غير مربوط
                       </Badge>
                     )}
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
-                      {!customer.account_created && (
-                        <CreateAccountDialog
-                          customerId={customer.id}
-                          customerName={customer.name}
-                          customerEmail={customer.email}
-                          onSuccess={() => queryClient.invalidateQueries({ queryKey: ["customers"] })}
-                        />
-                      )}
-                      {customer.account_created && (
-                        <ViewCredentialsDialog
-                          customerName={customer.name}
-                          customerEmail={customer.email}
-                        />
-                      )}
                       <Button
                         size="sm"
                         variant="ghost"
