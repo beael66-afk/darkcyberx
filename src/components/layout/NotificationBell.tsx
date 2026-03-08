@@ -99,7 +99,7 @@ export function NotificationBell() {
               "absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] text-[10px] font-bold rounded-full flex items-center justify-center px-1",
               highCount > 0
                 ? "bg-destructive text-destructive-foreground"
-                : "bg-yellow-500 text-white"
+                : "bg-warning text-warning-foreground"
             )}
           >
             {totalCount > 9 ? "9+" : totalCount}
@@ -109,7 +109,9 @@ export function NotificationBell() {
 
       {/* Dropdown Panel */}
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-[360px] rounded-xl border bg-popover shadow-xl z-50 overflow-hidden animate-in fade-in-0 slide-in-from-top-1 duration-150">
+        <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-[380px] max-w-[calc(100vw-16px)] rounded-xl border bg-popover text-popover-foreground shadow-xl z-[200] overflow-hidden animate-in fade-in-0 slide-in-from-top-1 duration-150"
+          style={{ right: "auto" }}
+        >
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/30">
             <div className="flex items-center gap-2">
