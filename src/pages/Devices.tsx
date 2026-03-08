@@ -20,11 +20,11 @@ type Device = Tables<"devices">;
 const Devices = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDevices, setSelectedDevices] = useState<Set<string>>(new Set());
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
   const queryClient = useQueryClient();
 
   const toggleGroup = (licenseId: string) => {
-    setCollapsedGroups(prev => {
+    setOpenGroups(prev => {
       const next = new Set(prev);
       if (next.has(licenseId)) next.delete(licenseId);
       else next.add(licenseId);
@@ -221,10 +221,10 @@ const Devices = () => {
             const customerName = (firstDevice?.licenses as any)?.customers?.name;
             const isGroupSelected = groupDevices?.every(d => selectedDevices.has(d.id)) ?? false;
             const isGroupPartial = (groupDevices?.some(d => selectedDevices.has(d.id)) && !isGroupSelected) ?? false;
-            const isCollapsed = collapsedGroups.has(licenseId);
+            const isCollapsed = !openGroups.has(licenseId);
 
             return (
-              <Collapsible key={licenseId} open={!isCollapsed} onOpenChange={() => toggleGroup(licenseId)}>
+              <Collapsible key={licenseId} open={openGroups.has(licenseId)} onOpenChange={() => toggleGroup(licenseId)}>
                 <div className="rounded-lg border bg-card overflow-hidden">
                   {/* License Group Header */}
                   <div className="flex items-center gap-3 px-4 py-3 bg-muted/40 border-b">

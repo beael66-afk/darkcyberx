@@ -47,8 +47,17 @@ const getInitials = (name: string) =>
 
 const RustDeskIds = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [collapsedCustomers, setCollapsedCustomers] = useState<Set<string>>(new Set());
+  const [openCustomers, setOpenCustomers] = useState<Set<string>>(new Set());
   const queryClient = useQueryClient();
+
+  const toggleCustomer = (customerId: string) => {
+    setOpenCustomers(prev => {
+      const next = new Set(prev);
+      if (next.has(customerId)) next.delete(customerId);
+      else next.add(customerId);
+      return next;
+    });
+  };
 
   const { data: entries, isLoading, refetch } = useQuery({
     queryKey: ["rustdesk-ids"],
@@ -97,14 +106,8 @@ const RustDeskIds = () => {
     window.open(`https://rustdesk.com/web/#${cleanId}`, "_blank");
   };
 
-  const toggleCustomer = (customerId: string) => {
-    setCollapsedCustomers(prev => {
-      const next = new Set(prev);
-      if (next.has(customerId)) next.delete(customerId);
-      else next.add(customerId);
-      return next;
-    });
-  };
+
+
 
   // Group entries by customer
   const grouped: CustomerGroup[] = [];
@@ -212,7 +215,7 @@ const RustDeskIds = () => {
       ) : (
         <div className="space-y-4">
           {grouped.map((group) => {
-            const isCollapsed = collapsedCustomers.has(group.customer_id);
+            const isCollapsed = !openCustomers.has(group.customer_id);
             return (
               <Card key={group.customer_id} className="overflow-hidden border shadow-sm">
                 {/* Customer Header */}
