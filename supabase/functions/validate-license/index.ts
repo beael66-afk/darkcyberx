@@ -6,17 +6,18 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
 };
 
-// Rate limiting configuration
-const rateLimitWindow = 60000; // 1 minute
+// ── Auto-block config ────────────────────────────────────────────────────────
+const AUTO_BLOCK_THRESHOLD = 30; // block after N failed attempts
+
+// ── Rate limiting ────────────────────────────────────────────────────────────
+const rateLimitWindow = 60000;
 const maxRequestsPerWindow = 30;
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 
 setInterval(() => {
   const now = Date.now();
   for (const [key, value] of rateLimitMap.entries()) {
-    if (now > value.resetTime) {
-      rateLimitMap.delete(key);
-    }
+    if (now > value.resetTime) rateLimitMap.delete(key);
   }
 }, 300000);
 
@@ -32,7 +33,6 @@ function checkRateLimit(apiKey: string): boolean {
   return true;
 }
 
-// Extract real client IP from request headers
 function getClientIp(req: Request): string {
   const cfIp = req.headers.get('cf-connecting-ip');
   if (cfIp) return cfIp;
@@ -43,7 +43,54 @@ function getClientIp(req: Request): string {
   return 'unknown';
 }
 
-// License key pattern: XXXX-XXXX-XXXX-XXXX (alphanumeric uppercase)
+// ── Auto-block helper ────────────────────────────────────────────────────────
+async function checkAndAutoBlock(
+  supabase: ReturnType<typeof createClient>,
+  clientIp: string
+): Promise<void> {
+  if (clientIp === 'unknown') return;
+
+  const { count } = await supabase
+    .from('logs')
+    .select('id', { count: 'exact', head: true })
+    .eq('entity_type', 'security')
+    .eq('ip_address', clientIp);
+
+  if ((count ?? 0) < AUTO_BLOCK_THRESHOLD) return;
+
+  // Insert — ignore if already blocked
+  const { error } = await supabase
+    .from('blocked_ips')
+    .insert({
+      ip_address: clientIp,
+      reason: `تم الحجب تلقائياً — ${count} محاولة فاشلة (Auto-Block)`,
+    });
+
+  if (error) return; // already exists
+
+  console.warn(`[AUTO-BLOCK] IP ${clientIp} blocked after ${count} failed attempts`);
+
+  // Telegram notification to admin
+  const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
+  const adminChatId = Deno.env.get('ADMIN_TELEGRAM_CHAT_ID');
+  if (botToken && adminChatId) {
+    const msg =
+      `🚫 *تم حجب IP تلقائياً*\n\n` +
+      `🌐 العنوان: \`${clientIp}\`\n` +
+      `🔢 المحاولات: *${count}* محاولة فاشلة\n` +
+      `⏰ الوقت: ${new Date().toLocaleString('ar-EG')}\n\n` +
+      `يمكنك مراجعة وإلغاء الحجب من صفحة *إدارة الـ IP*.`;
+    await fetch(
+      `https://api.telegram.org/bot${botToken}/sendMessage`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: adminChatId, text: msg, parse_mode: 'Markdown' }),
+      }
+    ).catch(() => {/* ignore */});
+  }
+}
+
 const LICENSE_KEY_PATTERN = /^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
 
 serve(async (req) => {
@@ -59,7 +106,7 @@ serve(async (req) => {
 
     const clientIp = getClientIp(req);
 
-    // ── IP Block Check ─────────────────────────────────
+    // ── IP Block Check ────────────────────────────────────────────────────────
     const { data: blockedIp } = await supabase
       .from('blocked_ips')
       .select('id, reason')
@@ -68,7 +115,6 @@ serve(async (req) => {
 
     if (blockedIp) {
       console.warn(`Blocked IP attempted access: ${clientIp}`);
-      // Log blocked attempt
       await supabase.from('logs').insert({
         entity_type: 'security',
         action: 'verified',
@@ -89,6 +135,7 @@ serve(async (req) => {
         description: 'محاولة تفعيل بدون مفتاح API',
         ip_address: clientIp,
       });
+      checkAndAutoBlock(supabase, clientIp);
       return new Response(
         JSON.stringify({ error: 'Missing API key', valid: false }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -103,6 +150,7 @@ serve(async (req) => {
         description: `تجاوز حد الطلبات - مفتاح: ${apiKey.substring(0, 8)}...`,
         ip_address: clientIp,
       });
+      checkAndAutoBlock(supabase, clientIp);
       return new Response(
         JSON.stringify({ error: 'Too many requests. Please try again later.', valid: false }),
         { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -121,6 +169,7 @@ serve(async (req) => {
         description: `محاولة تفعيل بمفتاح API غير صالح - البادئة: ${apiKey.substring(0, 8)}...`,
         ip_address: clientIp,
       });
+      checkAndAutoBlock(supabase, clientIp);
       return new Response(
         JSON.stringify({ error: 'Invalid API key', valid: false }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -134,6 +183,7 @@ serve(async (req) => {
         description: `محاولة تفعيل بمفتاح API معطّل - البادئة: ${apiKey.substring(0, 8)}...`,
         ip_address: clientIp,
       });
+      checkAndAutoBlock(supabase, clientIp);
       return new Response(
         JSON.stringify({ error: 'API key is inactive', valid: false }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -147,6 +197,7 @@ serve(async (req) => {
         description: `محاولة تفعيل بمفتاح API منتهي الصلاحية - البادئة: ${apiKey.substring(0, 8)}...`,
         ip_address: clientIp,
       });
+      checkAndAutoBlock(supabase, clientIp);
       return new Response(
         JSON.stringify({ error: 'API key has expired', valid: false }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -155,7 +206,6 @@ serve(async (req) => {
 
     await supabase.rpc('update_api_key_last_used', { api_key_value: apiKey });
 
-    // Parse and validate request body
     let body: Record<string, unknown>;
     try {
       body = await req.json();
@@ -200,6 +250,7 @@ serve(async (req) => {
         description: `محاولة تفعيل بمفتاح غير موجود: ${license_key}`,
         ip_address: clientIp,
       });
+      checkAndAutoBlock(supabase, clientIp);
       return new Response(
         JSON.stringify({ error: 'License not found', valid: false }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -229,7 +280,6 @@ serve(async (req) => {
     }
 
     if (safeHwid) {
-      // Check if this HWID exists but is disabled (blocked device)
       const { data: blockedDevice } = await supabase
         .from('devices')
         .select('id, is_active')
@@ -247,10 +297,7 @@ serve(async (req) => {
           ip_address: clientIp,
         });
         return new Response(
-          JSON.stringify({
-            error: 'Device is blocked. Please contact support.',
-            valid: false,
-          }),
+          JSON.stringify({ error: 'Device is blocked. Please contact support.', valid: false }),
           { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -297,17 +344,14 @@ serve(async (req) => {
       }
     }
 
-    // Log with IP address
-    await supabase
-      .from('logs')
-      .insert({
-        entity_type: 'license',
-        entity_id: license.id,
-        action: 'verified',
-        description: `License validated via API`,
-        user_id: apiKeyData.user_id,
-        ip_address: clientIp,
-      });
+    await supabase.from('logs').insert({
+      entity_type: 'license',
+      entity_id: license.id,
+      action: 'verified',
+      description: `License validated via API`,
+      user_id: apiKeyData.user_id,
+      ip_address: clientIp,
+    });
 
     return new Response(
       JSON.stringify({
