@@ -73,7 +73,7 @@ const IpManagement = () => {
       const [logsRes, blockedRes, licensesRes] = await Promise.all([
         supabase
           .from("logs")
-          .select("ip_address, created_at, entity_id, entity_type")
+          .select("ip_address, created_at, entity_id, entity_type, description")
           .not("ip_address", "is", null)
           .neq("ip_address", "unknown")
           .order("created_at", { ascending: false })
@@ -87,7 +87,7 @@ const IpManagement = () => {
       const logs = logsRes.data || [];
       const blockedSet = new Set((blockedRes.data || []).map(b => b.ip_address));
 
-      // Build a map: license_key -> customer_name
+      // Build a map: license_id -> customer_name and license_key -> customer_name
       const licenseToCustomer = new Map<string, string>();
       for (const lic of licensesRes.data || []) {
         const customer = lic.customers as { id: string; name: string } | null;
@@ -97,18 +97,27 @@ const IpManagement = () => {
         }
       }
 
-      // Aggregate logs by IP, track which entity_ids appeared for each IP
-      const ipMap = new Map<string, { count: number; lastSeen: string; entityIds: Set<string> }>();
+      // Regex to extract license key from log description
+      const licKeyRegex = /([A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4})/;
+
+      // Aggregate logs by IP
+      const ipMap = new Map<string, { count: number; lastSeen: string; entityIds: Set<string>; attemptedKeys: Set<string> }>();
       for (const log of logs) {
         if (!log.ip_address) continue;
         const existing = ipMap.get(log.ip_address);
+        const keyMatch = log.description ? licKeyRegex.exec(log.description) : null;
+        const extractedKey = keyMatch ? keyMatch[1] : null;
+
         if (!existing) {
           const ids = new Set<string>();
+          const keys = new Set<string>();
           if (log.entity_id) ids.add(log.entity_id);
-          ipMap.set(log.ip_address, { count: 1, lastSeen: log.created_at || "", entityIds: ids });
+          if (extractedKey) keys.add(extractedKey);
+          ipMap.set(log.ip_address, { count: 1, lastSeen: log.created_at || "", entityIds: ids, attemptedKeys: keys });
         } else {
           existing.count++;
           if (log.entity_id) existing.entityIds.add(log.entity_id);
+          if (extractedKey) existing.attemptedKeys.add(extractedKey);
           if ((log.created_at || "") > existing.lastSeen) {
             existing.lastSeen = log.created_at || "";
           }
@@ -116,7 +125,7 @@ const IpManagement = () => {
       }
 
       return Array.from(ipMap.entries())
-        .map(([ip, { count, lastSeen, entityIds }]) => {
+        .map(([ip, { count, lastSeen, entityIds, attemptedKeys }]) => {
           // Find customer name from any license entity seen from this IP
           let customerName: string | null = null;
           for (const id of entityIds) {
@@ -129,6 +138,7 @@ const IpManagement = () => {
             last_seen: lastSeen,
             is_blocked: blockedSet.has(ip),
             customer_name: customerName,
+            attempted_keys: Array.from(attemptedKeys),
           };
         })
         .sort((a, b) => b.request_count - a.request_count) as IpActivity[];
