@@ -307,6 +307,88 @@ async function clearState(supabase: any, chatId: number) {
     .eq("telegram_chat_id", chatId);
 }
 
+// ─── Location Handling ─────────────────────────────────
+async function checkAndRequestLocation(chatId: number, token: string, supabase: any) {
+  // Check if location already saved (in telegram_links)
+  const { data: existingLink } = await supabase
+    .from("telegram_links")
+    .select("latitude")
+    .eq("telegram_chat_id", chatId)
+    .maybeSingle();
+
+  // If already has location OR location is saved → go to main menu
+  if (existingLink && existingLink.latitude !== null) {
+    await sendMainMenu(chatId, token, supabase);
+    return;
+  }
+
+  // Also check if there's NO link yet (brand new user) — still ask for location first
+  // Request location using Reply Keyboard
+  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text:
+        "━━━━━━━━━━━━━━━━━━━━━\n" +
+        "📍 *تحديد الموقع الجغرافي*\n" +
+        "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+        "لاستخدام البوت، نحتاج تحديد موقعك الجغرافي مرة واحدة فقط.\n\n" +
+        "اضغط الزر أدناه لمشاركة موقعك 👇",
+      parse_mode: "Markdown",
+      reply_markup: {
+        keyboard: [[{ text: "📍 مشاركة موقعي", request_location: true }]],
+        resize_keyboard: true,
+        one_time_keyboard: true,
+      },
+    }),
+  });
+}
+
+async function handleLocationReceived(supabase: any, chatId: number, latitude: number, longitude: number, token: string) {
+  // Save location to telegram_links if link exists, otherwise just store in state for later
+  const { data: existingLink } = await supabase
+    .from("telegram_links")
+    .select("id")
+    .eq("telegram_chat_id", chatId)
+    .maybeSingle();
+
+  if (existingLink) {
+    await supabase
+      .from("telegram_links")
+      .update({
+        latitude,
+        longitude,
+        location_updated_at: new Date().toISOString(),
+      })
+      .eq("telegram_chat_id", chatId);
+  } else {
+    // Store in state until they link/register
+    await supabase
+      .from("telegram_user_states")
+      .upsert({
+        telegram_chat_id: chatId,
+        step: "has_location",
+        data: { latitude, longitude },
+        updated_at: new Date().toISOString(),
+      });
+  }
+
+  // Remove the location keyboard and proceed to main menu
+  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text: "✅ *تم حفظ موقعك بنجاح!*",
+      parse_mode: "Markdown",
+      reply_markup: { remove_keyboard: true },
+    }),
+  });
+
+  await sendMainMenu(chatId, token, supabase);
+}
+
 // ─── Main Menu ─────────────────────────────────────────
 async function sendMainMenu(chatId: number, token: string, supabase?: any) {
   // Check if this chat is already linked to a customer
