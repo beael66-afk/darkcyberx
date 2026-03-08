@@ -49,6 +49,7 @@ const menuItems = [
   { title: "بوت التليجرام", url: "/telegram-settings", icon: Bot },
   { title: "الطلبات", url: "/renewal-orders", icon: ShoppingCart },
   { title: "إدارة الـ IP", url: "/ip-management", icon: Shield },
+  { title: "حجب الأجهزة (HWID)", url: "/blocked-hwids", icon: Cpu },
   { title: "التنبيهات الأمنية", url: "/alerts", icon: ShieldAlert },
   { title: "الإعدادات", url: "/settings", icon: Settings },
 ];
