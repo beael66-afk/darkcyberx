@@ -107,7 +107,7 @@ const RustDeskIds = () => {
   };
 
   const toggleCustomer = (customerId: string) => {
-    setCollapsedCustomers(prev => {
+    setOpenCustomers(prev => {
       const next = new Set(prev);
       if (next.has(customerId)) next.delete(customerId);
       else next.add(customerId);
