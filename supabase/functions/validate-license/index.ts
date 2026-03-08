@@ -194,6 +194,12 @@ serve(async (req) => {
 
     if (licenseError || !license) {
       console.log('License validation failed: key not found');
+      await supabase.from('logs').insert({
+        entity_type: 'security',
+        action: 'verified',
+        description: `محاولة تفعيل بمفتاح غير موجود: ${license_key}`,
+        ip_address: clientIp,
+      });
       return new Response(
         JSON.stringify({ error: 'License not found', valid: false }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

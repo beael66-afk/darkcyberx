@@ -35,6 +35,7 @@ interface IpActivity {
   last_seen: string;
   is_blocked: boolean;
   customer_name: string | null;
+  attempted_keys: string[];
 }
 
 const formatDate = (dateStr: string) => {
@@ -72,7 +73,7 @@ const IpManagement = () => {
       const [logsRes, blockedRes, licensesRes] = await Promise.all([
         supabase
           .from("logs")
-          .select("ip_address, created_at, entity_id, entity_type")
+          .select("ip_address, created_at, entity_id, entity_type, description")
           .not("ip_address", "is", null)
           .neq("ip_address", "unknown")
           .order("created_at", { ascending: false })
@@ -86,7 +87,7 @@ const IpManagement = () => {
       const logs = logsRes.data || [];
       const blockedSet = new Set((blockedRes.data || []).map(b => b.ip_address));
 
-      // Build a map: license_key -> customer_name
+      // Build a map: license_id -> customer_name and license_key -> customer_name
       const licenseToCustomer = new Map<string, string>();
       for (const lic of licensesRes.data || []) {
         const customer = lic.customers as { id: string; name: string } | null;
@@ -96,18 +97,27 @@ const IpManagement = () => {
         }
       }
 
-      // Aggregate logs by IP, track which entity_ids appeared for each IP
-      const ipMap = new Map<string, { count: number; lastSeen: string; entityIds: Set<string> }>();
+      // Regex to extract license key from log description
+      const licKeyRegex = /([A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4})/;
+
+      // Aggregate logs by IP
+      const ipMap = new Map<string, { count: number; lastSeen: string; entityIds: Set<string>; attemptedKeys: Set<string> }>();
       for (const log of logs) {
         if (!log.ip_address) continue;
         const existing = ipMap.get(log.ip_address);
+        const keyMatch = log.description ? licKeyRegex.exec(log.description) : null;
+        const extractedKey = keyMatch ? keyMatch[1] : null;
+
         if (!existing) {
           const ids = new Set<string>();
+          const keys = new Set<string>();
           if (log.entity_id) ids.add(log.entity_id);
-          ipMap.set(log.ip_address, { count: 1, lastSeen: log.created_at || "", entityIds: ids });
+          if (extractedKey) keys.add(extractedKey);
+          ipMap.set(log.ip_address, { count: 1, lastSeen: log.created_at || "", entityIds: ids, attemptedKeys: keys });
         } else {
           existing.count++;
           if (log.entity_id) existing.entityIds.add(log.entity_id);
+          if (extractedKey) existing.attemptedKeys.add(extractedKey);
           if ((log.created_at || "") > existing.lastSeen) {
             existing.lastSeen = log.created_at || "";
           }
@@ -115,7 +125,7 @@ const IpManagement = () => {
       }
 
       return Array.from(ipMap.entries())
-        .map(([ip, { count, lastSeen, entityIds }]) => {
+        .map(([ip, { count, lastSeen, entityIds, attemptedKeys }]) => {
           // Find customer name from any license entity seen from this IP
           let customerName: string | null = null;
           for (const id of entityIds) {
@@ -128,6 +138,7 @@ const IpManagement = () => {
             last_seen: lastSeen,
             is_blocked: blockedSet.has(ip),
             customer_name: customerName,
+            attempted_keys: Array.from(attemptedKeys),
           };
         })
         .sort((a, b) => b.request_count - a.request_count) as IpActivity[];
@@ -363,10 +374,24 @@ const IpManagement = () => {
                             <span className="text-sm font-medium">{item.customer_name}</span>
                           </div>
                         ) : (
-                          <Badge variant="outline" className="gap-1 text-xs text-destructive border-destructive/30 bg-destructive/5">
-                            <AlertTriangle className="h-3 w-3" />
-                            سبام
-                          </Badge>
+                          <div className="flex flex-col gap-1">
+                            <Badge variant="outline" className="gap-1 text-xs text-destructive border-destructive/30 bg-destructive/5 w-fit">
+                              <AlertTriangle className="h-3 w-3" />
+                              سبام
+                            </Badge>
+                            {item.attempted_keys.length > 0 && (
+                              <div className="flex flex-col gap-0.5">
+                                {item.attempted_keys.slice(0, 3).map(key => (
+                                  <code key={key} className="text-[10px] font-mono text-muted-foreground bg-muted px-1 py-0.5 rounded w-fit">
+                                    {key}
+                                  </code>
+                                ))}
+                                {item.attempted_keys.length > 3 && (
+                                  <span className="text-[10px] text-muted-foreground">+{item.attempted_keys.length - 3} أخرى</span>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         )}
                       </TableCell>
                       <TableCell>
