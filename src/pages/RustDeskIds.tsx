@@ -72,7 +72,12 @@ const RustDeskIds = () => {
     toast.success(`تم نسخ ${label}`);
   };
 
-  const openRustDesk = (rustdeskId: string) => {
+  const openRustDeskApp = (rustdeskId: string) => {
+    // Open locally installed RustDesk app via URL protocol
+    window.location.href = `rustdesk://connection/new/${rustdeskId}`;
+  };
+
+  const openRustDeskWeb = (rustdeskId: string) => {
     window.open(`https://web.rustdesk.com/?id=${rustdeskId}&password=${RUSTDESK_PASSWORD}`, "_blank");
   };
 
@@ -212,14 +217,25 @@ const RustDeskIds = () => {
                     {formatDate(entry.updated_at)}
                   </TableCell>
                   <TableCell>
-                    <div className="flex gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
+                      <div className="flex gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
                       <Button
                         size="sm"
                         className="h-8 gap-1 text-xs"
-                        onClick={() => openRustDesk(entry.rustdesk_id)}
+                        onClick={() => openRustDeskApp(entry.rustdesk_id)}
+                        title="فتح تطبيق RustDesk المثبت"
                       >
                         <ExternalLink className="h-3.5 w-3.5" />
-                        اتصل الآن
+                        اتصل (تطبيق)
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 gap-1 text-xs"
+                        onClick={() => openRustDeskWeb(entry.rustdesk_id)}
+                        title="فتح RustDesk عبر المتصفح"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        ويب
                       </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
