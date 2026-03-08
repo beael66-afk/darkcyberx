@@ -440,7 +440,12 @@ export default function ApiCredentials() {
                   className="flex items-center justify-between p-4 border rounded-lg"
                 >
                   <div className="flex-1">
-                    <p className="font-medium">{apiKey.name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium">{apiKey.name}</p>
+                      <Badge variant={apiKey.is_active ? "default" : "destructive"} className="text-xs">
+                        {apiKey.is_active ? "نشط" : "معطّل"}
+                      </Badge>
+                    </div>
                     <div className="flex items-center gap-2 mt-1">
                       <code className="text-sm text-muted-foreground">
                         {apiKey.key_masked}
@@ -451,6 +456,21 @@ export default function ApiCredentials() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant={apiKey.is_active ? "outline" : "outline"}
+                      className={apiKey.is_active
+                        ? "border-yellow-500 text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-950"
+                        : "border-green-500 text-green-600 hover:bg-green-50 dark:hover:bg-green-950"
+                      }
+                      onClick={() => toggleApiKey(apiKey.id, apiKey.is_active ?? true)}
+                    >
+                      {apiKey.is_active ? (
+                        <><PowerOff className="h-4 w-4 ml-1" /> تعطيل</>
+                      ) : (
+                        <><Power className="h-4 w-4 ml-1" /> تفعيل</>
+                      )}
+                    </Button>
                     <Button
                       size="sm"
                       variant="destructive"
