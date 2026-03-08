@@ -122,6 +122,12 @@ Deno.serve(async (req) => {
     const text = message.text?.trim() || "";
     const photo = message.photo; // array of photo sizes or undefined
 
+    // Handle message_type = new_chat_members (user just joined / opened chat)
+    if (message?.new_chat_members || message?.chat?.type === "private" && !text && !photo) {
+      await sendMainMenu(chatId, TELEGRAM_BOT_TOKEN, supabase);
+      return new Response("OK", { status: 200 });
+    }
+
     // Clear state on new command
     if (text.startsWith("/")) {
       await clearState(supabase, chatId);
@@ -262,10 +268,8 @@ Deno.serve(async (req) => {
       return new Response("OK", { status: 200 });
     }
 
-    // No state - unknown message
-    await sendMessage(chatId, TELEGRAM_BOT_TOKEN,
-      "❓ أمر غير معروف.\nاضغط /start لعرض القائمة الرئيسية."
-    );
+    // No state - greet automatically as if they pressed /start
+    await sendMainMenu(chatId, TELEGRAM_BOT_TOKEN, supabase);
   } catch (error) {
     console.error("Telegram bot error:", error);
   }
