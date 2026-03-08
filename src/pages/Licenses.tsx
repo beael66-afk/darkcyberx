@@ -3,8 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Copy, Trash2, Edit, FileSpreadsheet, FileText, RefreshCw, KeyRound, Loader2 } from "lucide-react";
-import { RenewalTokenDialog } from "@/components/licenses/RenewalTokenDialog";
+import { Plus, Search, Copy, Trash2, Edit, FileSpreadsheet, FileText, KeyRound, Loader2 } from "lucide-react";
 import { exportToExcel, exportToCSV } from "@/lib/exportUtils";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -70,7 +69,7 @@ const Licenses = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [licenseToDelete, setLicenseToDelete] = useState<{ id: string; key: string } | null>(null);
   const [editingLicense, setEditingLicense] = useState<License | null>(null);
-  const [renewalLicense, setRenewalLicense] = useState<License | null>(null);
+  
   const [regenerateLicense, setRegenerateLicense] = useState<License | null>(null);
   const [isRegenerateDialogOpen, setIsRegenerateDialogOpen] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
@@ -591,14 +590,6 @@ const Licenses = () => {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => setRenewalLicense(license)}
-                          title="رموز التجديد"
-                        >
-                          <RefreshCw className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
                           onClick={() => { setRegenerateLicense(license); setIsRegenerateDialogOpen(true); }}
                           title="تجديد مفتاح الترخيص"
                           className="text-warning hover:text-warning/80 hover:bg-warning/10"
@@ -679,16 +670,6 @@ const Licenses = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {renewalLicense && (
-        <RenewalTokenDialog
-          open={!!renewalLicense}
-          onOpenChange={(open) => !open && setRenewalLicense(null)}
-          licenseId={renewalLicense.id}
-          licenseKey={renewalLicense.license_key}
-          customerName={renewalLicense.customer?.name || null}
-        />
-      )}
     </div>
   );
 };

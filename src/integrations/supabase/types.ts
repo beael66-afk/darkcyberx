@@ -504,47 +504,6 @@ export type Database = {
           },
         ]
       }
-      renewal_tokens: {
-        Row: {
-          created_at: string
-          expires_at: string
-          id: string
-          is_used: boolean
-          license_id: string
-          renewal_days: number
-          token: string
-          used_at: string | null
-        }
-        Insert: {
-          created_at?: string
-          expires_at?: string
-          id?: string
-          is_used?: boolean
-          license_id: string
-          renewal_days?: number
-          token?: string
-          used_at?: string | null
-        }
-        Update: {
-          created_at?: string
-          expires_at?: string
-          id?: string
-          is_used?: boolean
-          license_id?: string
-          renewal_days?: number
-          token?: string
-          used_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "renewal_tokens_license_id_fkey"
-            columns: ["license_id"]
-            isOneToOne: false
-            referencedRelation: "licenses"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       telegram_links: {
         Row: {
           created_at: string
