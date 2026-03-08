@@ -590,14 +590,6 @@ const Licenses = () => {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => setRenewalLicense(license)}
-                          title="رموز التجديد"
-                        >
-                          <RefreshCw className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
                           onClick={() => { setRegenerateLicense(license); setIsRegenerateDialogOpen(true); }}
                           title="تجديد مفتاح الترخيص"
                           className="text-warning hover:text-warning/80 hover:bg-warning/10"
