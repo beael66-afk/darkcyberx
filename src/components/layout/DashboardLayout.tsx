@@ -5,6 +5,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { ThemeToggle } from "./ThemeToggle";
 import { AiAssistant } from "@/components/ai/AiAssistant";
+import { NotificationBell } from "./NotificationBell";
 import { User } from "@supabase/supabase-js";
 
 export const DashboardLayout = () => {
