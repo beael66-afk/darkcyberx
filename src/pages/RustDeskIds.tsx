@@ -72,7 +72,12 @@ const RustDeskIds = () => {
     toast.success(`تم نسخ ${label}`);
   };
 
-  const openRustDesk = (rustdeskId: string) => {
+  const openRustDeskApp = (rustdeskId: string) => {
+    // Open locally installed RustDesk app via URL protocol
+    window.location.href = `rustdesk://connection/new/${rustdeskId}`;
+  };
+
+  const openRustDeskWeb = (rustdeskId: string) => {
     window.open(`https://web.rustdesk.com/?id=${rustdeskId}&password=${RUSTDESK_PASSWORD}`, "_blank");
   };
 
