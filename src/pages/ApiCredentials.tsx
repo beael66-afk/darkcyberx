@@ -264,12 +264,14 @@ export default function ApiCredentials() {
 
       if (keyError) throw keyError;
 
+      // Store only the hash (via trigger), not the plaintext key
+      // The trigger hash_api_key() will hash it and then we clear it
       const { error: insertError } = await supabase
         .from('api_keys')
         .insert({
           user_id: user.id,
           name: newKeyName,
-          key: keyData
+          key: keyData  // trigger will hash → key_hash, we rely on hash for validation
         });
 
       if (insertError) throw insertError;
