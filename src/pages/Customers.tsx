@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, Edit, Trash2, FileSpreadsheet, FileText, Users, Building2, Mail, Phone, StickyNote, MessageCircle } from "lucide-react";
+import { Plus, Search, Edit, Trash2, FileSpreadsheet, FileText, Users, Building2, Mail, StickyNote, MessageCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { exportToExcel, exportToCSV } from "@/lib/exportUtils";
@@ -217,30 +217,6 @@ const Customers = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="phone" className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    رقم الهاتف
-                  </Label>
-                  <Input
-                    id="phone"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="01xxxxxxxxx"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="company" className="flex items-center gap-2">
-                    <Building2 className="h-4 w-4 text-muted-foreground" />
-                    الشركة
-                  </Label>
-                  <Input
-                    id="company"
-                    value={formData.company}
-                    onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                    placeholder="اسم الشركة (اختياري)"
-                  />
-                </div>
-                <div className="space-y-2">
                   <Label htmlFor="notes" className="flex items-center gap-2">
                     <StickyNote className="h-4 w-4 text-muted-foreground" />
                     ملاحظات
@@ -291,17 +267,6 @@ const Customers = () => {
             </div>
           </CardContent>
         </Card>
-        <Card className="border-none shadow-sm bg-gradient-to-br from-blue-500/10 to-blue-500/5">
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="rounded-xl bg-blue-500/15 p-3">
-              <Building2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">شركات</p>
-              <p className="text-2xl font-bold">{withCompany}</p>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Search */}
@@ -322,8 +287,6 @@ const Customers = () => {
             <TableRow className="bg-muted/50 hover:bg-muted/50">
               <TableHead className="font-semibold">العميل</TableHead>
               <TableHead className="font-semibold">البريد الإلكتروني</TableHead>
-              <TableHead className="font-semibold">الهاتف</TableHead>
-              <TableHead className="font-semibold">الشركة</TableHead>
               <TableHead className="font-semibold">البوت</TableHead>
               <TableHead className="font-semibold text-left">الإجراءات</TableHead>
             </TableRow>
@@ -331,13 +294,13 @@ const Customers = () => {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+                <TableCell colSpan={4} className="text-center py-12 text-muted-foreground">
                   جاري التحميل...
                 </TableCell>
               </TableRow>
             ) : filteredCustomers?.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-12">
+                <TableCell colSpan={4} className="text-center py-12">
                   <div className="flex flex-col items-center gap-2 text-muted-foreground">
                     <Users className="h-10 w-10 opacity-30" />
                     <p>لا توجد عملاء</p>
@@ -356,8 +319,6 @@ const Customers = () => {
                     </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground">{customer.email}</TableCell>
-                  <TableCell className="text-muted-foreground">{customer.phone || "—"}</TableCell>
-                  <TableCell className="text-muted-foreground">{customer.company || "—"}</TableCell>
                   <TableCell>
                     {linkedCustomerIds.has(customer.id) ? (
                       <Badge variant="default" className="bg-green-500/15 text-green-700 dark:text-green-400 hover:bg-green-500/20 border-none text-xs gap-1">
