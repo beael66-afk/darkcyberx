@@ -9,7 +9,9 @@ import {
   Download,
   Filter,
   ChevronRight,
+  ChevronDown,
   CheckCircle2,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +28,7 @@ import { useSecurityAlerts, SecurityAlert } from "@/hooks/useSecurityAlerts";
 import { exportToCSV } from "@/lib/exportUtils";
 import { useQueryClient } from "@tanstack/react-query";
 
-// ── config ───────────────────────────────────────────────────────────────────
+// ── config ────────────────────────────────────────────────────────────────────
 const typeLabels: Record<SecurityAlert["type"], string> = {
   suspicious_ip: "IP مشبوه",
   shared_hwid: "HWID مشترك",
@@ -49,31 +51,31 @@ const severityLabels: Record<SecurityAlert["severity"], string> = {
 
 const severityConfig: Record<
   SecurityAlert["severity"],
-  { dot: string; bg: string; border: string; text: string; badge: string; badgeVariant: string }
+  { dot: string; bg: string; expandBg: string; border: string; text: string; badge: string }
 > = {
   high: {
     dot: "bg-destructive",
-    bg: "bg-destructive/5 hover:bg-destructive/10",
+    bg: "hover:bg-destructive/5",
+    expandBg: "bg-destructive/5 border-t border-destructive/10",
     border: "border-destructive/30",
     text: "text-destructive",
     badge: "bg-destructive text-destructive-foreground",
-    badgeVariant: "destructive",
   },
   medium: {
     dot: "bg-warning",
-    bg: "bg-warning/5 hover:bg-warning/10",
+    bg: "hover:bg-warning/5",
+    expandBg: "bg-warning/5 border-t border-warning/10",
     border: "border-warning/30",
     text: "text-warning-foreground",
     badge: "bg-warning text-warning-foreground",
-    badgeVariant: "warning",
   },
   low: {
     dot: "bg-primary",
-    bg: "bg-primary/5 hover:bg-primary/10",
+    bg: "hover:bg-primary/5",
+    expandBg: "bg-primary/5 border-t border-primary/10",
     border: "border-primary/30",
     text: "text-primary",
     badge: "bg-primary text-primary-foreground",
-    badgeVariant: "default",
   },
 };
 
@@ -102,6 +104,51 @@ function StatCard({
   );
 }
 
+// ── detail panel ──────────────────────────────────────────────────────────────
+function AlertDetailPanel({ alert, onNavigate }: { alert: SecurityAlert; onNavigate: () => void }) {
+  const cfg = severityConfig[alert.severity];
+  if (!alert.details || alert.details.length === 0) {
+    return (
+      <div className={cn("px-6 py-4", cfg.expandBg)}>
+        <p className="text-sm text-muted-foreground">لا توجد تفاصيل إضافية.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn("px-6 py-4 space-y-1", cfg.expandBg)}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 mb-3">
+        {alert.details.map((d, i) => (
+          <div key={i} className="flex items-start gap-2 min-w-0">
+            {d.label && (
+              <span className="text-xs text-muted-foreground shrink-0 w-28 text-left pt-0.5">
+                {d.label}
+              </span>
+            )}
+            <span
+              className={cn(
+                "text-xs break-all",
+                d.mono && "font-mono bg-muted px-1.5 py-0.5 rounded",
+                d.highlight && cfg.text,
+                d.highlight && "font-semibold",
+                !d.label && "mr-28"
+              )}
+            >
+              {d.value}
+            </span>
+          </div>
+        ))}
+      </div>
+      <div className="pt-2 flex">
+        <Button size="sm" variant="outline" className="gap-1.5 text-xs h-7" onClick={onNavigate}>
+          <ExternalLink className="h-3.5 w-3.5" />
+          الانتقال للصفحة المختصة
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 // ── main page ─────────────────────────────────────────────────────────────────
 export default function Alerts() {
   const navigate = useNavigate();
@@ -111,8 +158,8 @@ export default function Alerts() {
 
   const [filterType, setFilterType] = useState<string>("all");
   const [filterSeverity, setFilterSeverity] = useState<string>("all");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  // ── derived ────────────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
     return alerts.filter((a) => {
       if (filterType !== "all" && a.type !== filterType) return false;
@@ -129,7 +176,6 @@ export default function Alerts() {
     ? new Date(dataUpdatedAt).toLocaleTimeString("ar-EG")
     : "—";
 
-  // ── export ─────────────────────────────────────────────────────────────────
   const handleExport = () => {
     const rows = filtered.map((a) => ({
       النوع: typeLabels[a.type],
@@ -142,10 +188,13 @@ export default function Alerts() {
     exportToCSV(rows, `security-alerts-${new Date().toISOString().slice(0, 10)}`);
   };
 
-  // ── render ─────────────────────────────────────────────────────────────────
+  const toggleExpand = (id: string) => {
+    setExpandedId((prev) => (prev === id ? null : id));
+  };
+
   return (
     <div className="space-y-6">
-      {/* Page header */}
+      {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -211,9 +260,7 @@ export default function Alerts() {
             <Filter className="h-4 w-4" />
             فلترة النتائج
             {(filterType !== "all" || filterSeverity !== "all") && (
-              <Badge variant="secondary" className="text-[10px]">
-                فعّال
-              </Badge>
+              <Badge variant="secondary" className="text-[10px]">فعّال</Badge>
             )}
           </CardTitle>
         </CardHeader>
@@ -286,59 +333,80 @@ export default function Alerts() {
             <div className="divide-y">
               {filtered.map((alert) => {
                 const cfg = severityConfig[alert.severity];
+                const isExpanded = expandedId === alert.id;
+                const hasDetails = alert.details && alert.details.length > 0;
+
                 return (
-                  <div
-                    key={alert.id}
-                    className={cn(
-                      "flex items-start gap-4 px-5 py-4 cursor-pointer transition-colors group",
-                      cfg.bg
-                    )}
-                    onClick={() => navigate(alert.link)}
-                  >
-                    {/* Severity dot */}
-                    <div className="mt-1 shrink-0">
-                      <div
-                        className={cn(
-                          "h-2.5 w-2.5 rounded-full",
-                          cfg.dot,
-                          alert.severity === "high" && "animate-pulse"
-                        )}
-                      />
-                    </div>
-
-                    {/* Icon */}
-                    <div className={cn("mt-0.5 shrink-0", cfg.text)}>
-                      {typeIcons[alert.type]}
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <p className="font-semibold text-sm">{alert.title}</p>
-                        <span
+                  <div key={alert.id}>
+                    {/* Row */}
+                    <div
+                      className={cn(
+                        "flex items-start gap-4 px-5 py-4 cursor-pointer transition-colors group",
+                        cfg.bg,
+                        isExpanded && "bg-muted/30"
+                      )}
+                      onClick={() => toggleExpand(alert.id)}
+                    >
+                      {/* Severity dot */}
+                      <div className="mt-2 shrink-0">
+                        <div
                           className={cn(
-                            "text-[10px] font-bold rounded-full px-2 py-0.5",
-                            cfg.badge
+                            "h-2.5 w-2.5 rounded-full",
+                            cfg.dot,
+                            alert.severity === "high" && "animate-pulse"
                           )}
-                        >
-                          {severityLabels[alert.severity]}
-                        </span>
-                        <span className="text-[10px] rounded-full px-2 py-0.5 bg-muted text-muted-foreground">
-                          {typeLabels[alert.type]}
-                        </span>
-                        {alert.count !== undefined && (
-                          <span className="text-[10px] font-bold rounded-full px-2 py-0.5 bg-secondary text-secondary-foreground mr-auto">
-                            العدد: {alert.count}
+                        />
+                      </div>
+
+                      {/* Icon */}
+                      <div className={cn("mt-0.5 shrink-0", cfg.text)}>
+                        {typeIcons[alert.type]}
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <p className="font-semibold text-sm">{alert.title}</p>
+                          <span className={cn("text-[10px] font-bold rounded-full px-2 py-0.5", cfg.badge)}>
+                            {severityLabels[alert.severity]}
                           </span>
+                          <span className="text-[10px] rounded-full px-2 py-0.5 bg-muted text-muted-foreground">
+                            {typeLabels[alert.type]}
+                          </span>
+                          {alert.count !== undefined && (
+                            <span className="text-[10px] font-bold rounded-full px-2 py-0.5 bg-secondary text-secondary-foreground mr-auto">
+                              العدد: {alert.count}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          {alert.description}
+                        </p>
+                        {hasDetails && (
+                          <p className={cn("text-[11px] mt-1 font-medium", cfg.text)}>
+                            {isExpanded ? "▲ إخفاء التفاصيل" : "▼ عرض التفاصيل الكاملة"}
+                          </p>
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        {alert.description}
-                      </p>
+
+                      {/* Chevron */}
+                      <div className="shrink-0 mt-1 transition-transform duration-200"
+                        style={{ transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)" }}
+                      >
+                        {hasDetails
+                          ? <ChevronDown className={cn("h-4 w-4 text-muted-foreground", isExpanded && "rotate-180")} />
+                          : <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                        }
+                      </div>
                     </div>
 
-                    {/* Arrow */}
-                    <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    {/* Expanded detail panel */}
+                    {isExpanded && (
+                      <AlertDetailPanel
+                        alert={alert}
+                        onNavigate={() => navigate(alert.link)}
+                      />
+                    )}
                   </div>
                 );
               })}
