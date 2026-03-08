@@ -6,10 +6,22 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Search, Filter, FileText, UserPlus, Edit, Trash, Check, X, FileSpreadsheet } from "lucide-react";
 import { exportToExcel, exportToCSV } from "@/lib/exportUtils";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
+import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Log = Tables<"logs">;
@@ -20,6 +32,9 @@ const Logs = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [actionFilter, setActionFilter] = useState("all");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchLogs();
@@ -27,6 +42,8 @@ const Logs = () => {
 
   useEffect(() => {
     filterLogs();
+    // Clear selection when filter changes
+    setSelectedIds(new Set());
   }, [searchTerm, actionFilter, logs]);
 
   const fetchLogs = async () => {
@@ -62,6 +79,45 @@ const Logs = () => {
     }
 
     setFilteredLogs(filtered);
+  };
+
+  const allVisibleSelected =
+    filteredLogs.length > 0 && filteredLogs.every((log) => selectedIds.has(log.id));
+  const someSelected = selectedIds.size > 0;
+
+  const toggleSelectAll = () => {
+    if (allVisibleSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredLogs.map((l) => l.id)));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleDeleteSelected = async () => {
+    setDeleting(true);
+    try {
+      const ids = Array.from(selectedIds);
+      const { error } = await supabase.from("logs").delete().in("id", ids);
+      if (error) throw error;
+      toast.success(`تم حذف ${ids.length} سجل بنجاح`);
+      setSelectedIds(new Set());
+      setShowDeleteDialog(false);
+      await fetchLogs();
+    } catch (error: any) {
+      toast.error("فشل حذف السجلات");
+      console.error(error);
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const getActionIcon = (action: string) => {
@@ -181,10 +237,34 @@ const Logs = () => {
       </Card>
 
       <Card>
+        {/* Bulk action bar */}
+        {someSelected && (
+          <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/50">
+            <span className="text-sm font-medium">
+              تم تحديد <strong>{selectedIds.size}</strong> سجل
+            </span>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setShowDeleteDialog(true)}
+            >
+              <Trash className="ml-2 h-4 w-4" />
+              حذف المحدد
+            </Button>
+          </div>
+        )}
+
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10">
+                  <Checkbox
+                    checked={allVisibleSelected}
+                    onCheckedChange={toggleSelectAll}
+                    aria-label="تحديد الكل"
+                  />
+                </TableHead>
                 <TableHead>التاريخ والوقت</TableHead>
                 <TableHead>الإجراء</TableHead>
                 <TableHead>النوع</TableHead>
@@ -195,21 +275,31 @@ const Logs = () => {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8">
+                  <TableCell colSpan={6} className="text-center py-8">
                     جاري التحميل...
                   </TableCell>
                 </TableRow>
               ) : filteredLogs.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                     لا توجد سجلات
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredLogs.map((log) => (
-                  <TableRow key={log.id}>
+                  <TableRow
+                    key={log.id}
+                    className={selectedIds.has(log.id) ? "bg-muted/40" : ""}
+                  >
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedIds.has(log.id)}
+                        onCheckedChange={() => toggleSelect(log.id)}
+                        aria-label="تحديد السجل"
+                      />
+                    </TableCell>
                     <TableCell className="font-mono text-sm">
-                      {format(new Date(log.created_at), "dd MMM yyyy، HH:mm:ss", {
+                      {format(new Date(log.created_at!), "dd MMM yyyy، HH:mm:ss", {
                         locale: ar,
                       })}
                     </TableCell>
@@ -238,9 +328,7 @@ const Logs = () => {
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center">
-              <p className="text-2xl font-bold text-primary">
-                {logs.length}
-              </p>
+              <p className="text-2xl font-bold text-primary">{logs.length}</p>
               <p className="text-sm text-muted-foreground">إجمالي السجلات</p>
             </div>
             <div className="text-center">
@@ -264,6 +352,28 @@ const Logs = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Confirm delete dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من حذف <strong>{selectedIds.size}</strong> سجل؟ هذا الإجراء لا يمكن التراجع عنه.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteSelected}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "جاري الحذف..." : "حذف"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
