@@ -374,10 +374,24 @@ const IpManagement = () => {
                             <span className="text-sm font-medium">{item.customer_name}</span>
                           </div>
                         ) : (
-                          <Badge variant="outline" className="gap-1 text-xs text-destructive border-destructive/30 bg-destructive/5">
-                            <AlertTriangle className="h-3 w-3" />
-                            سبام
-                          </Badge>
+                          <div className="flex flex-col gap-1">
+                            <Badge variant="outline" className="gap-1 text-xs text-destructive border-destructive/30 bg-destructive/5 w-fit">
+                              <AlertTriangle className="h-3 w-3" />
+                              سبام
+                            </Badge>
+                            {item.attempted_keys.length > 0 && (
+                              <div className="flex flex-col gap-0.5">
+                                {item.attempted_keys.slice(0, 3).map(key => (
+                                  <code key={key} className="text-[10px] font-mono text-muted-foreground bg-muted px-1 py-0.5 rounded w-fit">
+                                    {key}
+                                  </code>
+                                ))}
+                                {item.attempted_keys.length > 3 && (
+                                  <span className="text-[10px] text-muted-foreground">+{item.attempted_keys.length - 3} أخرى</span>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         )}
                       </TableCell>
                       <TableCell>
