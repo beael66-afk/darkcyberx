@@ -161,6 +161,31 @@ Deno.serve(async (req) => {
       return new Response("OK", { status: 200 });
     }
 
+    if (state?.step === "awaiting_rustdesk_id") {
+      const rdId = text.trim();
+      if (!rdId || rdId.length < 6) {
+        await sendMessage(chatId, TELEGRAM_BOT_TOKEN, "⚠️ الـ ID يبدو غير صحيح. أرسل الـ ID من برنامج RustDesk:");
+        return new Response("OK", { status: 200 });
+      }
+      await handleRustDeskIdInput(supabase, chatId, rdId, state.data?.deviceLabel, TELEGRAM_BOT_TOKEN);
+      await clearState(supabase, chatId);
+      return new Response("OK", { status: 200 });
+    }
+
+    if (state?.step === "awaiting_rustdesk_label") {
+      const label = text.trim() || null;
+      await setState(supabase, chatId, "awaiting_rustdesk_id", { deviceLabel: label });
+      await sendMessage(chatId, TELEGRAM_BOT_TOKEN,
+        "━━━━━━━━━━━━━━━━━━━━━\n" +
+        "🖥️ *أرسل الآن ID جهازك من برنامج RustDesk*\n" +
+        "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+        "افتح برنامج RustDesk على جهازك وأرسل الرقم الظاهر في الواجهة الرئيسية.\n\n" +
+        "مثال: `123456789`",
+        "Markdown"
+      );
+      return new Response("OK", { status: 200 });
+    }
+
     if (state?.step === "awaiting_days") {
       if (/^\d+$/.test(text)) {
         await handleDaysInput(supabase, chatId, parseInt(text), state.data?.licenseKey, TELEGRAM_BOT_TOKEN);
