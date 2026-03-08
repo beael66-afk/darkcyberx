@@ -553,8 +553,11 @@ const Licenses = () => {
               ) : (
                 filteredLicenses.map((license) => (
                   <TableRow key={license.id}>
-                    <TableCell className="font-mono text-sm">
-                      {license.license_key}
+                    <TableCell>
+                      <div className="font-mono text-sm">{license.license_key}</div>
+                      {license.customer?.name && (
+                        <div className="text-xs text-muted-foreground mt-0.5">{license.customer.name}</div>
+                      )}
                     </TableCell>
                     <TableCell>{license.customer?.name || "-"}</TableCell>
                     <TableCell>{license.product?.name || "-"}</TableCell>
