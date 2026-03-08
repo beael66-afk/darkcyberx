@@ -941,7 +941,10 @@ async function handleRustDeskRegister(supabase: any, chatId: number, token: stri
     existingMsg = "📋 *أجهزتك المسجّلة:*\n";
     devices.forEach((d: any, i: number) => {
       existingMsg += `${i + 1}. \`${d.rustdesk_id}\`${d.device_label ? ` — ${d.device_label}` : ""}\n`;
-      buttons.push([{ text: `🗑️ حذف: ${d.device_label || d.rustdesk_id}`, callback_data: `rustdesk_delete_${d.id}` }]);
+      buttons.push([
+        { text: `✏️ تعديل: ${d.device_label || d.rustdesk_id}`, callback_data: `rustdesk_edit_${d.id}` },
+        { text: `🗑️ حذف`, callback_data: `rustdesk_delete_${d.id}` },
+      ]);
     });
     existingMsg += "\n";
   }
