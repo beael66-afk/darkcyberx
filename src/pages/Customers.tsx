@@ -267,17 +267,6 @@ const Customers = () => {
             </div>
           </CardContent>
         </Card>
-        <Card className="border-none shadow-sm bg-gradient-to-br from-blue-500/10 to-blue-500/5">
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="rounded-xl bg-blue-500/15 p-3">
-              <Building2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">شركات</p>
-              <p className="text-2xl font-bold">{withCompany}</p>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Search */}
