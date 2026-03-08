@@ -14,6 +14,7 @@ import {
   Bell,
   Bot,
   ShoppingCart,
+  Shield,
 } from "lucide-react";
 import {
   Sidebar,
