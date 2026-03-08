@@ -47,8 +47,17 @@ const getInitials = (name: string) =>
 
 const RustDeskIds = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [collapsedCustomers, setCollapsedCustomers] = useState<Set<string>>(new Set());
+  const [openCustomers, setOpenCustomers] = useState<Set<string>>(new Set());
   const queryClient = useQueryClient();
+
+  const toggleCustomer = (customerId: string) => {
+    setOpenCustomers(prev => {
+      const next = new Set(prev);
+      if (next.has(customerId)) next.delete(customerId);
+      else next.add(customerId);
+      return next;
+    });
+  };
 
   const { data: entries, isLoading, refetch } = useQuery({
     queryKey: ["rustdesk-ids"],
