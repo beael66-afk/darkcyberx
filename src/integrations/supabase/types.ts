@@ -381,30 +381,39 @@ export type Database = {
       registration_requests: {
         Row: {
           admin_note: string | null
+          amount: number | null
           created_at: string
           email: string
           id: string
           name: string
+          receipt_note: string | null
+          requested_days: number | null
           status: string
           telegram_chat_id: number
           updated_at: string
         }
         Insert: {
           admin_note?: string | null
+          amount?: number | null
           created_at?: string
           email: string
           id?: string
           name: string
+          receipt_note?: string | null
+          requested_days?: number | null
           status?: string
           telegram_chat_id: number
           updated_at?: string
         }
         Update: {
           admin_note?: string | null
+          amount?: number | null
           created_at?: string
           email?: string
           id?: string
           name?: string
+          receipt_note?: string | null
+          requested_days?: number | null
           status?: string
           telegram_chat_id?: number
           updated_at?: string
