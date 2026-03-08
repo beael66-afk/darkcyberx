@@ -349,24 +349,13 @@ function IpDetailDrawer({ ip, isOpen, onClose }: { ip: IpActivity | null; isOpen
                       {geoInfo.lat.toFixed(4)}, {geoInfo.lon.toFixed(4)}
                     </p>
                     <div className="rounded-lg overflow-hidden border h-[220px] w-full">
-                      <MapContainer
-                        key={`${geoInfo.lat}-${geoInfo.lon}`}
-                        center={[geoInfo.lat, geoInfo.lon] as [number, number]}
-                        zoom={12}
-                        style={{ height: "100%", width: "100%" }}
-                        scrollWheelZoom={false}
-                        attributionControl={false}
-                      >
-                        <TileLayer
-                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                        />
-                        <Marker position={[geoInfo.lat, geoInfo.lon]} icon={markerIcon}>
-                          <Popup>
-                            {ip?.ip_address}<br />
-                            {geoInfo.city}, {geoInfo.country}
-                          </Popup>
-                        </Marker>
-                      </MapContainer>
+                      <iframe
+                        title="ip-map"
+                        src={`https://www.openstreetmap.org/export/embed.html?bbox=${geoInfo.lon - 0.05},${geoInfo.lat - 0.05},${geoInfo.lon + 0.05},${geoInfo.lat + 0.05}&layer=mapnik&marker=${geoInfo.lat},${geoInfo.lon}`}
+                        style={{ width: "100%", height: "100%", border: 0 }}
+                        loading="lazy"
+                        sandbox="allow-scripts allow-same-origin"
+                      />
                     </div>
                   </div>
 
