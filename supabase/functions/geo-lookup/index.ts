@@ -31,22 +31,63 @@ serve(async (req) => {
       );
     }
 
-    // ip-api.com is HTTP-only on free tier but works fine server-side (no CORS issues)
-    const fields = "status,message,continent,continentCode,country,countryCode,region,regionName,city,zip,lat,lon,timezone,offset,currency,isp,org,as,asname,reverse,mobile,proxy,hosting,query";
-    const geoRes = await fetch(`http://ip-api.com/json/${ip}?fields=${fields}`);
-    
+    const token = Deno.env.get("IPINFO_TOKEN");
+    const apiUrl = token
+      ? `https://ipinfo.io/${ip}?token=${token}`
+      : `https://ipinfo.io/${ip}/json`;
+
+    const geoRes = await fetch(apiUrl);
+
     if (!geoRes.ok) {
-      throw new Error(`ip-api.com returned ${geoRes.status}`);
+      throw new Error(`ipinfo.io returned ${geoRes.status}`);
     }
 
-    const data = await geoRes.json();
+    const raw = await geoRes.json();
 
-    if (data.status !== "success") {
+    if (raw.error) {
       return new Response(
-        JSON.stringify({ error: data.message || "Lookup failed" }),
+        JSON.stringify({ error: raw.error.message || "Lookup failed" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // Parse loc "lat,lon" → numbers
+    let lat = 0, lon = 0;
+    if (raw.loc) {
+      const parts = raw.loc.split(",");
+      lat = parseFloat(parts[0]) || 0;
+      lon = parseFloat(parts[1]) || 0;
+    }
+
+    // Normalize to match the existing GeoInfo interface in the frontend
+    const data = {
+      status: "success",
+      query: raw.ip || ip,
+      continent: "",
+      continentCode: "",
+      country: raw.country || "—",
+      countryCode: raw.country || "—",
+      region: raw.region || "—",
+      regionName: raw.region || "—",
+      city: raw.city || "—",
+      zip: raw.postal || "—",
+      lat,
+      lon,
+      timezone: raw.timezone || "—",
+      offset: 0,
+      currency: "",
+      isp: raw.org || "—",
+      org: raw.org || "—",
+      as: raw.org || "—",
+      asname: raw.org || "—",
+      reverse: raw.hostname || "—",
+      mobile: false,
+      proxy: false,
+      hosting: false,
+      // Extra ipinfo fields
+      hostname: raw.hostname || "—",
+      anycast: raw.anycast || false,
+    };
 
     return new Response(
       JSON.stringify(data),
