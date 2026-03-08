@@ -81,7 +81,9 @@ const RustDeskIds = () => {
 
   const openRustDeskWeb = (rustdeskId: string) => {
     const cleanId = rustdeskId.replace(/\s+/g, "");
-    window.open(`https://rustdesk.com/web/#id=${cleanId}&password=${RUSTDESK_PASSWORD}`, "_blank");
+    navigator.clipboard.writeText(RUSTDESK_PASSWORD);
+    toast.success("تم نسخ كلمة المرور للحافظة 🔑", { description: RUSTDESK_PASSWORD });
+    window.open(`https://rustdesk.com/web/#${cleanId}`, "_blank");
   };
 
   const filtered = entries?.filter(e =>
