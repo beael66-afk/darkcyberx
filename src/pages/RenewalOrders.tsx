@@ -404,6 +404,7 @@ const RenewalOrders = () => {
       queryClient.invalidateQueries({ queryKey: ["registration-requests"] });
       queryClient.invalidateQueries({ queryKey: ["customers"] });
       queryClient.invalidateQueries({ queryKey: ["licenses"] });
+      queryClient.invalidateQueries({ queryKey: ["renewal-revenue"] });
       if (data.licenseKey) {
         toast.success(`تم تفعيل الحساب وإنشاء ترخيص: ${data.licenseKey}`);
       } else {
