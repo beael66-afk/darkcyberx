@@ -20,7 +20,7 @@ export type Database = {
           expires_at: string | null
           id: string
           is_active: boolean | null
-          key: string
+          key: string | null
           key_hash: string | null
           last_used_at: string | null
           name: string
@@ -31,7 +31,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           is_active?: boolean | null
-          key: string
+          key?: string | null
           key_hash?: string | null
           last_used_at?: string | null
           name: string
@@ -42,7 +42,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           is_active?: boolean | null
-          key?: string
+          key?: string | null
           key_hash?: string | null
           last_used_at?: string | null
           name?: string

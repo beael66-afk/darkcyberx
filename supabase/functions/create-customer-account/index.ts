@@ -56,8 +56,14 @@ const handler = async (req: Request): Promise<Response> => {
 
     const safeName = escapeHtml(name.trim());
 
-    // Generate temporary password
-    const tempPassword = `Temp${Math.random().toString(36).slice(-8)}!`;
+    // Generate temporary password using CSPRNG (cryptographically secure)
+    const generateSecurePassword = (): string => {
+      const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%";
+      const bytes = new Uint8Array(12);
+      crypto.getRandomValues(bytes);
+      return "T" + Array.from(bytes).map(b => chars[b % chars.length]).join("") + "!";
+    };
+    const tempPassword = generateSecurePassword();
 
     // Create user account
     const { data: user, error: createError } = await supabaseAdmin.auth.admin.createUser({
