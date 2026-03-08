@@ -23,15 +23,24 @@ setInterval(() => {
 function checkRateLimit(apiKey: string): boolean {
   const now = Date.now();
   const limitData = rateLimitMap.get(apiKey);
-
   if (!limitData || now > limitData.resetTime) {
     rateLimitMap.set(apiKey, { count: 1, resetTime: now + rateLimitWindow });
     return true;
   }
-
   if (limitData.count >= maxRequestsPerWindow) return false;
   limitData.count++;
   return true;
+}
+
+// Extract real client IP from request headers
+function getClientIp(req: Request): string {
+  const cfIp = req.headers.get('cf-connecting-ip');
+  if (cfIp) return cfIp;
+  const forwarded = req.headers.get('x-forwarded-for');
+  if (forwarded) return forwarded.split(',')[0].trim();
+  const realIp = req.headers.get('x-real-ip');
+  if (realIp) return realIp;
+  return 'unknown';
 }
 
 // License key pattern: XXXX-XXXX-XXXX-XXXX (alphanumeric uppercase)
@@ -47,6 +56,30 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
+
+    const clientIp = getClientIp(req);
+
+    // ── IP Block Check ─────────────────────────────────
+    const { data: blockedIp } = await supabase
+      .from('blocked_ips')
+      .select('id, reason')
+      .eq('ip_address', clientIp)
+      .maybeSingle();
+
+    if (blockedIp) {
+      console.warn(`Blocked IP attempted access: ${clientIp}`);
+      // Log blocked attempt
+      await supabase.from('logs').insert({
+        entity_type: 'security',
+        action: 'verified',
+        description: `Blocked IP attempted license validation`,
+        ip_address: clientIp,
+      });
+      return new Response(
+        JSON.stringify({ error: 'Access denied', valid: false }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const apiKey = req.headers.get('x-api-key');
     if (!apiKey) {
@@ -112,7 +145,6 @@ serve(async (req) => {
       );
     }
 
-    // Validate license key format
     if (!LICENSE_KEY_PATTERN.test(license_key)) {
       return new Response(
         JSON.stringify({ error: 'Invalid license key format', valid: false }),
@@ -120,7 +152,6 @@ serve(async (req) => {
       );
     }
 
-    // Validate optional fields length
     const safeHwid = hwid && typeof hwid === 'string' ? hwid.slice(0, 255) : undefined;
     const safeDeviceName = device_name && typeof device_name === 'string' ? device_name.slice(0, 200) : undefined;
     const safeOsInfo = os_info && typeof os_info === 'string' ? os_info.slice(0, 200) : undefined;
@@ -204,6 +235,7 @@ serve(async (req) => {
       }
     }
 
+    // Log with IP address
     await supabase
       .from('logs')
       .insert({
@@ -211,7 +243,8 @@ serve(async (req) => {
         entity_id: license.id,
         action: 'verified',
         description: `License validated via API`,
-        user_id: apiKeyData.user_id
+        user_id: apiKeyData.user_id,
+        ip_address: clientIp,
       });
 
     return new Response(

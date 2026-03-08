@@ -50,6 +50,33 @@ export type Database = {
         }
         Relationships: []
       }
+      blocked_ips: {
+        Row: {
+          blocked_by: string | null
+          created_at: string
+          id: string
+          ip_address: string
+          reason: string | null
+          updated_at: string
+        }
+        Insert: {
+          blocked_by?: string | null
+          created_at?: string
+          id?: string
+          ip_address: string
+          reason?: string | null
+          updated_at?: string
+        }
+        Update: {
+          blocked_by?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string
+          reason?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           account_created: boolean | null

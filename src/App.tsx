@@ -22,6 +22,7 @@ const ApiCredentials = lazy(() => import("./pages/ApiCredentials"));
 const NotificationSettings = lazy(() => import("./pages/NotificationSettings"));
 const TelegramSettings = lazy(() => import("./pages/TelegramSettings"));
 const RenewalOrders = lazy(() => import("./pages/RenewalOrders"));
+const IpManagement = lazy(() => import("./pages/IpManagement"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 
@@ -71,6 +72,7 @@ const App = () => (
               <Route path="/notification-settings" element={<NotificationSettings />} />
               <Route path="/telegram-settings" element={<TelegramSettings />} />
               <Route path="/renewal-orders" element={<RenewalOrders />} />
+              <Route path="/ip-management" element={<IpManagement />} />
               <Route path="/settings" element={<Settings />} />
             </Route>
             
