@@ -369,6 +369,19 @@ const RenewalOrders = () => {
 
         if (!licErr && licData) {
           licenseKey = licData.license_key;
+
+          // Create persistent invoice record so revenue is never lost on deletion
+          if (req.amount && Number(req.amount) > 0) {
+            await supabase.from("invoices").insert({
+              customer_id: customer.id,
+              license_id: licData.id,
+              amount: req.amount,
+              status: "paid",
+              paid_at: new Date().toISOString(),
+              payment_method: "vodafone_cash",
+              notes: `تسجيل جديد - ${req.requested_days ?? renewalDays} يوم`,
+            });
+          }
         }
       }
 
