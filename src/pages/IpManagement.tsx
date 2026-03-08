@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
   Shield, ShieldOff, Search, Ban, Globe, Activity, AlertTriangle, Clock,
-  Trash2, Plus, Copy, RefreshCw,
+  Trash2, Copy, RefreshCw, User,
 } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
