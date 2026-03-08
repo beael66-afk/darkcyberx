@@ -234,11 +234,14 @@ const TelegramSettings = () => {
                   <TableCell className="text-muted-foreground">
                     <div className="flex items-center gap-1.5">
                       <Calendar className="h-3.5 w-3.5" />
-                      {new Date(link.created_at).toLocaleDateString("ar-EG", {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                      })}
+                      {link.created_at
+                        ? (() => {
+                            const d = new Date(link.created_at);
+                            return isNaN(d.getTime())
+                              ? "—"
+                              : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+                          })()
+                        : "—"}
                     </div>
                   </TableCell>
                   <TableCell>
