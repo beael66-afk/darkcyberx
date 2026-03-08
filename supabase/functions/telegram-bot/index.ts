@@ -326,10 +326,16 @@ async function handleCallbackQuery(supabase: any, query: any, token: string) {
     case "rustdesk_register":
       await handleRustDeskRegister(supabase, chatId, token);
       break;
+    case "rustdesk_add_new":
+      await handleRustDeskAddNew(supabase, chatId, token);
+      break;
     default:
       if (data.startsWith("renew_")) {
         const licenseKey = data.replace("renew_", "");
         await handleRenewLicense(supabase, chatId, licenseKey, token);
+      } else if (data.startsWith("rustdesk_delete_")) {
+        const deviceId = data.replace("rustdesk_delete_", "");
+        await handleRustDeskDeleteDevice(supabase, chatId, deviceId, token);
       }
       break;
   }
@@ -891,26 +897,70 @@ async function handleRustDeskRegister(supabase: any, chatId: number, token: stri
     return;
   }
 
-  // Check if already has a RustDesk ID
-  const { data: existing } = await supabase
+  // Fetch all existing devices for this customer
+  const { data: devices } = await supabase
     .from("rustdesk_ids")
-    .select("rustdesk_id, device_label")
+    .select("id, rustdesk_id, device_label")
     .eq("customer_id", customer.customer_id)
-    .maybeSingle();
+    .order("created_at", { ascending: true });
 
-  const existingMsg = existing
-    ? `📌 *ID الجهاز الحالي:* \`${existing.rustdesk_id}\`${existing.device_label ? `\n🏷️ الاسم: ${existing.device_label}` : ""}\n\n`
-    : "";
+  let existingMsg = "";
+  const buttons: any[] = [];
 
+  if (devices && devices.length > 0) {
+    existingMsg = "📋 *أجهزتك المسجّلة:*\n";
+    devices.forEach((d: any, i: number) => {
+      existingMsg += `${i + 1}. \`${d.rustdesk_id}\`${d.device_label ? ` — ${d.device_label}` : ""}\n`;
+      buttons.push([{ text: `🗑️ حذف: ${d.device_label || d.rustdesk_id}`, callback_data: `rustdesk_delete_${d.id}` }]);
+    });
+    existingMsg += "\n";
+  }
+
+  buttons.push([{ text: "➕ إضافة جهاز جديد", callback_data: "rustdesk_add_new" }]);
+  buttons.push([{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]);
+
+  await sendMessageWithKeyboard(chatId, token,
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "🖥️ *إدارة أجهزة RustDesk*\n" +
+    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+    existingMsg +
+    "اختر إجراءً:",
+    { inline_keyboard: buttons },
+    "Markdown"
+  );
+}
+
+async function handleRustDeskAddNew(supabase: any, chatId: number, token: string) {
   await setState(supabase, chatId, "awaiting_rustdesk_label");
   await sendMessage(chatId, token,
     "━━━━━━━━━━━━━━━━━━━━━\n" +
-    "🖥️ *تسجيل / تعديل ID جهاز RustDesk*\n" +
+    "🖥️ *إضافة جهاز جديد*\n" +
     "━━━━━━━━━━━━━━━━━━━━━\n\n" +
-    existingMsg +
     "✏️ *أدخل اسماً مميزاً للجهاز* (اختياري)\n" +
     "مثال: `لابتوب المكتب` أو `جهاز البيت`\n\n" +
     "_(أو أرسل `.` للتخطي)_",
+    "Markdown"
+  );
+}
+
+async function handleRustDeskDeleteDevice(supabase: any, chatId: number, deviceId: string, token: string) {
+  const customer = await getCustomerByChatId(supabase, chatId);
+  if (!customer) return;
+
+  const { error } = await supabase
+    .from("rustdesk_ids")
+    .delete()
+    .eq("id", deviceId)
+    .eq("customer_id", customer.customer_id);
+
+  if (error) {
+    await sendMessage(chatId, token, "❌ حدث خطأ أثناء الحذف. حاول مرة أخرى.");
+    return;
+  }
+
+  await sendMessageWithKeyboard(chatId, token,
+    "✅ *تم حذف الجهاز بنجاح!*",
+    { inline_keyboard: [[{ text: "🖥️ إدارة الأجهزة", callback_data: "rustdesk_register" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
     "Markdown"
   );
 }
@@ -921,15 +971,28 @@ async function handleRustDeskIdInput(supabase: any, chatId: number, rustdeskId: 
 
   const label = deviceLabel === "." ? null : deviceLabel;
 
+  // Check if this rustdesk_id already exists globally
+  const { data: existingGlobal } = await supabase
+    .from("rustdesk_ids")
+    .select("id, customer_id")
+    .eq("rustdesk_id", rustdeskId)
+    .maybeSingle();
+
+  if (existingGlobal) {
+    if (existingGlobal.customer_id === customer.customer_id) {
+      await sendMessage(chatId, token, `⚠️ هذا الـ ID \`${rustdeskId}\` مسجّل مسبقاً في أجهزتك.`, "Markdown");
+    } else {
+      await sendMessage(chatId, token, `⚠️ هذا الـ ID \`${rustdeskId}\` مسجّل لدى عميل آخر. تحقق من الرقم وأعد المحاولة.`, "Markdown");
+    }
+    return;
+  }
+
   const { error } = await supabase
     .from("rustdesk_ids")
-    .upsert(
-      { customer_id: customer.customer_id, rustdesk_id: rustdeskId, device_label: label, updated_at: new Date().toISOString() },
-      { onConflict: "customer_id" }
-    );
+    .insert({ customer_id: customer.customer_id, rustdesk_id: rustdeskId, device_label: label });
 
   if (error) {
-    console.error("RustDesk upsert error:", error);
+    console.error("RustDesk insert error:", error);
     await sendMessage(chatId, token, "❌ حدث خطأ. حاول مرة أخرى.");
     return;
   }
@@ -942,7 +1005,7 @@ async function handleRustDeskIdInput(supabase: any, chatId: number, rustdeskId: 
     (label ? `🏷️ *اسم الجهاز:* ${label}\n` : "") +
     "\n🔑 *كلمة المرور للاتصال:* `123456medoissaA`\n\n" +
     "سيتمكن فريق الدعم من الاتصال بجهازك عند الحاجة ✅",
-    { inline_keyboard: [[{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
+    { inline_keyboard: [[{ text: "🖥️ إدارة الأجهزة", callback_data: "rustdesk_register" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
     "Markdown"
   );
 }
