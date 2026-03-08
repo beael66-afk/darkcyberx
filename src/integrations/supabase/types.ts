@@ -547,18 +547,27 @@ export type Database = {
           created_at: string
           customer_id: string
           id: string
+          latitude: number | null
+          location_updated_at: string | null
+          longitude: number | null
           telegram_chat_id: number
         }
         Insert: {
           created_at?: string
           customer_id: string
           id?: string
+          latitude?: number | null
+          location_updated_at?: string | null
+          longitude?: number | null
           telegram_chat_id: number
         }
         Update: {
           created_at?: string
           customer_id?: string
           id?: string
+          latitude?: number | null
+          location_updated_at?: string | null
+          longitude?: number | null
           telegram_chat_id?: number
         }
         Relationships: [
