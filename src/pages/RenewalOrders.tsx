@@ -254,6 +254,20 @@ const RenewalOrders = () => {
     },
   });
 
+  // ─── Total Revenue from invoices (persists after deletion) ─
+  const { data: revenueData } = useQuery({
+    queryKey: ["renewal-revenue"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("invoices")
+        .select("amount")
+        .eq("status", "paid")
+        .eq("payment_method", "vodafone_cash");
+      if (error) throw error;
+      return (data || []).reduce((sum, inv) => sum + Number(inv.amount), 0);
+    },
+  });
+
   // ─── Renewal Mutations ─────────────────────────────
   const confirmMutation = useMutation({
     mutationFn: async ({ requestId, action, adminNote }: { requestId: string; action: string; adminNote?: string }) => {
