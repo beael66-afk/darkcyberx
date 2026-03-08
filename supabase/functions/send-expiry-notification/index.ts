@@ -8,6 +8,18 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// HTML escape to prevent XSS in email templates
+function escapeHtml(text: string): string {
+  const map: Record<string, string> = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;",
+  };
+  return text.replace(/[&<>"']/g, (m) => map[m]);
+}
+
 interface NotificationRequest {
   customerEmail: string;
   customerName: string;
@@ -23,14 +35,35 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { customerEmail, customerName, licenseKey, productName, expiryDate, daysRemaining }: NotificationRequest = await req.json();
+    const body = await req.json();
+    const { customerEmail, customerName, licenseKey, productName, expiryDate, daysRemaining }: NotificationRequest = body;
 
-    console.log(`Sending expiry notification to ${customerEmail} for license ${licenseKey}`);
+    // Input validation
+    if (!customerEmail || typeof customerEmail !== "string" || customerEmail.length > 255 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
+      return new Response(JSON.stringify({ error: "البريد الإلكتروني غير صالح" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+    if (!licenseKey || typeof licenseKey !== "string" || licenseKey.length > 50) {
+      return new Response(JSON.stringify({ error: "مفتاح الترخيص غير صالح" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    // Sanitize all user-provided fields before embedding in HTML
+    const safeCustomerName = escapeHtml(String(customerName || "").slice(0, 200));
+    const safeLicenseKey = escapeHtml(String(licenseKey).slice(0, 50));
+    const safeProductName = escapeHtml(String(productName || "").slice(0, 200));
+    const safeDaysRemaining = Number(daysRemaining) || 0;
+
+    console.log(`Sending expiry notification for license ${safeLicenseKey}`);
 
     const emailResponse = await resend.emails.send({
       from: "License Manager <onboarding@resend.dev>",
       to: [customerEmail],
-      subject: `تنبيه: اقتراب انتهاء ترخيصك - ${productName}`,
+      subject: `تنبيه: اقتراب انتهاء ترخيصك - ${safeProductName}`,
       html: `
         <!DOCTYPE html>
         <html dir="rtl">
@@ -46,7 +79,6 @@ const handler = async (req: Request): Promise<Response> => {
               .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #dee2e6; }
               .info-label { font-weight: bold; color: #495057; }
               .info-value { color: #212529; }
-              .button { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
               .footer { text-align: center; padding: 20px; color: #6c757d; font-size: 14px; }
             </style>
           </head>
@@ -56,22 +88,22 @@ const handler = async (req: Request): Promise<Response> => {
                 <h1 style="margin: 0;">⚠️ تنبيه انتهاء الترخيص</h1>
               </div>
               <div class="content">
-                <p style="font-size: 16px;">عزيزي/عزيزتي <strong>${customerName}</strong>،</p>
+                <p style="font-size: 16px;">عزيزي/عزيزتي <strong>${safeCustomerName}</strong>،</p>
                 
                 <div class="alert-box">
-                  <strong>⏰ تنبيه هام:</strong> سينتهي ترخيصك خلال <strong>${daysRemaining}</strong> يوم!
+                  <strong>⏰ تنبيه هام:</strong> سينتهي ترخيصك خلال <strong>${safeDaysRemaining}</strong> يوم!
                 </div>
 
-                <p>نود إعلامك بأن ترخيصك لمنتج <strong>${productName}</strong> يقترب من تاريخ الانتهاء.</p>
+                <p>نود إعلامك بأن ترخيصك لمنتج <strong>${safeProductName}</strong> يقترب من تاريخ الانتهاء.</p>
 
                 <div class="license-info">
                   <div class="info-row">
                     <span class="info-label">مفتاح الترخيص:</span>
-                    <span class="info-value"><code>${licenseKey}</code></span>
+                    <span class="info-value"><code>${safeLicenseKey}</code></span>
                   </div>
                   <div class="info-row">
                     <span class="info-label">المنتج:</span>
-                    <span class="info-value">${productName}</span>
+                    <span class="info-value">${safeProductName}</span>
                   </div>
                   <div class="info-row">
                     <span class="info-label">تاريخ الانتهاء:</span>
@@ -79,7 +111,7 @@ const handler = async (req: Request): Promise<Response> => {
                   </div>
                   <div class="info-row" style="border-bottom: none;">
                     <span class="info-label">الأيام المتبقية:</span>
-                    <span class="info-value" style="color: #dc3545; font-weight: bold;">${daysRemaining} يوم</span>
+                    <span class="info-value" style="color: #dc3545; font-weight: bold;">${safeDaysRemaining} يوم</span>
                   </div>
                 </div>
 
@@ -99,7 +131,7 @@ const handler = async (req: Request): Promise<Response> => {
       `,
     });
 
-    console.log("Email sent successfully:", emailResponse);
+    console.log("Email sent successfully");
 
     return new Response(JSON.stringify({ success: true, emailId: emailResponse.data?.id }), {
       status: 200,
@@ -108,7 +140,7 @@ const handler = async (req: Request): Promise<Response> => {
   } catch (error: any) {
     console.error("Error sending expiry notification:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: "حدث خطأ في إرسال الإشعار" }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
