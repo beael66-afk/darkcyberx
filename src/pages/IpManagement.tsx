@@ -379,15 +379,15 @@ const IpManagement = () => {
                               <AlertTriangle className="h-3 w-3" />
                               سبام
                             </Badge>
-                            {item.attempted_keys.length > 0 && (
+                            {(item.attempted_keys || []).length > 0 && (
                               <div className="flex flex-col gap-0.5">
-                                {item.attempted_keys.slice(0, 3).map(key => (
+                                {(item.attempted_keys || []).slice(0, 3).map(key => (
                                   <code key={key} className="text-[10px] font-mono text-muted-foreground bg-muted px-1 py-0.5 rounded w-fit">
                                     {key}
                                   </code>
                                 ))}
-                                {item.attempted_keys.length > 3 && (
-                                  <span className="text-[10px] text-muted-foreground">+{item.attempted_keys.length - 3} أخرى</span>
+                                {(item.attempted_keys || []).length > 3 && (
+                                  <span className="text-[10px] text-muted-foreground">+{(item.attempted_keys || []).length - 3} أخرى</span>
                                 )}
                               </div>
                             )}
