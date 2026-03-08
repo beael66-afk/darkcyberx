@@ -1167,6 +1167,116 @@ async function handleRustDeskIdInput(supabase: any, chatId: number, rustdeskId: 
   );
 }
 
+// ─── Reset Key Flow ────────────────────────────────────
+async function handleResetKeyStart(supabase: any, chatId: number, token: string) {
+  const customer = await getCustomerByChatId(supabase, chatId);
+  if (!customer) {
+    await sendMessageWithKeyboard(chatId, token,
+      "⚠️ حسابك غير مربوط بعد.",
+      { inline_keyboard: [[{ text: "🔗 ربط حساب", callback_data: "link_account" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
+    );
+    return;
+  }
+
+  const { data: licenses } = await supabase
+    .from("licenses")
+    .select("id, license_key, status, products(name)")
+    .eq("customer_id", customer.customer_id);
+
+  if (!licenses || licenses.length === 0) {
+    await sendMessageWithKeyboard(chatId, token,
+      "📋 لا توجد تراخيص على حسابك.",
+      { inline_keyboard: [[{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
+    );
+    return;
+  }
+
+  // For each license, count linked devices
+  const licensesWithDevices = await Promise.all(
+    licenses.map(async (l: any) => {
+      const { count } = await supabase
+        .from("devices")
+        .select("*", { count: "exact", head: true })
+        .eq("license_id", l.id);
+      return { ...l, deviceCount: count || 0 };
+    })
+  );
+
+  const statusEmoji: Record<string, string> = { active: "🟢", expired: "🔴", suspended: "🟡", pending: "⚪" };
+
+  const buttons = licensesWithDevices.map((l: any) => {
+    const emoji = statusEmoji[l.status] || "⚪";
+    const devTxt = l.deviceCount > 0 ? ` (${l.deviceCount} جهاز)` : " (لا أجهزة)";
+    return [{ text: `${emoji} ${l.products?.name || "ترخيص"}${devTxt} — اضغط للريسيت`, callback_data: `reset_confirm_${l.id}` }];
+  });
+  buttons.push([{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]);
+
+  await sendMessageWithKeyboard(chatId, token,
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "🔑 *ريسيت المفتاح*\n" +
+    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+    "⚠️ سيتم *مسح جميع الأجهزة* المرتبطة بالمفتاح المختار.\n" +
+    "بعد الريسيت يمكنك تفعيل المفتاح على أجهزة جديدة.\n\n" +
+    "اختر الترخيص:",
+    { inline_keyboard: buttons },
+    "Markdown"
+  );
+}
+
+async function handleResetKeyConfirm(supabase: any, chatId: number, licenseId: string, token: string) {
+  const customer = await getCustomerByChatId(supabase, chatId);
+  if (!customer) return;
+
+  // Verify this license belongs to this customer
+  const { data: license } = await supabase
+    .from("licenses")
+    .select("id, license_key, products(name)")
+    .eq("id", licenseId)
+    .eq("customer_id", customer.customer_id)
+    .maybeSingle();
+
+  if (!license) {
+    await sendMessageWithKeyboard(chatId, token,
+      "❌ الترخيص غير موجود أو لا يخصك.",
+      { inline_keyboard: [[{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
+    );
+    return;
+  }
+
+  // Count devices before deleting
+  const { count: deviceCount } = await supabase
+    .from("devices")
+    .select("*", { count: "exact", head: true })
+    .eq("license_id", licenseId);
+
+  // Delete all devices linked to this license
+  const { error } = await supabase
+    .from("devices")
+    .delete()
+    .eq("license_id", licenseId);
+
+  if (error) {
+    console.error("Reset key devices delete error:", error);
+    await sendMessageWithKeyboard(chatId, token,
+      "❌ حدث خطأ أثناء الريسيت. حاول مرة أخرى.",
+      { inline_keyboard: [[{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
+    );
+    return;
+  }
+
+  await sendMessageWithKeyboard(chatId, token,
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "✅ *تم الريسيت بنجاح!*\n" +
+    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+    `🔑 الترخيص: *${license.products?.name || "ترخيص"}*\n` +
+    `🗑️ تم مسح: *${deviceCount || 0} جهاز*\n\n` +
+    "يمكنك الآن تفعيل المفتاح على أجهزتك الجديدة ✅\n\n" +
+    `\`${license.license_key}\``,
+    { inline_keyboard: [[{ text: "📋 عرض تراخيصي", callback_data: "my_licenses" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
+    "Markdown"
+  );
+}
+
 // ─── Help ──────────────────────────────────────────────
 async function handleHelp(chatId: number, token: string) {
   await sendMessageWithKeyboard(chatId, token,
