@@ -254,17 +254,26 @@ const RenewalOrders = () => {
     },
   });
 
-  // ─── Total Revenue from invoices (persists after deletion) ─
+  // ─── Total Revenue: invoices (paid) + confirmed renewal_requests fallback ─
   const { data: revenueData } = useQuery({
     queryKey: ["renewal-revenue"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // From invoices table (new records after the fix)
+      const { data: invData } = await supabase
         .from("invoices")
         .select("amount")
-        .eq("status", "paid")
-        .eq("payment_method", "vodafone_cash");
-      if (error) throw error;
-      return (data || []).reduce((sum, inv) => sum + Number(inv.amount), 0);
+        .eq("status", "paid");
+      const invoiceTotal = (invData || []).reduce((sum, inv) => sum + Number(inv.amount), 0);
+
+      // Fallback: confirmed renewal_requests not yet in invoices
+      const { data: renewalData } = await supabase
+        .from("renewal_requests")
+        .select("amount")
+        .eq("status", "confirmed");
+      const renewalTotal = (renewalData || []).reduce((sum, r) => sum + Number(r.amount), 0);
+
+      // Use whichever is bigger (invoices or renewal_requests confirmed)
+      return Math.max(invoiceTotal, renewalTotal);
     },
   });
 
