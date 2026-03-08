@@ -353,6 +353,15 @@ const Licenses = () => {
         headers: { Authorization: `Bearer ${session?.access_token}` },
       });
       if (error) throw error;
+
+      // Revoke the old key so it can't be reused
+      if (data.oldKey) {
+        await supabase.from("revoked_keys" as any).upsert(
+          { license_key: data.oldKey, reason: `تم تجديد المفتاح — استُبدل بـ ${data.newKey}` },
+          { onConflict: "license_key" }
+        );
+      }
+
       toast({
         title: "✅ تم تجديد المفتاح",
         description: data.notified
