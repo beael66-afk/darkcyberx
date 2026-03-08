@@ -20,25 +20,8 @@ type Device = Tables<"devices">;
 const Devices = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDevices, setSelectedDevices] = useState<Set<string>>(new Set());
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set(["ALL_COLLAPSED"]));
-
-  // Initialize all groups as collapsed when data loads
-  const { data: devices, isLoading } = useQuery({
-    queryKey: ["devices"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("devices")
-        .select("*, licenses(license_key, customers(name))")
-        .order("license_id", { ascending: true })
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-    select: (data) => data,
-  });
-
-  // Track which groups are OPEN (instead of which are collapsed)
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
+  const queryClient = useQueryClient();
 
   const toggleGroup = (licenseId: string) => {
     setOpenGroups(prev => {
@@ -48,6 +31,8 @@ const Devices = () => {
       return next;
     });
   };
+
+  const { data: devices, isLoading } = useQuery({
     queryKey: ["devices"],
     queryFn: async () => {
       const { data, error } = await supabase
