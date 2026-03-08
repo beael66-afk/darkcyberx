@@ -262,10 +262,8 @@ Deno.serve(async (req) => {
       return new Response("OK", { status: 200 });
     }
 
-    // No state - unknown message
-    await sendMessage(chatId, TELEGRAM_BOT_TOKEN,
-      "❓ أمر غير معروف.\nاضغط /start لعرض القائمة الرئيسية."
-    );
+    // No state - greet automatically as if they pressed /start
+    await sendMainMenu(chatId, TELEGRAM_BOT_TOKEN, supabase);
   } catch (error) {
     console.error("Telegram bot error:", error);
   }
