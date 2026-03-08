@@ -24,6 +24,7 @@ const TelegramSettings = lazy(() => import("./pages/TelegramSettings"));
 const RenewalOrders = lazy(() => import("./pages/RenewalOrders"));
 const RustDeskIds = lazy(() => import("./pages/RustDeskIds"));
 const IpManagement = lazy(() => import("./pages/IpManagement"));
+const BlockedHwids = lazy(() => import("./pages/BlockedHwids"));
 const Alerts = lazy(() => import("./pages/Alerts"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
