@@ -260,9 +260,11 @@ serve(async (req) => {
         description: `محاولة تفعيل بمفتاح ملغى: ${license_key}`,
         ip_address: clientIp,
       });
-      const { forceShutdown } = await checkAndAutoBlock(supabase, clientIp);
+      // Trigger auto-block check in background (don't await)
+      checkAndAutoBlock(supabase, clientIp).catch(() => {});
+      // Always return force_shutdown: true immediately for revoked keys
       return new Response(
-        JSON.stringify({ error: 'Access denied', valid: false, force_shutdown: forceShutdown }),
+        JSON.stringify({ error: 'Access denied', valid: false, force_shutdown: true }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -293,10 +295,12 @@ serve(async (req) => {
     }
 
     if (license.status !== 'active') {
+      // Suspended/expired licenses → force shutdown immediately
       return new Response(
         JSON.stringify({
           error: `License is ${license.status}`,
           valid: false,
+          force_shutdown: license.status === 'suspended',
           license: { key: license.license_key, status: license.status }
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
