@@ -22,6 +22,7 @@ const ApiCredentials = lazy(() => import("./pages/ApiCredentials"));
 const NotificationSettings = lazy(() => import("./pages/NotificationSettings"));
 const TelegramSettings = lazy(() => import("./pages/TelegramSettings"));
 const RenewalOrders = lazy(() => import("./pages/RenewalOrders"));
+const RustDeskIds = lazy(() => import("./pages/RustDeskIds"));
 const IpManagement = lazy(() => import("./pages/IpManagement"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
