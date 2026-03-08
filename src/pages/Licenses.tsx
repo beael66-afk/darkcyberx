@@ -563,11 +563,11 @@ const Licenses = () => {
                     <TableCell>{license.max_devices}</TableCell>
                     <TableCell>
                       {license.expire_at
-                        ? new Date(license.expire_at).toLocaleDateString("ar-EG", {
-                            year: "numeric",
-                            month: "2-digit",
-                            day: "2-digit",
-                          })
+                        ? (() => {
+                            const d = new Date(license.expire_at);
+                            if (isNaN(d.getTime())) return "—";
+                            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+                          })()
                         : "غير محدد"}
                     </TableCell>
                     <TableCell>
