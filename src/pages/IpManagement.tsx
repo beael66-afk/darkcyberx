@@ -6,13 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
   Shield, ShieldOff, Search, Ban, Globe, Activity, AlertTriangle, Clock,
-  Trash2, Copy, RefreshCw, User,
+  Trash2, Copy, RefreshCw, User, Eye, FileText, Key, Info,
 } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -21,6 +21,11 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle,
+} from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 
 interface BlockedIp {
   id: string;
@@ -38,6 +43,14 @@ interface IpActivity {
   attempted_keys: string[];
 }
 
+interface IpLog {
+  id: string;
+  action: string;
+  entity_type: string;
+  description: string;
+  created_at: string;
+}
+
 const formatDate = (dateStr: string) => {
   if (!dateStr) return "—";
   const d = new Date(dateStr);
@@ -45,11 +58,178 @@ const formatDate = (dateStr: string) => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 };
 
+const formatDateTime = (dateStr: string) => {
+  if (!dateStr) return "—";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "—";
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`;
+};
+
+const getLogIcon = (entityType: string, description: string) => {
+  if (entityType === "security") return <AlertTriangle className="h-3.5 w-3.5 text-destructive" />;
+  if (description.toLowerCase().includes("license") || description.includes("ترخيص") || description.includes("مفتاح")) return <Key className="h-3.5 w-3.5 text-primary" />;
+  return <FileText className="h-3.5 w-3.5 text-muted-foreground" />;
+};
+
+const getLogBadgeVariant = (entityType: string): "destructive" | "secondary" | "outline" => {
+  if (entityType === "security") return "destructive";
+  return "secondary";
+};
+
+// ─── IP Detail Drawer ─────────────────────────────────
+function IpDetailDrawer({ ip, isOpen, onClose }: { ip: IpActivity | null; isOpen: boolean; onClose: () => void }) {
+  const { data: logs, isLoading } = useQuery({
+    queryKey: ["ip-logs", ip?.ip_address],
+    enabled: isOpen && !!ip?.ip_address,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("logs")
+        .select("id, action, entity_type, description, created_at")
+        .eq("ip_address", ip!.ip_address)
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return data as IpLog[];
+    },
+  });
+
+  const licKeyRegex = /([A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4})/g;
+
+  const securityLogs = logs?.filter(l => l.entity_type === "security") || [];
+  const otherLogs = logs?.filter(l => l.entity_type !== "security") || [];
+
+  const allKeys = new Set<string>();
+  logs?.forEach(l => {
+    const matches = l.description.matchAll(licKeyRegex);
+    for (const m of matches) allKeys.add(m[1]);
+  });
+
+  return (
+    <Sheet open={isOpen} onOpenChange={onClose}>
+      <SheetContent side="left" className="w-full sm:max-w-xl p-0 flex flex-col">
+        <SheetHeader className="p-5 pb-3 border-b">
+          <SheetTitle className="flex items-center gap-2 text-base">
+            <Globe className="h-5 w-5 text-primary" />
+            <code className="font-mono">{ip?.ip_address}</code>
+            {ip?.is_blocked && <Badge variant="destructive" className="text-xs gap-1"><Ban className="h-3 w-3" />محظور</Badge>}
+          </SheetTitle>
+        </SheetHeader>
+
+        <ScrollArea className="flex-1">
+          <div className="p-5 space-y-5">
+
+            {/* Summary Cards */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-lg border bg-muted/30 p-3">
+                <p className="text-xs text-muted-foreground mb-1">إجمالي الطلبات</p>
+                <p className="text-2xl font-bold">{ip?.request_count ?? 0}</p>
+              </div>
+              <div className="rounded-lg border bg-muted/30 p-3">
+                <p className="text-xs text-muted-foreground mb-1">محاولات أمنية</p>
+                <p className="text-2xl font-bold text-destructive">{securityLogs.length}</p>
+              </div>
+              <div className="rounded-lg border bg-muted/30 p-3 col-span-2">
+                <p className="text-xs text-muted-foreground mb-1">آخر نشاط</p>
+                <p className="text-sm font-medium">{formatDateTime(ip?.last_seen ?? "")}</p>
+              </div>
+            </div>
+
+            {/* Customer or Spam */}
+            <div className="rounded-lg border p-3 flex items-center gap-3">
+              {ip?.customer_name ? (
+                <>
+                  <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
+                    {ip.customer_name.charAt(0)}
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">العميل</p>
+                    <p className="font-semibold">{ip.customer_name}</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="h-9 w-9 rounded-full bg-destructive/10 flex items-center justify-center shrink-0">
+                    <AlertTriangle className="h-4 w-4 text-destructive" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">التصنيف</p>
+                    <p className="font-semibold text-destructive">سبام / غير معروف</p>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Attempted License Keys */}
+            {allKeys.size > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Key className="h-4 w-4 text-primary" />
+                  <p className="text-sm font-semibold">مفاتيح الترخيص المحاوَلة ({allKeys.size})</p>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {Array.from(allKeys).map(k => (
+                    <code key={k} className="text-xs font-mono bg-muted border rounded px-2 py-1">{k}</code>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <Separator />
+
+            {/* Timeline of Logs */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Activity className="h-4 w-4 text-primary" />
+                <p className="text-sm font-semibold">سجل النشاط الكامل ({logs?.length ?? 0} حدث)</p>
+              </div>
+
+              {isLoading ? (
+                <div className="text-center py-8 text-muted-foreground text-sm">جاري التحميل...</div>
+              ) : !logs?.length ? (
+                <div className="text-center py-8 text-muted-foreground text-sm">لا توجد سجلات</div>
+              ) : (
+                <div className="space-y-1.5">
+                  {logs.map((log) => (
+                    <div key={log.id} className={`rounded-lg border p-3 text-sm ${log.entity_type === "security" ? "border-destructive/30 bg-destructive/5" : "bg-muted/20"}`}>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-2 flex-1 min-w-0">
+                          <div className="mt-0.5 shrink-0">{getLogIcon(log.entity_type, log.description)}</div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-foreground leading-relaxed break-words">{log.description}</p>
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <Badge variant={getLogBadgeVariant(log.entity_type)} className="text-[10px] h-4 px-1.5">
+                                {log.entity_type}
+                              </Badge>
+                              <Badge variant="outline" className="text-[10px] h-4 px-1.5">
+                                {log.action}
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-[10px] text-muted-foreground whitespace-nowrap shrink-0 mt-0.5">
+                          {formatDateTime(log.created_at)}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+          </div>
+        </ScrollArea>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
 const IpManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [addIpOpen, setAddIpOpen] = useState(false);
   const [newIp, setNewIp] = useState("");
   const [newReason, setNewReason] = useState("");
+  const [selectedIp, setSelectedIp] = useState<IpActivity | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const queryClient = useQueryClient();
 
   // Fetch blocked IPs
@@ -65,11 +245,10 @@ const IpManagement = () => {
     },
   });
 
-  // Fetch IP activity from logs — enriched with customer names via licenses
+  // Fetch IP activity from logs
   const { data: ipActivity, isLoading: activityLoading, refetch: refetchActivity } = useQuery({
     queryKey: ["ip-activity"],
     queryFn: async () => {
-      // Fetch logs, blocked IPs, and licenses+customers in parallel
       const [logsRes, blockedRes, licensesRes] = await Promise.all([
         supabase
           .from("logs")
@@ -79,15 +258,12 @@ const IpManagement = () => {
           .order("created_at", { ascending: false })
           .limit(1000),
         supabase.from("blocked_ips").select("ip_address"),
-        supabase
-          .from("licenses")
-          .select("id, license_key, customers(id, name)"),
+        supabase.from("licenses").select("id, license_key, customers(id, name)"),
       ]);
 
       const logs = logsRes.data || [];
       const blockedSet = new Set((blockedRes.data || []).map(b => b.ip_address));
 
-      // Build a map: license_id -> customer_name and license_key -> customer_name
       const licenseToCustomer = new Map<string, string>();
       for (const lic of licensesRes.data || []) {
         const customer = lic.customers as { id: string; name: string } | null;
@@ -97,10 +273,8 @@ const IpManagement = () => {
         }
       }
 
-      // Regex to extract license key from log description
       const licKeyRegex = /([A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4})/;
 
-      // Aggregate logs by IP
       const ipMap = new Map<string, { count: number; lastSeen: string; entityIds: Set<string>; attemptedKeys: Set<string> }>();
       for (const log of logs) {
         if (!log.ip_address) continue;
@@ -118,15 +292,12 @@ const IpManagement = () => {
           existing.count++;
           if (log.entity_id) existing.entityIds.add(log.entity_id);
           if (extractedKey) existing.attemptedKeys.add(extractedKey);
-          if ((log.created_at || "") > existing.lastSeen) {
-            existing.lastSeen = log.created_at || "";
-          }
+          if ((log.created_at || "") > existing.lastSeen) existing.lastSeen = log.created_at || "";
         }
       }
 
       return Array.from(ipMap.entries())
         .map(([ip, { count, lastSeen, entityIds, attemptedKeys }]) => {
-          // Find customer name from any license entity seen from this IP
           let customerName: string | null = null;
           for (const id of entityIds) {
             const name = licenseToCustomer.get(id);
@@ -145,13 +316,9 @@ const IpManagement = () => {
     },
   });
 
-  // Block IP mutation
   const blockMutation = useMutation({
     mutationFn: async ({ ip, reason }: { ip: string; reason?: string }) => {
-      const { error } = await supabase.from("blocked_ips").insert({
-        ip_address: ip.trim(),
-        reason: reason?.trim() || null,
-      });
+      const { error } = await supabase.from("blocked_ips").insert({ ip_address: ip.trim(), reason: reason?.trim() || null });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -165,7 +332,6 @@ const IpManagement = () => {
     onError: (e: any) => toast.error(e.message?.includes("unique") ? "هذا الـ IP محظور بالفعل" : "فشل حظر الـ IP"),
   });
 
-  // Unblock IP mutation
   const unblockMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("blocked_ips").delete().eq("id", id);
@@ -184,6 +350,11 @@ const IpManagement = () => {
     toast.success("تم نسخ الـ IP");
   };
 
+  const openDetail = (item: IpActivity) => {
+    setSelectedIp(item);
+    setDrawerOpen(true);
+  };
+
   const filteredBlocked = blockedIps?.filter(b =>
     b.ip_address.includes(searchTerm) || b.reason?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -200,6 +371,13 @@ const IpManagement = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Detail Drawer */}
+      <IpDetailDrawer
+        ip={selectedIp}
+        isOpen={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+      />
+
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -228,20 +406,11 @@ const IpManagement = () => {
               <div className="space-y-4 pt-2">
                 <div className="space-y-1.5">
                   <Label>عنوان IP</Label>
-                  <Input
-                    placeholder="مثال: 192.168.1.1"
-                    value={newIp}
-                    onChange={(e) => setNewIp(e.target.value)}
-                  />
+                  <Input placeholder="مثال: 192.168.1.1" value={newIp} onChange={(e) => setNewIp(e.target.value)} />
                 </div>
                 <div className="space-y-1.5">
                   <Label>سبب الحظر (اختياري)</Label>
-                  <Textarea
-                    placeholder="مثال: نشاط مشبوه، هجوم brute force..."
-                    value={newReason}
-                    onChange={(e) => setNewReason(e.target.value)}
-                    rows={3}
-                  />
+                  <Textarea placeholder="مثال: نشاط مشبوه، هجوم brute force..." value={newReason} onChange={(e) => setNewReason(e.target.value)} rows={3} />
                 </div>
                 <div className="flex gap-2 justify-end">
                   <Button variant="outline" onClick={() => setAddIpOpen(false)}>إلغاء</Button>
@@ -265,37 +434,25 @@ const IpManagement = () => {
         <Card className="border-none shadow-sm bg-gradient-to-br from-primary/10 to-primary/5">
           <CardContent className="p-4 flex items-center gap-3">
             <div className="rounded-xl bg-primary/15 p-2.5"><Globe className="h-5 w-5 text-primary" /></div>
-            <div>
-              <p className="text-xs text-muted-foreground">IPs فريدة</p>
-              <p className="text-2xl font-bold">{uniqueIps}</p>
-            </div>
+            <div><p className="text-xs text-muted-foreground">IPs فريدة</p><p className="text-2xl font-bold">{uniqueIps}</p></div>
           </CardContent>
         </Card>
         <Card className="border-none shadow-sm bg-gradient-to-br from-blue-500/10 to-blue-500/5">
           <CardContent className="p-4 flex items-center gap-3">
             <div className="rounded-xl bg-blue-500/15 p-2.5"><Activity className="h-5 w-5 text-blue-500" /></div>
-            <div>
-              <p className="text-xs text-muted-foreground">إجمالي الطلبات</p>
-              <p className="text-2xl font-bold">{totalRequests}</p>
-            </div>
+            <div><p className="text-xs text-muted-foreground">إجمالي الطلبات</p><p className="text-2xl font-bold">{totalRequests}</p></div>
           </CardContent>
         </Card>
         <Card className="border-none shadow-sm bg-gradient-to-br from-destructive/10 to-destructive/5">
           <CardContent className="p-4 flex items-center gap-3">
             <div className="rounded-xl bg-destructive/15 p-2.5"><Ban className="h-5 w-5 text-destructive" /></div>
-            <div>
-              <p className="text-xs text-muted-foreground">IPs محظورة</p>
-              <p className="text-2xl font-bold">{blockedCount}</p>
-            </div>
+            <div><p className="text-xs text-muted-foreground">IPs محظورة</p><p className="text-2xl font-bold">{blockedCount}</p></div>
           </CardContent>
         </Card>
         <Card className="border-none shadow-sm bg-gradient-to-br from-orange-500/10 to-orange-500/5">
           <CardContent className="p-4 flex items-center gap-3">
             <div className="rounded-xl bg-orange-500/15 p-2.5"><AlertTriangle className="h-5 w-5 text-orange-500" /></div>
-            <div>
-              <p className="text-xs text-muted-foreground">طلبات محظورة</p>
-              <p className="text-2xl font-bold">{blockedRequestCount}</p>
-            </div>
+            <div><p className="text-xs text-muted-foreground">طلبات محظورة</p><p className="text-2xl font-bold">{blockedRequestCount}</p></div>
           </CardContent>
         </Card>
       </div>
@@ -381,13 +538,13 @@ const IpManagement = () => {
                             </Badge>
                             {(item.attempted_keys || []).length > 0 && (
                               <div className="flex flex-col gap-0.5">
-                                {(item.attempted_keys || []).slice(0, 3).map(key => (
+                                {(item.attempted_keys || []).slice(0, 2).map(key => (
                                   <code key={key} className="text-[10px] font-mono text-muted-foreground bg-muted px-1 py-0.5 rounded w-fit">
                                     {key}
                                   </code>
                                 ))}
-                                {(item.attempted_keys || []).length > 3 && (
-                                  <span className="text-[10px] text-muted-foreground">+{(item.attempted_keys || []).length - 3} أخرى</span>
+                                {(item.attempted_keys || []).length > 2 && (
+                                  <span className="text-[10px] text-muted-foreground">+{(item.attempted_keys || []).length - 2} أخرى</span>
                                 )}
                               </div>
                             )}
@@ -395,7 +552,7 @@ const IpManagement = () => {
                         )}
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-2">
                           <div
                             className="h-2 rounded-full bg-primary/60"
                             style={{ width: `${Math.min((item.request_count / (Math.max(...(filteredActivity?.map(a => a.request_count) || [1]))) * 80), 80)}px` }}
@@ -422,6 +579,17 @@ const IpManagement = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
+                          {/* Detail Button */}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 gap-1 text-xs"
+                            onClick={() => openDetail(item)}
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                            <span className="hidden sm:inline">تفاصيل</span>
+                          </Button>
+
                           {item.is_blocked ? (
                             <Button
                               size="sm"
