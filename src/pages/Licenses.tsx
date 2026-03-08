@@ -670,16 +670,6 @@ const Licenses = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {renewalLicense && (
-        <RenewalTokenDialog
-          open={!!renewalLicense}
-          onOpenChange={(open) => !open && setRenewalLicense(null)}
-          licenseId={renewalLicense.id}
-          licenseKey={renewalLicense.license_key}
-          customerName={renewalLicense.customer?.name || null}
-        />
-      )}
     </div>
   );
 };
