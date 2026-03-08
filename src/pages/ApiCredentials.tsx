@@ -4,7 +4,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Copy, Check, Plus, Trash2 } from "lucide-react";
+import { Copy, Check, Plus, Trash2, Power, PowerOff } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -320,6 +321,32 @@ export default function ApiCredentials() {
     }
   };
 
+  const toggleApiKey = async (id: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('api_keys')
+        .update({ is_active: !currentStatus })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      fetchApiKeys();
+      toast({
+        title: currentStatus ? "تم التعطيل" : "تم التفعيل",
+        description: currentStatus
+          ? "مفتاح API معطّل — أي أداة تستخدمه ستحصل على force_shutdown"
+          : "مفتاح API نشط الآن",
+      });
+    } catch (error) {
+      console.error('Error toggling API key:', error);
+      toast({
+        title: "خطأ",
+        description: "فشل تغيير حالة المفتاح",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Keys are now always masked from the database for security
 
   const copyToClipboard = (text: string, type: string) => {
@@ -413,7 +440,12 @@ export default function ApiCredentials() {
                   className="flex items-center justify-between p-4 border rounded-lg"
                 >
                   <div className="flex-1">
-                    <p className="font-medium">{apiKey.name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium">{apiKey.name}</p>
+                      <Badge variant={apiKey.is_active ? "default" : "destructive"} className="text-xs">
+                        {apiKey.is_active ? "نشط" : "معطّل"}
+                      </Badge>
+                    </div>
                     <div className="flex items-center gap-2 mt-1">
                       <code className="text-sm text-muted-foreground">
                         {apiKey.key_masked}
@@ -424,6 +456,21 @@ export default function ApiCredentials() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant={apiKey.is_active ? "outline" : "outline"}
+                      className={apiKey.is_active
+                        ? "border-yellow-500 text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-950"
+                        : "border-green-500 text-green-600 hover:bg-green-50 dark:hover:bg-green-950"
+                      }
+                      onClick={() => toggleApiKey(apiKey.id, apiKey.is_active ?? true)}
+                    >
+                      {apiKey.is_active ? (
+                        <><PowerOff className="h-4 w-4 ml-1" /> تعطيل</>
+                      ) : (
+                        <><Power className="h-4 w-4 ml-1" /> تفعيل</>
+                      )}
+                    </Button>
                     <Button
                       size="sm"
                       variant="destructive"
