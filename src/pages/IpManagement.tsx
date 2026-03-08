@@ -121,17 +121,34 @@ function IpDetailDrawer({ ip, isOpen, onClose }: { ip: IpActivity | null; isOpen
     },
   });
 
-  // Fetch geo info
+  // Fetch geo info via ipwho.is (HTTPS, free, no key needed)
   const { data: geoInfo, isLoading: geoLoading } = useQuery({
     queryKey: ["geo-info", ip?.ip_address],
     enabled: isOpen && !!ip?.ip_address,
     staleTime: 1000 * 60 * 60,
+    retry: 2,
     queryFn: async () => {
       try {
-        const res = await fetch(`https://ip-api.com/json/${ip!.ip_address}?fields=status,country,countryCode,regionName,city,isp,org,as,lat,lon,timezone,mobile,proxy,hosting`);
-        const data = await res.json();
-        if (data.status === "success") return data as GeoInfo;
-        return null;
+        const res = await fetch(`https://ipwho.is/${ip!.ip_address}`);
+        if (!res.ok) return null;
+        const d = await res.json();
+        if (!d.success) return null;
+        // Map ipwho.is response to GeoInfo shape
+        return {
+          country: d.country ?? "—",
+          countryCode: d.country_code ?? "—",
+          city: d.city ?? "—",
+          regionName: d.region ?? "—",
+          isp: d.connection?.isp ?? d.connection?.org ?? "—",
+          org: d.connection?.org ?? "—",
+          as: d.connection?.asn ? `AS${d.connection.asn}` : "—",
+          timezone: d.timezone?.id ?? "—",
+          lat: d.latitude ?? 0,
+          lon: d.longitude ?? 0,
+          mobile: false,
+          proxy: d.type === "proxy" || d.type === "vpn",
+          hosting: d.type === "hosting" || d.type === "datacenter",
+        } as GeoInfo;
       } catch { return null; }
     },
   });
