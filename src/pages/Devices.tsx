@@ -20,7 +20,17 @@ type Device = Tables<"devices">;
 const Devices = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDevices, setSelectedDevices] = useState<Set<string>>(new Set());
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const queryClient = useQueryClient();
+
+  const toggleGroup = (licenseId: string) => {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(licenseId)) next.delete(licenseId);
+      else next.add(licenseId);
+      return next;
+    });
+  };
 
   const { data: devices, isLoading } = useQuery({
     queryKey: ["devices"],
