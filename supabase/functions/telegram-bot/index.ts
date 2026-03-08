@@ -162,7 +162,7 @@ Deno.serve(async (req) => {
     }
 
     if (state?.step === "awaiting_rustdesk_id") {
-      const rdId = text.trim();
+      const rdId = text.trim().replace(/\s+/g, "");
       if (!rdId || rdId.length < 6) {
         await sendMessage(chatId, TELEGRAM_BOT_TOKEN, "⚠️ الـ ID يبدو غير صحيح. أرسل الـ ID من برنامج RustDesk:");
         return new Response("OK", { status: 200 });

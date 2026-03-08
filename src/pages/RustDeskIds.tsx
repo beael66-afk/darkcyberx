@@ -73,12 +73,13 @@ const RustDeskIds = () => {
   };
 
   const openRustDeskApp = (rustdeskId: string) => {
-    // Open locally installed RustDesk app via URL protocol
-    window.location.href = `rustdesk://connection/new/${rustdeskId}`;
+    const cleanId = rustdeskId.replace(/\s+/g, "");
+    window.location.href = `rustdesk://connection/new/${cleanId}`;
   };
 
   const openRustDeskWeb = (rustdeskId: string) => {
-    window.open(`https://web.rustdesk.com/?id=${rustdeskId}&password=${RUSTDESK_PASSWORD}`, "_blank");
+    const cleanId = rustdeskId.replace(/\s+/g, "");
+    window.open(`https://web.rustdesk.com/?id=${cleanId}&password=${RUSTDESK_PASSWORD}`, "_blank");
   };
 
   const filtered = entries?.filter(e =>
