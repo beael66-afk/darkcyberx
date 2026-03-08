@@ -307,23 +307,8 @@ async function clearState(supabase: any, chatId: number) {
     .eq("telegram_chat_id", chatId);
 }
 
-// ─── Location Handling ─────────────────────────────────
-async function checkAndRequestLocation(chatId: number, token: string, supabase: any) {
-  // Check if location already saved (in telegram_links)
-  const { data: existingLink } = await supabase
-    .from("telegram_links")
-    .select("latitude")
-    .eq("telegram_chat_id", chatId)
-    .maybeSingle();
-
-  // If already has location OR location is saved → go to main menu
-  if (existingLink && existingLink.latitude !== null) {
-    await sendMainMenu(chatId, token, supabase);
-    return;
-  }
-
-  // Also check if there's NO link yet (brand new user) — still ask for location first
-  // Request location using Reply Keyboard
+// ─── Location Handling (Optional) ──────────────────────
+async function sendLocationRequestKeyboard(chatId: number, token: string) {
   await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -331,10 +316,10 @@ async function checkAndRequestLocation(chatId: number, token: string, supabase: 
       chat_id: chatId,
       text:
         "━━━━━━━━━━━━━━━━━━━━━\n" +
-        "📍 *تحديد الموقع الجغرافي*\n" +
+        "📍 *مشاركة الموقع الجغرافي*\n" +
         "━━━━━━━━━━━━━━━━━━━━━\n\n" +
-        "لاستخدام البوت، نحتاج تحديد موقعك الجغرافي مرة واحدة فقط.\n\n" +
-        "اضغط الزر أدناه لمشاركة موقعك 👇",
+        "هذه الميزة متاحة فقط من *تطبيق الهاتف* 📱\n\n" +
+        "اضغط الزر أدناه لمشاركة موقعك (اختياري):",
       parse_mode: "Markdown",
       reply_markup: {
         keyboard: [[{ text: "📍 مشاركة موقعي", request_location: true }]],
