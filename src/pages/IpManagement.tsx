@@ -35,6 +35,7 @@ interface IpActivity {
   last_seen: string;
   is_blocked: boolean;
   customer_name: string | null;
+  attempted_keys: string[];
 }
 
 const formatDate = (dateStr: string) => {
