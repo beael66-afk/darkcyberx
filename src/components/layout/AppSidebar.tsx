@@ -15,6 +15,7 @@ import {
   Bot,
   ShoppingCart,
   Shield,
+  MonitorPlay,
 } from "lucide-react";
 import {
   Sidebar,
@@ -38,6 +39,7 @@ const menuItems = [
   { title: "العملاء", url: "/customers", icon: Users },
   { title: "المنتجات", url: "/products", icon: Package },
   { title: "الأجهزة", url: "/devices", icon: Monitor },
+  { title: "RustDesk IDs", url: "/rustdesk-ids", icon: MonitorPlay },
   { title: "التقارير", url: "/reports", icon: BarChart3 },
   { title: "السجلات", url: "/logs", icon: ScrollText },
   { title: "بيانات الاعتماد", url: "/api-credentials", icon: Code2 },

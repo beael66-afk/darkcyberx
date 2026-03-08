@@ -504,6 +504,41 @@ export type Database = {
           },
         ]
       }
+      rustdesk_ids: {
+        Row: {
+          created_at: string
+          customer_id: string
+          device_label: string | null
+          id: string
+          rustdesk_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          device_label?: string | null
+          id?: string
+          rustdesk_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          device_label?: string | null
+          id?: string
+          rustdesk_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rustdesk_ids_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       telegram_links: {
         Row: {
           created_at: string

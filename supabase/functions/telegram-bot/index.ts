@@ -161,6 +161,31 @@ Deno.serve(async (req) => {
       return new Response("OK", { status: 200 });
     }
 
+    if (state?.step === "awaiting_rustdesk_id") {
+      const rdId = text.trim();
+      if (!rdId || rdId.length < 6) {
+        await sendMessage(chatId, TELEGRAM_BOT_TOKEN, "⚠️ الـ ID يبدو غير صحيح. أرسل الـ ID من برنامج RustDesk:");
+        return new Response("OK", { status: 200 });
+      }
+      await handleRustDeskIdInput(supabase, chatId, rdId, state.data?.deviceLabel, TELEGRAM_BOT_TOKEN);
+      await clearState(supabase, chatId);
+      return new Response("OK", { status: 200 });
+    }
+
+    if (state?.step === "awaiting_rustdesk_label") {
+      const label = text.trim() || null;
+      await setState(supabase, chatId, "awaiting_rustdesk_id", { deviceLabel: label });
+      await sendMessage(chatId, TELEGRAM_BOT_TOKEN,
+        "━━━━━━━━━━━━━━━━━━━━━\n" +
+        "🖥️ *أرسل الآن ID جهازك من برنامج RustDesk*\n" +
+        "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+        "افتح برنامج RustDesk على جهازك وأرسل الرقم الظاهر في الواجهة الرئيسية.\n\n" +
+        "مثال: `123456789`",
+        "Markdown"
+      );
+      return new Response("OK", { status: 200 });
+    }
+
     if (state?.step === "awaiting_days") {
       if (/^\d+$/.test(text)) {
         await handleDaysInput(supabase, chatId, parseInt(text), state.data?.licenseKey, TELEGRAM_BOT_TOKEN);
@@ -234,6 +259,7 @@ async function sendMainMenu(chatId: number, token: string, supabase?: any) {
       inline_keyboard: [
         [{ text: "📋 عرض تراخيصي", callback_data: "my_licenses" }],
         [{ text: "🔄 تجديد ترخيص", callback_data: "renew" }],
+        [{ text: "🖥️ تسجيل / تعديل ID جهاز", callback_data: "rustdesk_register" }],
         [{ text: "❓ المساعدة", callback_data: "help" }],
       ],
     };
@@ -296,6 +322,9 @@ async function handleCallbackQuery(supabase: any, query: any, token: string) {
     case "main_menu":
       await clearState(supabase, chatId);
       await sendMainMenu(chatId, token, supabase);
+      break;
+    case "rustdesk_register":
+      await handleRustDeskRegister(supabase, chatId, token);
       break;
     default:
       if (data.startsWith("renew_")) {
@@ -846,6 +875,73 @@ async function handleReceiptSubmit(
     "━━━━━━━━━━━━━━━━━━━━━\n\n" +
     "📨 سيتم مراجعة طلبك من الإدارة\n" +
     "وسيصلك إشعار بالتأكيد قريباً ✅",
+    { inline_keyboard: [[{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
+    "Markdown"
+  );
+}
+
+// ─── RustDesk ID Flow ──────────────────────────────────
+async function handleRustDeskRegister(supabase: any, chatId: number, token: string) {
+  const customer = await getCustomerByChatId(supabase, chatId);
+  if (!customer) {
+    await sendMessageWithKeyboard(chatId, token,
+      "⚠️ حسابك غير مربوط بعد.",
+      { inline_keyboard: [[{ text: "🔗 ربط حساب", callback_data: "link_account" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
+    );
+    return;
+  }
+
+  // Check if already has a RustDesk ID
+  const { data: existing } = await supabase
+    .from("rustdesk_ids")
+    .select("rustdesk_id, device_label")
+    .eq("customer_id", customer.customer_id)
+    .maybeSingle();
+
+  const existingMsg = existing
+    ? `📌 *ID الجهاز الحالي:* \`${existing.rustdesk_id}\`${existing.device_label ? `\n🏷️ الاسم: ${existing.device_label}` : ""}\n\n`
+    : "";
+
+  await setState(supabase, chatId, "awaiting_rustdesk_label");
+  await sendMessage(chatId, token,
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "🖥️ *تسجيل / تعديل ID جهاز RustDesk*\n" +
+    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+    existingMsg +
+    "✏️ *أدخل اسماً مميزاً للجهاز* (اختياري)\n" +
+    "مثال: `لابتوب المكتب` أو `جهاز البيت`\n\n" +
+    "_(أو أرسل `.` للتخطي)_",
+    "Markdown"
+  );
+}
+
+async function handleRustDeskIdInput(supabase: any, chatId: number, rustdeskId: string, deviceLabel: string | null, token: string) {
+  const customer = await getCustomerByChatId(supabase, chatId);
+  if (!customer) return;
+
+  const label = deviceLabel === "." ? null : deviceLabel;
+
+  const { error } = await supabase
+    .from("rustdesk_ids")
+    .upsert(
+      { customer_id: customer.customer_id, rustdesk_id: rustdeskId, device_label: label, updated_at: new Date().toISOString() },
+      { onConflict: "customer_id" }
+    );
+
+  if (error) {
+    console.error("RustDesk upsert error:", error);
+    await sendMessage(chatId, token, "❌ حدث خطأ. حاول مرة أخرى.");
+    return;
+  }
+
+  await sendMessageWithKeyboard(chatId, token,
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "✅ *تم حفظ ID الجهاز بنجاح!*\n" +
+    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+    `🖥️ *ID الجهاز:* \`${rustdeskId}\`\n` +
+    (label ? `🏷️ *اسم الجهاز:* ${label}\n` : "") +
+    "\n🔑 *كلمة المرور للاتصال:* `123456medoissaA`\n\n" +
+    "سيتمكن فريق الدعم من الاتصال بجهازك عند الحاجة ✅",
     { inline_keyboard: [[{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
     "Markdown"
   );
