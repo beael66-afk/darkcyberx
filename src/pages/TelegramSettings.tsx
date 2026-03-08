@@ -17,6 +17,7 @@ import {
   Calendar,
   Copy,
   ExternalLink,
+  MapPin,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -40,6 +41,9 @@ interface TelegramLink {
   telegram_chat_id: number;
   created_at: string;
   customer_id: string;
+  latitude: number | null;
+  longitude: number | null;
+  location_updated_at: string | null;
   customers: {
     id: string;
     name: string;
@@ -55,9 +59,8 @@ const TelegramSettings = () => {
   const { data: links, isLoading } = useQuery({
     queryKey: ["telegram-links"],
     queryFn: async () => {
-      // Fetch links and customers separately to avoid RLS join issues
       const [{ data: linksData, error: linksError }, { data: customersData }] = await Promise.all([
-        supabase.from("telegram_links").select("id, telegram_chat_id, created_at, customer_id").order("created_at", { ascending: false }),
+        supabase.from("telegram_links").select("id, telegram_chat_id, created_at, customer_id, latitude, longitude, location_updated_at").order("created_at", { ascending: false }),
         supabase.from("customers").select("id, name, email, company"),
       ]);
       if (linksError) throw linksError;
@@ -176,6 +179,7 @@ const TelegramSettings = () => {
               <TableHead className="font-semibold">العميل</TableHead>
               <TableHead className="font-semibold">البريد الإلكتروني</TableHead>
               <TableHead className="font-semibold">معرف التليجرام</TableHead>
+              <TableHead className="font-semibold">الموقع الجغرافي</TableHead>
               <TableHead className="font-semibold">تاريخ الربط</TableHead>
               <TableHead className="font-semibold text-left">الإجراءات</TableHead>
             </TableRow>
@@ -183,13 +187,13 @@ const TelegramSettings = () => {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">
+                <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
                   جاري التحميل...
                 </TableCell>
               </TableRow>
             ) : filteredLinks?.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-12">
+                <TableCell colSpan={6} className="text-center py-12">
                   <div className="flex flex-col items-center gap-2 text-muted-foreground">
                     <Bot className="h-10 w-10 opacity-30" />
                     <p>لا يوجد عملاء مربوطين</p>
@@ -230,6 +234,32 @@ const TelegramSettings = () => {
                       </TooltipTrigger>
                       <TooltipContent>انسخ معرف التليجرام</TooltipContent>
                     </Tooltip>
+                  </TableCell>
+                  <TableCell>
+                    {link.latitude && link.longitude ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <a
+                            href={`https://www.google.com/maps?q=${link.latitude},${link.longitude}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 text-sm text-emerald-600 dark:text-emerald-400 hover:underline"
+                          >
+                            <MapPin className="h-3.5 w-3.5 shrink-0" />
+                            <span className="font-mono">
+                              {link.latitude.toFixed(4)}, {link.longitude.toFixed(4)}
+                            </span>
+                            <ExternalLink className="h-3 w-3 opacity-50" />
+                          </a>
+                        </TooltipTrigger>
+                        <TooltipContent>فتح في خرائط Google</TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      <span className="text-muted-foreground text-sm flex items-center gap-1">
+                        <MapPin className="h-3.5 w-3.5 opacity-40" />
+                        لم يُحدد
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     <div className="flex items-center gap-1.5">
