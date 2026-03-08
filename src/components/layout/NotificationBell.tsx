@@ -109,9 +109,7 @@ export function NotificationBell() {
 
       {/* Dropdown Panel */}
       {open && (
-        <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-[380px] max-w-[calc(100vw-16px)] rounded-xl border bg-popover text-popover-foreground shadow-xl z-[200] overflow-hidden animate-in fade-in-0 slide-in-from-top-1 duration-150"
-          style={{ right: "auto" }}
-        >
+        <div className="absolute right-0 top-full mt-2 w-[370px] rounded-xl border bg-popover text-popover-foreground shadow-xl z-[200] overflow-hidden animate-in fade-in-0 slide-in-from-top-1 duration-150">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/30">
             <div className="flex items-center gap-2">
