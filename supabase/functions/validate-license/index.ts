@@ -295,10 +295,12 @@ serve(async (req) => {
     }
 
     if (license.status !== 'active') {
+      // Suspended/expired licenses → force shutdown immediately
       return new Response(
         JSON.stringify({
           error: `License is ${license.status}`,
           valid: false,
+          force_shutdown: license.status === 'suspended',
           license: { key: license.license_key, status: license.status }
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
