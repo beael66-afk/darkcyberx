@@ -338,9 +338,10 @@ function IpDetailDrawer({ ip, isOpen, onClose }: { ip: IpActivity | null; isOpen
                     <div className="rounded-lg overflow-hidden border h-[220px] w-full">
                       <iframe
                         title="ip-map"
-                        src={`https://www.openstreetmap.org/export/embed.html?bbox=${geoInfo.lon - 0.05},${geoInfo.lat - 0.05},${geoInfo.lon + 0.05},${geoInfo.lat + 0.05}&layer=mapnik&marker=${geoInfo.lat},${geoInfo.lon}`}
+                        src={`https://maps.google.com/maps?q=${geoInfo.lat},${geoInfo.lon}&z=12&output=embed`}
                         style={{ width: "100%", height: "100%", border: 0 }}
                         loading="lazy"
+                        allowFullScreen
                       />
                     </div>
                     <div className="flex gap-2 flex-wrap">
