@@ -713,9 +713,24 @@ async function handleLinkAccount(supabase: any, chatId: number, email: string, t
       return;
     }
 
+    // Retrieve location from state if saved earlier
+    const { data: locState } = await supabase
+      .from("telegram_user_states")
+      .select("data")
+      .eq("telegram_chat_id", chatId)
+      .eq("step", "has_location")
+      .maybeSingle();
+
+    const insertData: any = { customer_id: customer.id, telegram_chat_id: chatId };
+    if (locState?.data?.latitude) {
+      insertData.latitude = locState.data.latitude;
+      insertData.longitude = locState.data.longitude;
+      insertData.location_updated_at = new Date().toISOString();
+    }
+
     const { error } = await supabase
       .from("telegram_links")
-      .insert({ customer_id: customer.id, telegram_chat_id: chatId });
+      .insert(insertData);
 
     if (error) {
       console.error("Error linking:", error);
