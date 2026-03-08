@@ -366,6 +366,9 @@ async function handleCallbackQuery(supabase: any, query: any, token: string) {
       } else if (data.startsWith("rustdesk_delete_")) {
         const deviceId = data.replace("rustdesk_delete_", "");
         await handleRustDeskDeleteDevice(supabase, chatId, deviceId, token);
+      } else if (data.startsWith("rustdesk_edit_")) {
+        const deviceId = data.replace("rustdesk_edit_", "");
+        await handleRustDeskEditStart(supabase, chatId, deviceId, token);
       }
       break;
   }
