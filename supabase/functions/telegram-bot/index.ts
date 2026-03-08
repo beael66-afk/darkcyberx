@@ -475,6 +475,9 @@ async function handleCallbackQuery(supabase: any, query: any, token: string) {
     case "download_rustdesk":
       await handleDownloadRustDesk(chatId, token);
       break;
+    case "share_location":
+      await sendLocationRequestKeyboard(chatId, token);
+      break;
     default:
       if (data.startsWith("renew_")) {
         const licenseKey = data.replace("renew_", "");
