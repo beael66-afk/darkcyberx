@@ -287,8 +287,6 @@ const Customers = () => {
             <TableRow className="bg-muted/50 hover:bg-muted/50">
               <TableHead className="font-semibold">العميل</TableHead>
               <TableHead className="font-semibold">البريد الإلكتروني</TableHead>
-              <TableHead className="font-semibold">الهاتف</TableHead>
-              <TableHead className="font-semibold">الشركة</TableHead>
               <TableHead className="font-semibold">البوت</TableHead>
               <TableHead className="font-semibold text-left">الإجراءات</TableHead>
             </TableRow>
