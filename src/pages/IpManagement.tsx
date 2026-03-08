@@ -341,7 +341,6 @@ function IpDetailDrawer({ ip, isOpen, onClose }: { ip: IpActivity | null; isOpen
                         src={`https://www.openstreetmap.org/export/embed.html?bbox=${geoInfo.lon - 0.05},${geoInfo.lat - 0.05},${geoInfo.lon + 0.05},${geoInfo.lat + 0.05}&layer=mapnik&marker=${geoInfo.lat},${geoInfo.lon}`}
                         style={{ width: "100%", height: "100%", border: 0 }}
                         loading="lazy"
-                        sandbox="allow-scripts allow-same-origin"
                       />
                     </div>
                     <div className="flex gap-2 flex-wrap">
