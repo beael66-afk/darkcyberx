@@ -53,6 +53,30 @@ export type Database = {
         }
         Relationships: []
       }
+      blocked_hwids: {
+        Row: {
+          blocked_by: string | null
+          created_at: string
+          hwid: string
+          id: string
+          reason: string | null
+        }
+        Insert: {
+          blocked_by?: string | null
+          created_at?: string
+          hwid: string
+          id?: string
+          reason?: string | null
+        }
+        Update: {
+          blocked_by?: string | null
+          created_at?: string
+          hwid?: string
+          id?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
       blocked_ips: {
         Row: {
           blocked_by: string | null
