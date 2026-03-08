@@ -372,10 +372,12 @@ const RenewalOrders = () => {
 
           // Create persistent invoice record so revenue is never lost on deletion
           if (req.amount && Number(req.amount) > 0) {
+            const { data: invNum } = await supabase.rpc("generate_invoice_number");
             await supabase.from("invoices").insert({
               customer_id: customer.id,
               license_id: licData.id,
               amount: req.amount,
+              invoice_number: invNum || `INV-${Date.now()}`,
               status: "paid",
               paid_at: new Date().toISOString(),
               payment_method: "vodafone_cash",
