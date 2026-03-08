@@ -52,6 +52,32 @@ interface IpLog {
   created_at: string;
 }
 
+interface GeoInfo {
+  country: string;
+  countryCode: string;
+  city: string;
+  regionName: string;
+  isp: string;
+  org: string;
+  as: string;
+  timezone: string;
+  lat: number;
+  lon: number;
+  mobile: boolean;
+  proxy: boolean;
+  hosting: boolean;
+}
+
+interface DeviceInfo {
+  device_name: string | null;
+  os_info: string | null;
+  hwid: string;
+  last_verified: string | null;
+  is_active: boolean | null;
+  license_key: string | null;
+  customer_name: string | null;
+}
+
 const formatDate = (dateStr: string) => {
   if (!dateStr) return "—";
   const d = new Date(dateStr);
@@ -79,95 +105,259 @@ const getLogBadgeVariant = (entityType: string): "destructive" | "secondary" | "
 
 // ─── IP Detail Drawer ─────────────────────────────────
 function IpDetailDrawer({ ip, isOpen, onClose }: { ip: IpActivity | null; isOpen: boolean; onClose: () => void }) {
-  const { data: logs, isLoading } = useQuery({
+  // Fetch logs
+  const { data: logs, isLoading: logsLoading } = useQuery({
     queryKey: ["ip-logs", ip?.ip_address],
     enabled: isOpen && !!ip?.ip_address,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("logs")
-        .select("id, action, entity_type, description, created_at")
+        .select("id, action, entity_type, description, created_at, entity_id")
         .eq("ip_address", ip!.ip_address)
         .order("created_at", { ascending: false })
-        .limit(200);
+        .limit(300);
       if (error) throw error;
-      return data as IpLog[];
+      return data as (IpLog & { entity_id: string | null })[];
+    },
+  });
+
+  // Fetch geo info
+  const { data: geoInfo, isLoading: geoLoading } = useQuery({
+    queryKey: ["geo-info", ip?.ip_address],
+    enabled: isOpen && !!ip?.ip_address,
+    staleTime: 1000 * 60 * 60,
+    queryFn: async () => {
+      try {
+        const res = await fetch(`https://ip-api.com/json/${ip!.ip_address}?fields=status,country,countryCode,regionName,city,isp,org,as,lat,lon,timezone,mobile,proxy,hosting`);
+        const data = await res.json();
+        if (data.status === "success") return data as GeoInfo;
+        return null;
+      } catch { return null; }
+    },
+  });
+
+  // Fetch devices linked to licenses accessed from this IP
+  const { data: devices } = useQuery({
+    queryKey: ["ip-devices", ip?.ip_address, logs?.length],
+    enabled: isOpen && !!logs?.length,
+    queryFn: async () => {
+      const licenseIds = [...new Set(
+        (logs || []).filter(l => l.entity_type === "license" && l.entity_id).map(l => l.entity_id!)
+      )];
+      if (!licenseIds.length) return [] as DeviceInfo[];
+      const { data } = await supabase
+        .from("devices")
+        .select("device_name, os_info, hwid, last_verified, is_active, license_id, licenses!inner(license_key, customers(name))")
+        .in("license_id", licenseIds);
+      return (data || []).map((d: any) => ({
+        device_name: d.device_name,
+        os_info: d.os_info,
+        hwid: d.hwid,
+        last_verified: d.last_verified,
+        is_active: d.is_active,
+        license_key: d.licenses?.license_key ?? null,
+        customer_name: d.licenses?.customers?.name ?? null,
+      })) as DeviceInfo[];
     },
   });
 
   const licKeyRegex = /([A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4})/g;
-
   const securityLogs = logs?.filter(l => l.entity_type === "security") || [];
-  const otherLogs = logs?.filter(l => l.entity_type !== "security") || [];
-
+  const successLogs = logs?.filter(l => l.entity_type === "license") || [];
   const allKeys = new Set<string>();
-  logs?.forEach(l => {
-    const matches = l.description.matchAll(licKeyRegex);
-    for (const m of matches) allKeys.add(m[1]);
-  });
+  logs?.forEach(l => { const m = l.description.matchAll(licKeyRegex); for (const x of m) allKeys.add(x[1]); });
+
+  // Activity per hour (last 24h bar chart)
+  const hourlyActivity = (() => {
+    if (!logs) return [];
+    const now = Date.now();
+    const counts: Record<number, number> = {};
+    logs.forEach(l => {
+      const h = Math.floor((now - new Date(l.created_at).getTime()) / (1000 * 60 * 60));
+      if (h < 24) counts[h] = (counts[h] || 0) + 1;
+    });
+    return Array.from({ length: 24 }, (_, i) => ({ h: 23 - i, c: counts[23 - i] || 0 })).reverse();
+  })();
+  const maxHourly = Math.max(...hourlyActivity.map(x => x.c), 1);
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent side="left" className="w-full sm:max-w-xl p-0 flex flex-col">
-        <SheetHeader className="p-5 pb-3 border-b">
-          <SheetTitle className="flex items-center gap-2 text-base">
-            <Globe className="h-5 w-5 text-primary" />
-            <code className="font-mono">{ip?.ip_address}</code>
+      <SheetContent side="left" className="w-full sm:max-w-2xl p-0 flex flex-col">
+        <SheetHeader className="p-5 pb-3 border-b bg-muted/20">
+          <SheetTitle className="flex items-center gap-2 text-base flex-wrap">
+            <Globe className="h-5 w-5 text-primary shrink-0" />
+            <code className="font-mono text-lg">{ip?.ip_address}</code>
             {ip?.is_blocked && <Badge variant="destructive" className="text-xs gap-1"><Ban className="h-3 w-3" />محظور</Badge>}
+            {geoInfo?.proxy && <Badge variant="outline" className="text-xs gap-1 border-orange-300 text-orange-600">Proxy/VPN</Badge>}
+            {geoInfo?.hosting && <Badge variant="outline" className="text-xs gap-1 border-yellow-300 text-yellow-600"><Building2 className="h-3 w-3" />Hosting</Badge>}
           </SheetTitle>
         </SheetHeader>
 
         <ScrollArea className="flex-1">
-          <div className="p-5 space-y-5">
+          <div className="p-5 space-y-4">
 
-            {/* Summary Cards */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-lg border bg-muted/30 p-3">
+            {/* ── Stats ── */}
+            <div className="grid grid-cols-3 gap-2">
+              <div className="rounded-xl border bg-muted/30 p-3 text-center">
                 <p className="text-xs text-muted-foreground mb-1">إجمالي الطلبات</p>
                 <p className="text-2xl font-bold">{ip?.request_count ?? 0}</p>
               </div>
-              <div className="rounded-lg border bg-muted/30 p-3">
-                <p className="text-xs text-muted-foreground mb-1">محاولات أمنية</p>
+              <div className="rounded-xl border bg-destructive/10 p-3 text-center">
+                <p className="text-xs text-muted-foreground mb-1">محاولات فاشلة</p>
                 <p className="text-2xl font-bold text-destructive">{securityLogs.length}</p>
               </div>
-              <div className="rounded-lg border bg-muted/30 p-3 col-span-2">
-                <p className="text-xs text-muted-foreground mb-1">آخر نشاط</p>
-                <p className="text-sm font-medium">{formatDateTime(ip?.last_seen ?? "")}</p>
+              <div className="rounded-xl border bg-primary/5 p-3 text-center">
+                <p className="text-xs text-muted-foreground mb-1">تفعيلات ناجحة</p>
+                <p className="text-2xl font-bold text-primary">{successLogs.length}</p>
               </div>
             </div>
 
-            {/* Customer or Spam */}
-            <div className="rounded-lg border p-3 flex items-center gap-3">
+            {/* ── Geo Info ── */}
+            <div className="rounded-xl border overflow-hidden">
+              <div className="bg-muted/40 px-4 py-2.5 flex items-center gap-2 border-b">
+                <MapPin className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold">الموقع الجغرافي</span>
+              </div>
+              {geoLoading ? (
+                <div className="p-4 text-center text-muted-foreground text-sm">جاري جلب معلومات الموقع...</div>
+              ) : !geoInfo ? (
+                <div className="p-4 text-center text-muted-foreground text-sm">تعذّر جلب معلومات الموقع</div>
+              ) : (
+                <div className="p-4 grid grid-cols-2 gap-3">
+                  <div className="flex items-start gap-2">
+                    <Flag className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">الدولة</p>
+                      <p className="text-sm font-semibold">{geoInfo.country} ({geoInfo.countryCode})</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">المدينة / المنطقة</p>
+                      <p className="text-sm font-semibold">{geoInfo.city}, {geoInfo.regionName}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Wifi className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">مزود الإنترنت (ISP)</p>
+                      <p className="text-sm font-medium">{geoInfo.isp}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Building2 className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">المنظمة / AS</p>
+                      <p className="text-sm font-medium truncate">{geoInfo.org || geoInfo.as}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">المنطقة الزمنية</p>
+                      <p className="text-sm font-medium">{geoInfo.timezone}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full border ${geoInfo.proxy ? "border-orange-300 text-orange-600" : "border-border text-muted-foreground"}`}>
+                      {geoInfo.proxy ? <XCircle className="h-3 w-3" /> : <CheckCircle2 className="h-3 w-3" />}
+                      {geoInfo.proxy ? "Proxy/VPN" : "اتصال مباشر"}
+                    </div>
+                    {geoInfo.mobile && (
+                      <div className="flex items-center gap-1 text-xs px-2 py-1 rounded-full border border-blue-300 text-blue-600">
+                        <Monitor className="h-3 w-3" />
+                        موبايل
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ── Customer ── */}
+            <div className="rounded-xl border p-4 flex items-center gap-3">
               {ip?.customer_name ? (
                 <>
-                  <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-base shrink-0">
                     {ip.customer_name.charAt(0)}
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">العميل</p>
-                    <p className="font-semibold">{ip.customer_name}</p>
+                    <p className="text-xs text-muted-foreground">العميل المرتبط</p>
+                    <p className="font-semibold text-base">{ip.customer_name}</p>
                   </div>
+                  <CheckCircle2 className="h-5 w-5 text-primary ml-auto" />
                 </>
               ) : (
                 <>
-                  <div className="h-9 w-9 rounded-full bg-destructive/10 flex items-center justify-center shrink-0">
-                    <AlertTriangle className="h-4 w-4 text-destructive" />
+                  <div className="h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center shrink-0">
+                    <AlertTriangle className="h-5 w-5 text-destructive" />
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">التصنيف</p>
                     <p className="font-semibold text-destructive">سبام / غير معروف</p>
                   </div>
+                  <XCircle className="h-5 w-5 text-destructive ml-auto" />
                 </>
               )}
             </div>
 
-            {/* Attempted License Keys */}
-            {allKeys.size > 0 && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Key className="h-4 w-4 text-primary" />
-                  <p className="text-sm font-semibold">مفاتيح الترخيص المحاوَلة ({allKeys.size})</p>
+            {/* ── Devices ── */}
+            {devices && devices.length > 0 && (
+              <div className="rounded-xl border overflow-hidden">
+                <div className="bg-muted/40 px-4 py-2.5 flex items-center gap-2 border-b">
+                  <Monitor className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-semibold">الأجهزة المرتبطة ({devices.length})</span>
                 </div>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="divide-y">
+                  {devices.map((dev, i) => (
+                    <div key={i} className="p-3 flex items-start gap-3">
+                      <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${dev.is_active ? "bg-primary/10" : "bg-muted"}`}>
+                        <Cpu className={`h-4 w-4 ${dev.is_active ? "text-primary" : "text-muted-foreground"}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm font-semibold">{dev.device_name || "جهاز غير مسمى"}</p>
+                          {dev.is_active
+                            ? <Badge variant="outline" className="text-[10px] h-4 text-primary border-primary/30">نشط</Badge>
+                            : <Badge variant="outline" className="text-[10px] h-4 text-destructive border-destructive/30">موقوف</Badge>}
+                        </div>
+                        {dev.os_info && (
+                          <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                            <Monitor className="h-3 w-3" />{dev.os_info}
+                          </p>
+                        )}
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {dev.license_key && (
+                            <code className="text-[10px] font-mono bg-muted px-1.5 py-0.5 rounded border">{dev.license_key}</code>
+                          )}
+                          {dev.customer_name && (
+                            <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                              <User className="h-2.5 w-2.5" />{dev.customer_name}
+                            </span>
+                          )}
+                          {dev.last_verified && (
+                            <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                              <Clock className="h-2.5 w-2.5" />آخر تحقق: {formatDate(dev.last_verified)}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10px] font-mono text-muted-foreground/50 mt-0.5 truncate" title={dev.hwid}>HWID: {dev.hwid}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── Attempted Keys ── */}
+            {allKeys.size > 0 && (
+              <div className="rounded-xl border overflow-hidden">
+                <div className="bg-muted/40 px-4 py-2.5 flex items-center gap-2 border-b">
+                  <Key className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-semibold">مفاتيح الترخيص المحاوَلة ({allKeys.size})</span>
+                </div>
+                <div className="p-3 flex flex-wrap gap-1.5">
                   {Array.from(allKeys).map(k => (
                     <code key={k} className="text-xs font-mono bg-muted border rounded px-2 py-1">{k}</code>
                   ))}
@@ -175,16 +365,41 @@ function IpDetailDrawer({ ip, isOpen, onClose }: { ip: IpActivity | null; isOpen
               </div>
             )}
 
+            {/* ── Activity Chart (24h) ── */}
+            {hourlyActivity.some(x => x.c > 0) && (
+              <div className="rounded-xl border overflow-hidden">
+                <div className="bg-muted/40 px-4 py-2.5 flex items-center gap-2 border-b">
+                  <BarChart3 className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-semibold">النشاط خلال آخر 24 ساعة</span>
+                </div>
+                <div className="p-4">
+                  <div className="flex items-end gap-0.5 h-16">
+                    {hourlyActivity.map((x, i) => (
+                      <div key={i} className="flex-1 flex flex-col justify-end" title={`منذ ${x.h} ساعة: ${x.c} طلب`}>
+                        <div
+                          className="w-full rounded-sm bg-primary/60 hover:bg-primary transition-all"
+                          style={{ height: `${Math.max((x.c / maxHourly) * 100, x.c > 0 ? 4 : 0)}%` }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-between mt-1">
+                    <span className="text-[10px] text-muted-foreground">24 ساعة مضت</span>
+                    <span className="text-[10px] text-muted-foreground">الآن</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <Separator />
 
-            {/* Timeline of Logs */}
+            {/* ── Full Log ── */}
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Activity className="h-4 w-4 text-primary" />
                 <p className="text-sm font-semibold">سجل النشاط الكامل ({logs?.length ?? 0} حدث)</p>
               </div>
-
-              {isLoading ? (
+              {logsLoading ? (
                 <div className="text-center py-8 text-muted-foreground text-sm">جاري التحميل...</div>
               ) : !logs?.length ? (
                 <div className="text-center py-8 text-muted-foreground text-sm">لا توجد سجلات</div>
@@ -198,12 +413,8 @@ function IpDetailDrawer({ ip, isOpen, onClose }: { ip: IpActivity | null; isOpen
                           <div className="flex-1 min-w-0">
                             <p className="text-xs text-foreground leading-relaxed break-words">{log.description}</p>
                             <div className="flex items-center gap-2 mt-1.5">
-                              <Badge variant={getLogBadgeVariant(log.entity_type)} className="text-[10px] h-4 px-1.5">
-                                {log.entity_type}
-                              </Badge>
-                              <Badge variant="outline" className="text-[10px] h-4 px-1.5">
-                                {log.action}
-                              </Badge>
+                              <Badge variant={getLogBadgeVariant(log.entity_type)} className="text-[10px] h-4 px-1.5">{log.entity_type}</Badge>
+                              <Badge variant="outline" className="text-[10px] h-4 px-1.5">{log.action}</Badge>
                             </div>
                           </div>
                         </div>
