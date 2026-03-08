@@ -124,7 +124,7 @@ const ApproveRegDialog = ({
 }) => {
   const [maxDevices, setMaxDevices] = useState(1);
   const [selectedProduct, setSelectedProduct] = useState<string>("");
-  const [renewalDays, setRenewalDays] = useState<string>("");
+  const [renewalDays, setRenewalDays] = useState<string>(request.requested_days ? String(request.requested_days) : "");
   const [createLicense, setCreateLicense] = useState(true);
 
   const { data: products } = useQuery({
