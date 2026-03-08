@@ -608,8 +608,8 @@ const RenewalOrders = () => {
                           )}
                         </TableCell>
                         <TableCell><Badge variant={config.variant} className="gap-1"><StatusIcon className="h-3 w-3" />{config.label}</Badge></TableCell>
-                        <TableCell className="text-muted-foreground text-sm">
-                          <div className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{new Date(req.created_at).toLocaleDateString("ar-EG", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</div>
+                         <TableCell className="text-muted-foreground text-sm">
+                          <div className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{(() => { const d = new Date(req.created_at); if (isNaN(d.getTime())) return "—"; return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; })()}</div>
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-1 flex-wrap">
