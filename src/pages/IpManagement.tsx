@@ -126,7 +126,7 @@ function IpDetailDrawer({ ip, isOpen, onClose }: { ip: IpActivity | null; isOpen
     },
   });
 
-  // Fetch geo info via ipapi.co (HTTPS + CORS supported, free, no key needed)
+  // Fetch geo info via Edge Function → ip-api.com (server-side, no CORS, full data)
   const { data: geoInfo, isLoading: geoLoading } = useQuery({
     queryKey: ["geo-info", ip?.ip_address],
     enabled: isOpen && !!ip?.ip_address,
@@ -134,24 +134,34 @@ function IpDetailDrawer({ ip, isOpen, onClose }: { ip: IpActivity | null; isOpen
     retry: 1,
     queryFn: async () => {
       try {
-        const res = await fetch(`https://ipapi.co/${ip!.ip_address}/json/`);
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        const res = await fetch(
+          `${supabaseUrl}/functions/v1/geo-lookup?ip=${encodeURIComponent(ip!.ip_address)}`,
+          { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } }
+        );
         if (!res.ok) return null;
         const d = await res.json();
-        if (d.error) return null;
+        if (d.error || d.status !== "success") return null;
         return {
-          country: d.country_name ?? "—",
-          countryCode: d.country_code ?? "—",
+          country: d.country ?? "—",
+          countryCode: d.countryCode ?? "—",
+          continent: d.continent ?? "—",
           city: d.city ?? "—",
-          regionName: d.region ?? "—",
-          isp: d.org ?? "—",
+          regionName: d.regionName ?? "—",
+          zip: d.zip ?? "—",
+          isp: d.isp ?? "—",
           org: d.org ?? "—",
-          as: d.asn ?? "—",
+          as: d.as ?? "—",
+          asname: d.asname ?? "—",
+          reverse: d.reverse ?? "—",
           timezone: d.timezone ?? "—",
-          lat: d.latitude ?? 0,
-          lon: d.longitude ?? 0,
-          mobile: false,
-          proxy: false,
-          hosting: false,
+          currency: d.currency ?? "—",
+          lat: d.lat ?? 0,
+          lon: d.lon ?? 0,
+          mobile: d.mobile ?? false,
+          proxy: d.proxy ?? false,
+          hosting: d.hosting ?? false,
         } as GeoInfo;
       } catch { return null; }
     },
