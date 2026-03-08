@@ -58,13 +58,12 @@ const Dashboard = () => {
       const expiredLicenses = licenses.data?.filter((l) => l.status === "expired").length || 0;
       const pendingLicenses = licenses.data?.filter((l) => l.status === "pending").length || 0;
       const suspendedLicenses = licenses.data?.filter((l) => l.status === "suspended").length || 0;
-
+      
       const thirtyDaysFromNow = new Date();
       thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
-      const expiringSoon =
-        licenses.data?.filter(
-          (l) => l.expire_at && new Date(l.expire_at) <= thirtyDaysFromNow && l.status === "active"
-        ).length || 0;
+      const expiringSoon = licenses.data?.filter(
+        (l) => l.expire_at && new Date(l.expire_at) <= thirtyDaysFromNow && l.status === "active"
+      ).length || 0;
 
       setStats({
         totalLicenses: licenses.data?.length || 0,
@@ -77,6 +76,7 @@ const Dashboard = () => {
         totalDevices: devices.data?.length || 0,
         expiringSoon,
       });
+
       setLogs(recentLogs.data || []);
     } catch (error) {
       console.error("Error fetching stats:", error);
@@ -118,34 +118,36 @@ const Dashboard = () => {
       title: "الأجهزة المسجلة",
       value: stats.totalDevices,
       icon: Monitor,
-      color: "text-primary",
-      bgColor: "bg-primary/10",
+      color: "text-accent",
+      bgColor: "bg-accent/10",
     },
     {
       title: "تنتهي قريباً",
       value: stats.expiringSoon,
       icon: AlertCircle,
-      color: "text-destructive",
-      bgColor: "bg-destructive/10",
+      color: "text-warning",
+      bgColor: "bg-warning/10",
     },
   ];
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* ── Header ── */}
+    <div className="space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight mb-1">لوحة التحكم</h1>
-        <p className="text-sm text-muted-foreground">نظرة عامة على نظام إدارة التراخيص</p>
+        <h1 className="text-3xl font-bold mb-2">لوحة التحكم</h1>
+        <p className="text-muted-foreground">نظرة عامة على نظام إدارة التراخيص</p>
       </div>
 
-      {/* ── Stats Grid ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {statCards.map((card, index) => (
-          <StatCard key={card.title} {...card} index={index} loading={loading} />
+          <StatCard
+            key={card.title}
+            {...card}
+            index={index}
+            loading={loading}
+          />
         ))}
       </div>
 
-      {/* ── Charts & Activity ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <LicenseChart
           active={stats.activeLicenses}

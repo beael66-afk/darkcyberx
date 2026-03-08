@@ -59,66 +59,54 @@ export function AppSidebar() {
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
-      toast({ title: "تم تسجيل الخروج", description: "إلى اللقاء!" });
+      toast({
+        title: "تم تسجيل الخروج",
+        description: "إلى اللقاء!",
+      });
       navigate("/auth");
-    } catch {
-      toast({ title: "حدث خطأ", description: "فشل تسجيل الخروج", variant: "destructive" });
+    } catch (error) {
+      toast({
+        title: "حدث خطأ",
+        description: "فشل تسجيل الخروج",
+        variant: "destructive",
+      });
     }
   };
 
   return (
-    <Sidebar collapsible="icon" className={isCollapsed ? "w-16" : "w-64"}>
-      <SidebarContent className="bg-sidebar">
-        {/* ── Logo ── */}
-        <div className={`p-4 flex items-center gap-3 border-b border-sidebar-border ${isCollapsed ? "justify-center" : ""}`}>
-          <div className="relative flex-shrink-0">
-            <div className="w-9 h-9 rounded-xl bg-gradient-primary flex items-center justify-center shadow-gold animate-pulse-glow">
-              <KeySquare className="h-5 w-5 text-primary-foreground" />
-            </div>
+    <Sidebar className={isCollapsed ? "w-16" : "w-64"}>
+      <SidebarContent>
+        <div className="p-4 flex items-center gap-3">
+          <div className="p-2 bg-gradient-primary rounded-lg">
+            <KeySquare className="h-6 w-6 text-white" />
           </div>
           {!isCollapsed && (
-            <div className="min-w-0">
-              <h2 className="font-bold text-base text-sidebar-accent-foreground tracking-tight leading-none">
-                License Manager
-              </h2>
-              <p className="text-xs text-sidebar-foreground/50 mt-0.5">نظام إدارة التراخيص</p>
+            <div>
+              <h2 className="font-bold text-lg text-sidebar-foreground">License Manager</h2>
+              <p className="text-xs text-sidebar-foreground/60">نظام إدارة التراخيص</p>
             </div>
           )}
         </div>
 
-        {/* ── Nav Items ── */}
-        <SidebarGroup className="px-2 py-3">
-          {!isCollapsed && (
-            <SidebarGroupLabel className="text-sidebar-foreground/40 text-[10px] font-semibold tracking-widest uppercase px-3 mb-1">
-              القائمة
-            </SidebarGroupLabel>
-          )}
+        <SidebarGroup>
+          <SidebarGroupLabel>القائمة الرئيسية</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu className="gap-0.5">
+            <SidebarMenu>
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink
                       to={item.url}
-                      title={isCollapsed ? item.title : undefined}
                       className={({ isActive }) =>
-                        `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
                           isActive
-                            ? "bg-gradient-to-r from-primary/15 to-transparent border-r-2 border-primary text-primary shadow-sm"
-                            : "text-sidebar-foreground/70 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent"
-                        } ${isCollapsed ? "justify-center" : ""}`
+                            ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                            : "hover:bg-sidebar-accent/50"
+                        }`
                       }
                     >
-                      {({ isActive }) => (
-                        <>
-                          <item.icon
-                            className={`flex-shrink-0 h-4 w-4 transition-all ${
-                              isActive ? "text-primary" : ""
-                            }`}
-                          />
-                          {!isCollapsed && <span className="truncate">{item.title}</span>}
-                        </>
-                      )}
+                      <item.icon className="h-5 w-5" />
+                      {!isCollapsed && <span>{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -128,17 +116,14 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      {/* ── Footer ── */}
-      <SidebarFooter className="p-3 border-t border-sidebar-border bg-sidebar">
+      <SidebarFooter>
         <Button
           variant="ghost"
-          className={`w-full gap-3 text-sidebar-foreground/60 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all ${
-            isCollapsed ? "justify-center px-0" : "justify-start"
-          }`}
+          className="w-full justify-start gap-3"
           onClick={handleLogout}
         >
-          <LogOut className="h-4 w-4 flex-shrink-0" />
-          {!isCollapsed && <span className="text-sm">تسجيل الخروج</span>}
+          <LogOut className="h-5 w-5" />
+          {!isCollapsed && <span>تسجيل الخروج</span>}
         </Button>
       </SidebarFooter>
     </Sidebar>

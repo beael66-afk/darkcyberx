@@ -19,7 +19,7 @@ export const DashboardLayout = () => {
       .eq("user_id", userId)
       .eq("role", "admin")
       .single();
-
+    
     if (!data) {
       await supabase.auth.signOut();
       navigate("/auth");
@@ -56,25 +56,29 @@ export const DashboardLayout = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  if (!user || isAdmin === null || !isAdmin) return null;
+  if (!user || isAdmin === null) {
+    return null;
+  }
+
+  if (!isAdmin) {
+    return null;
+  }
 
   return (
     <SidebarProvider>
-      <AppSidebar />
-      <main className="flex-1 flex flex-col min-w-0 bg-background">
-        {/* ── Header ── */}
-        <header className="h-14 border-b border-border/60 bg-background/80 backdrop-blur-md flex items-center px-6 gap-4 sticky top-0 z-20 relative">
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
-          <SidebarTrigger className="text-muted-foreground hover:text-primary transition-colors" />
-          <div className="flex-1" />
-          <ThemeToggle />
-        </header>
-
-        {/* ── Page Content ── */}
-        <div className="flex-1 p-6 overflow-auto">
-          <Outlet />
-        </div>
-      </main>
+      <div className="min-h-screen flex w-full bg-background">
+        <AppSidebar />
+        <main className="flex-1 flex flex-col">
+          <header className="h-16 border-b bg-card/50 backdrop-blur-sm flex items-center px-6 gap-4 sticky top-0 z-10 transition-colors">
+            <SidebarTrigger />
+            <div className="flex-1" />
+            <ThemeToggle />
+          </header>
+          <div className="flex-1 p-6 transition-colors">
+            <Outlet />
+          </div>
+        </main>
+      </div>
       <AiAssistant />
     </SidebarProvider>
   );
