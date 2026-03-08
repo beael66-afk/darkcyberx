@@ -79,6 +79,7 @@ export const DashboardLayout = () => {
           </div>
         </main>
       </div>
+      <AiAssistant />
     </SidebarProvider>
   );
 };
