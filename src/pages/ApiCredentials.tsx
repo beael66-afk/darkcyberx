@@ -321,6 +321,32 @@ export default function ApiCredentials() {
     }
   };
 
+  const toggleApiKey = async (id: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('api_keys')
+        .update({ is_active: !currentStatus })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      fetchApiKeys();
+      toast({
+        title: currentStatus ? "تم التعطيل" : "تم التفعيل",
+        description: currentStatus
+          ? "مفتاح API معطّل — أي أداة تستخدمه ستحصل على force_shutdown"
+          : "مفتاح API نشط الآن",
+      });
+    } catch (error) {
+      console.error('Error toggling API key:', error);
+      toast({
+        title: "خطأ",
+        description: "فشل تغيير حالة المفتاح",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Keys are now always masked from the database for security
 
   const copyToClipboard = (text: string, type: string) => {
