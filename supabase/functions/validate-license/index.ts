@@ -148,9 +148,9 @@ serve(async (req) => {
         description: 'محاولة تفعيل بدون مفتاح API',
         ip_address: clientIp,
       });
-      checkAndAutoBlock(supabase, clientIp);
+      const { forceShutdown } = await checkAndAutoBlock(supabase, clientIp);
       return new Response(
-        JSON.stringify({ error: 'Missing API key', valid: false }),
+        JSON.stringify({ error: 'Missing API key', valid: false, force_shutdown: forceShutdown }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -163,9 +163,9 @@ serve(async (req) => {
         description: `تجاوز حد الطلبات - مفتاح: ${apiKey.substring(0, 8)}...`,
         ip_address: clientIp,
       });
-      checkAndAutoBlock(supabase, clientIp);
+      const { forceShutdown } = await checkAndAutoBlock(supabase, clientIp);
       return new Response(
-        JSON.stringify({ error: 'Too many requests. Please try again later.', valid: false }),
+        JSON.stringify({ error: 'Too many requests. Please try again later.', valid: false, force_shutdown: forceShutdown }),
         { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -182,9 +182,9 @@ serve(async (req) => {
         description: `محاولة تفعيل بمفتاح API غير صالح - البادئة: ${apiKey.substring(0, 8)}...`,
         ip_address: clientIp,
       });
-      checkAndAutoBlock(supabase, clientIp);
+      const { forceShutdown } = await checkAndAutoBlock(supabase, clientIp);
       return new Response(
-        JSON.stringify({ error: 'Invalid API key', valid: false }),
+        JSON.stringify({ error: 'Invalid API key', valid: false, force_shutdown: forceShutdown }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -196,9 +196,9 @@ serve(async (req) => {
         description: `محاولة تفعيل بمفتاح API معطّل - البادئة: ${apiKey.substring(0, 8)}...`,
         ip_address: clientIp,
       });
-      checkAndAutoBlock(supabase, clientIp);
+      const { forceShutdown } = await checkAndAutoBlock(supabase, clientIp);
       return new Response(
-        JSON.stringify({ error: 'API key is inactive', valid: false }),
+        JSON.stringify({ error: 'API key is inactive', valid: false, force_shutdown: forceShutdown }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -210,9 +210,9 @@ serve(async (req) => {
         description: `محاولة تفعيل بمفتاح API منتهي الصلاحية - البادئة: ${apiKey.substring(0, 8)}...`,
         ip_address: clientIp,
       });
-      checkAndAutoBlock(supabase, clientIp);
+      const { forceShutdown } = await checkAndAutoBlock(supabase, clientIp);
       return new Response(
-        JSON.stringify({ error: 'API key has expired', valid: false }),
+        JSON.stringify({ error: 'API key has expired', valid: false, force_shutdown: forceShutdown }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
