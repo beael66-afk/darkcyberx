@@ -73,6 +73,7 @@ const Licenses = () => {
   const [regenerateLicense, setRegenerateLicense] = useState<License | null>(null);
   const [isRegenerateDialogOpen, setIsRegenerateDialogOpen] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [suspendingId, setSuspendingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<{
     customer_id: string;
     product_id: string;
