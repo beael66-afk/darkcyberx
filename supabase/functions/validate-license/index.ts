@@ -83,6 +83,12 @@ serve(async (req) => {
 
     const apiKey = req.headers.get('x-api-key');
     if (!apiKey) {
+      await supabase.from('logs').insert({
+        entity_type: 'security',
+        action: 'verified',
+        description: 'محاولة تفعيل بدون مفتاح API',
+        ip_address: clientIp,
+      });
       return new Response(
         JSON.stringify({ error: 'Missing API key', valid: false }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -91,6 +97,12 @@ serve(async (req) => {
 
     if (!checkRateLimit(apiKey)) {
       console.warn(`Rate limit exceeded for API key prefix: ${apiKey.substring(0, 8)}...`);
+      await supabase.from('logs').insert({
+        entity_type: 'security',
+        action: 'verified',
+        description: `تجاوز حد الطلبات - مفتاح: ${apiKey.substring(0, 8)}...`,
+        ip_address: clientIp,
+      });
       return new Response(
         JSON.stringify({ error: 'Too many requests. Please try again later.', valid: false }),
         { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -103,6 +115,12 @@ serve(async (req) => {
 
     if (apiKeyError || !apiKeyData) {
       console.error('Invalid API key attempt detected');
+      await supabase.from('logs').insert({
+        entity_type: 'security',
+        action: 'verified',
+        description: `محاولة تفعيل بمفتاح API غير صالح - البادئة: ${apiKey.substring(0, 8)}...`,
+        ip_address: clientIp,
+      });
       return new Response(
         JSON.stringify({ error: 'Invalid API key', valid: false }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -110,6 +128,12 @@ serve(async (req) => {
     }
 
     if (!apiKeyData.is_active) {
+      await supabase.from('logs').insert({
+        entity_type: 'security',
+        action: 'verified',
+        description: `محاولة تفعيل بمفتاح API معطّل - البادئة: ${apiKey.substring(0, 8)}...`,
+        ip_address: clientIp,
+      });
       return new Response(
         JSON.stringify({ error: 'API key is inactive', valid: false }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -117,6 +141,12 @@ serve(async (req) => {
     }
 
     if (apiKeyData.expires_at && new Date(apiKeyData.expires_at) < new Date()) {
+      await supabase.from('logs').insert({
+        entity_type: 'security',
+        action: 'verified',
+        description: `محاولة تفعيل بمفتاح API منتهي الصلاحية - البادئة: ${apiKey.substring(0, 8)}...`,
+        ip_address: clientIp,
+      });
       return new Response(
         JSON.stringify({ error: 'API key has expired', valid: false }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
