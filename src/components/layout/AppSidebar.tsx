@@ -17,6 +17,7 @@ import {
   Shield,
   MonitorPlay,
   ShieldAlert,
+  Cpu,
 } from "lucide-react";
 import {
   Sidebar,
