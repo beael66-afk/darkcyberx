@@ -248,59 +248,100 @@ function IpDetailDrawer({ ip, isOpen, onClose }: { ip: IpActivity | null; isOpen
               <div className="bg-muted/40 px-4 py-2.5 flex items-center gap-2 border-b">
                 <MapPin className="h-4 w-4 text-primary" />
                 <span className="text-sm font-semibold">الموقع الجغرافي</span>
+                {geoInfo && (
+                  <div className="flex items-center gap-1.5 mr-auto">
+                    {geoInfo.proxy && <Badge variant="outline" className="text-[10px] h-5 border-orange-300 text-orange-600">🛡️ Proxy/VPN</Badge>}
+                    {geoInfo.hosting && <Badge variant="outline" className="text-[10px] h-5 border-yellow-300 text-yellow-600">🖥️ Hosting</Badge>}
+                    {geoInfo.mobile && <Badge variant="outline" className="text-[10px] h-5 border-blue-300 text-blue-600">📱 موبايل</Badge>}
+                  </div>
+                )}
               </div>
               {geoLoading ? (
-                <div className="p-4 text-center text-muted-foreground text-sm">جاري جلب معلومات الموقع...</div>
+                <div className="p-4 text-center text-muted-foreground text-sm animate-pulse">جاري جلب معلومات الموقع...</div>
               ) : !geoInfo ? (
                 <div className="p-4 text-center text-muted-foreground text-sm">تعذّر جلب معلومات الموقع</div>
               ) : (
-                <div className="p-4 grid grid-cols-2 gap-3">
-                  <div className="flex items-start gap-2">
-                    <Flag className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">الدولة</p>
-                      <p className="text-sm font-semibold">{geoInfo.country} ({geoInfo.countryCode})</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">المدينة / المنطقة</p>
-                      <p className="text-sm font-semibold">{geoInfo.city}, {geoInfo.regionName}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Wifi className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">مزود الإنترنت (ISP)</p>
-                      <p className="text-sm font-medium">{geoInfo.isp}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Building2 className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">المنظمة / AS</p>
-                      <p className="text-sm font-medium truncate">{geoInfo.org || geoInfo.as}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">المنطقة الزمنية</p>
-                      <p className="text-sm font-medium">{geoInfo.timezone}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <div className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full border ${geoInfo.proxy ? "border-orange-300 text-orange-600" : "border-border text-muted-foreground"}`}>
-                      {geoInfo.proxy ? <XCircle className="h-3 w-3" /> : <CheckCircle2 className="h-3 w-3" />}
-                      {geoInfo.proxy ? "Proxy/VPN" : "اتصال مباشر"}
-                    </div>
-                    {geoInfo.mobile && (
-                      <div className="flex items-center gap-1 text-xs px-2 py-1 rounded-full border border-blue-300 text-blue-600">
-                        <Monitor className="h-3 w-3" />
-                        موبايل
+                <div className="p-4 space-y-3">
+                  {/* Row 1: Country + City */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex items-start gap-2">
+                      <Flag className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">الدولة / القارة</p>
+                        <p className="text-sm font-semibold">{geoInfo.country} ({geoInfo.countryCode})</p>
+                        <p className="text-xs text-muted-foreground">{geoInfo.continent}</p>
                       </div>
-                    )}
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">المدينة / المنطقة</p>
+                        <p className="text-sm font-semibold">{geoInfo.city}, {geoInfo.regionName}</p>
+                        {geoInfo.zip && geoInfo.zip !== "—" && <p className="text-xs text-muted-foreground">ZIP: {geoInfo.zip}</p>}
+                      </div>
+                    </div>
+                  </div>
+                  {/* Row 2: ISP + Org */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex items-start gap-2">
+                      <Wifi className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">مزود الإنترنت (ISP)</p>
+                        <p className="text-sm font-medium">{geoInfo.isp}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Building2 className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">المنظمة</p>
+                        <p className="text-sm font-medium truncate">{geoInfo.org}</p>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Row 3: ASN + Timezone */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex items-start gap-2">
+                      <Globe className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">رقم الشبكة (ASN)</p>
+                        <p className="text-sm font-medium">{geoInfo.asname || geoInfo.as}</p>
+                        <p className="text-xs text-muted-foreground">{geoInfo.as}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Clock className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">المنطقة الزمنية</p>
+                        <p className="text-sm font-medium">{geoInfo.timezone}</p>
+                        {geoInfo.currency && geoInfo.currency !== "—" && (
+                          <p className="text-xs text-muted-foreground">العملة: {geoInfo.currency}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  {/* Reverse DNS */}
+                  {geoInfo.reverse && geoInfo.reverse !== "—" && (
+                    <div className="flex items-start gap-2 pt-1 border-t">
+                      <FileText className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Reverse DNS</p>
+                        <p className="text-sm font-mono text-muted-foreground">{geoInfo.reverse}</p>
+                      </div>
+                    </div>
+                  )}
+                  {/* Coordinates */}
+                  <div className="flex items-center gap-2 pt-1 border-t">
+                    <p className="text-xs text-muted-foreground">
+                      📍 {geoInfo.lat.toFixed(4)}, {geoInfo.lon.toFixed(4)}
+                    </p>
+                    <a
+                      href={`https://www.google.com/maps?q=${geoInfo.lat},${geoInfo.lon}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-primary hover:underline"
+                    >
+                      عرض على الخريطة ↗
+                    </a>
                   </div>
                 </div>
               )}
