@@ -323,6 +323,7 @@ async function sendMainMenu(chatId: number, token: string, supabase?: any) {
       inline_keyboard: [
         [{ text: "📋 عرض تراخيصي", callback_data: "my_licenses" }],
         [{ text: "🔄 تجديد ترخيص", callback_data: "renew" }],
+        [{ text: "🔑 ريسيت المفتاح (مسح الأجهزة)", callback_data: "reset_key" }],
         [{ text: "🖥️ تسجيل / تعديل ID جهاز", callback_data: "rustdesk_register" }],
         [{ text: "⬇️ تحميل RustDesk", callback_data: "download_rustdesk" }],
         [{ text: "❓ المساعدة", callback_data: "help" }],
