@@ -27,11 +27,11 @@ const severityConfig: Record<
     badge: "bg-destructive text-destructive-foreground",
   },
   medium: {
-    dot: "bg-yellow-500",
-    bg: "bg-yellow-500/5 hover:bg-yellow-500/10",
-    border: "border-yellow-500/20",
-    text: "text-yellow-600 dark:text-yellow-400",
-    badge: "bg-yellow-500 text-white",
+    dot: "bg-warning",
+    bg: "bg-warning/5 hover:bg-warning/10",
+    border: "border-warning/20",
+    text: "text-warning-foreground",
+    badge: "bg-warning text-warning-foreground",
   },
   low: {
     dot: "bg-primary",
