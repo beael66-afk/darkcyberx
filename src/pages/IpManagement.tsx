@@ -6,13 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
   Shield, ShieldOff, Search, Ban, Globe, Activity, AlertTriangle, Clock,
-  Trash2, Copy, RefreshCw, User, Eye, FileText, Key, Info,
+  Trash2, Copy, RefreshCw, User, Eye, FileText, Key, Monitor, Cpu,
+  MapPin, Building2, Flag, Wifi, CheckCircle2, XCircle, BarChart3,
 } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
