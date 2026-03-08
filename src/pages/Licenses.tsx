@@ -69,7 +69,7 @@ const Licenses = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [licenseToDelete, setLicenseToDelete] = useState<{ id: string; key: string } | null>(null);
   const [editingLicense, setEditingLicense] = useState<License | null>(null);
-  const [renewalLicense, setRenewalLicense] = useState<License | null>(null);
+  
   const [regenerateLicense, setRegenerateLicense] = useState<License | null>(null);
   const [isRegenerateDialogOpen, setIsRegenerateDialogOpen] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
