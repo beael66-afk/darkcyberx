@@ -126,7 +126,27 @@ Deno.serve(async (req) => {
         await sendMessage(chatId, TELEGRAM_BOT_TOKEN, "❌ بريد إلكتروني غير صحيح. حاول مرة أخرى:");
         return new Response("OK", { status: 200 });
       }
-      await handleRegistrationSubmit(supabase, chatId, state.data?.name, text.toLowerCase(), TELEGRAM_BOT_TOKEN);
+      // Check email validity first, then ask for days
+      await handleRegistrationEmailStep(supabase, chatId, state.data?.name, text.toLowerCase(), TELEGRAM_BOT_TOKEN);
+      return new Response("OK", { status: 200 });
+    }
+
+    if (state?.step === "awaiting_reg_days") {
+      if (/^\d+$/.test(text)) {
+        const days = parseInt(text);
+        if (days < 1 || days > 365) {
+          await sendMessage(chatId, TELEGRAM_BOT_TOKEN, "⚠️ يرجى إدخال عدد أيام بين 1 و 365:");
+          return new Response("OK", { status: 200 });
+        }
+        await handleRegDaysInput(supabase, chatId, days, state.data, TELEGRAM_BOT_TOKEN);
+        return new Response("OK", { status: 200 });
+      }
+      await sendMessage(chatId, TELEGRAM_BOT_TOKEN, "⚠️ أدخل رقم صحيح (عدد الأيام):");
+      return new Response("OK", { status: 200 });
+    }
+
+    if (state?.step === "awaiting_reg_receipt") {
+      await handleRegReceiptSubmit(supabase, chatId, text, photo, state.data, TELEGRAM_BOT_TOKEN);
       await clearState(supabase, chatId);
       return new Response("OK", { status: 200 });
     }
