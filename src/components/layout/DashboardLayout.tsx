@@ -73,6 +73,7 @@ export const DashboardLayout = () => {
           <header className="h-16 border-b bg-card/50 backdrop-blur-sm flex items-center px-6 gap-4 sticky top-0 z-10 transition-colors">
             <SidebarTrigger />
             <div className="flex-1" />
+            <NotificationBell />
             <ThemeToggle />
           </header>
           <div className="flex-1 p-6 transition-colors">
