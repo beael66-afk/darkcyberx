@@ -326,10 +326,16 @@ async function handleCallbackQuery(supabase: any, query: any, token: string) {
     case "rustdesk_register":
       await handleRustDeskRegister(supabase, chatId, token);
       break;
+    case "rustdesk_add_new":
+      await handleRustDeskAddNew(supabase, chatId, token);
+      break;
     default:
       if (data.startsWith("renew_")) {
         const licenseKey = data.replace("renew_", "");
         await handleRenewLicense(supabase, chatId, licenseKey, token);
+      } else if (data.startsWith("rustdesk_delete_")) {
+        const deviceId = data.replace("rustdesk_delete_", "");
+        await handleRustDeskDeleteDevice(supabase, chatId, deviceId, token);
       }
       break;
   }
