@@ -433,7 +433,7 @@ const RenewalOrders = () => {
   // ─── Stats ─────────────────────────────────────────
   const pendingCount = requests?.filter((r) => r.status === "pending").length || 0;
   const confirmedCount = requests?.filter((r) => r.status === "confirmed").length || 0;
-  const totalRevenue = requests?.filter((r) => r.status === "confirmed").reduce((sum, r) => sum + r.amount, 0) || 0;
+  const totalRevenue = revenueData ?? 0;
   const pendingRegCount = regRequests?.filter((r) => r.status === "pending").length || 0;
 
   const filteredRequests = requests?.filter((r) => {
