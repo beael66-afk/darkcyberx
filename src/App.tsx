@@ -75,6 +75,7 @@ const App = () => (
               <Route path="/telegram-settings" element={<TelegramSettings />} />
               <Route path="/renewal-orders" element={<RenewalOrders />} />
               <Route path="/ip-management" element={<IpManagement />} />
+              <Route path="/alerts" element={<Alerts />} />
               <Route path="/rustdesk-ids" element={<RustDeskIds />} />
               <Route path="/settings" element={<Settings />} />
             </Route>

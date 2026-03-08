@@ -16,6 +16,7 @@ import {
   ShoppingCart,
   Shield,
   MonitorPlay,
+  ShieldAlert,
 } from "lucide-react";
 import {
   Sidebar,
