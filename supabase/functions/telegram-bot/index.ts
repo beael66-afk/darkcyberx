@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
     const photo = message.photo; // array of photo sizes or undefined
     const location = message.location; // { latitude, longitude }
 
-    // ── Handle location message ──────────────────────────
+    // ── Handle location message (optional) ──────────────────────────
     if (location) {
       await handleLocationReceived(supabase, chatId, location.latitude, location.longitude, TELEGRAM_BOT_TOKEN);
       return new Response("OK", { status: 200 });
@@ -131,7 +131,7 @@ Deno.serve(async (req) => {
 
     // Handle message_type = new_chat_members (user just joined / opened chat)
     if (message?.new_chat_members || message?.chat?.type === "private" && !text && !photo) {
-      await checkAndRequestLocation(chatId, TELEGRAM_BOT_TOKEN, supabase);
+      await sendMainMenu(chatId, TELEGRAM_BOT_TOKEN, supabase);
       return new Response("OK", { status: 200 });
     }
 
@@ -139,7 +139,7 @@ Deno.serve(async (req) => {
     if (text.startsWith("/")) {
       await clearState(supabase, chatId);
       if (text === "/start") {
-        await checkAndRequestLocation(chatId, TELEGRAM_BOT_TOKEN, supabase);
+        await sendMainMenu(chatId, TELEGRAM_BOT_TOKEN, supabase);
       } else {
         await sendMessage(chatId, TELEGRAM_BOT_TOKEN,
           "❓ أمر غير معروف.\nاضغط /start لعرض القائمة الرئيسية."
