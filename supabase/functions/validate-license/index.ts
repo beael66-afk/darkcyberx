@@ -143,7 +143,7 @@ serve(async (req) => {
           action: 'verified',
           description: `جهاز محظور حاول التفعيل (HWID Block)`,
           ip_address: clientIp,
-        }).catch(() => {});
+        }).then(() => {}).catch(() => {});
         return new Response(
           JSON.stringify({ error: 'Access denied', valid: false, force_shutdown: true }),
           { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -165,7 +165,7 @@ serve(async (req) => {
         action: 'verified',
         description: `Blocked IP attempted license validation`,
         ip_address: clientIp,
-      }).catch(() => {});
+      }).then(() => {}).catch(() => {});
       return new Response(
         JSON.stringify({ error: 'Access denied', valid: false, force_shutdown: true }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
