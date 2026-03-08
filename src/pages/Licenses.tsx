@@ -276,6 +276,12 @@ const Licenses = () => {
     if (!licenseToDelete) return;
 
     try {
+      // Revoke the key first so old copies can't be reused
+      await supabase.from("revoked_keys" as any).upsert(
+        { license_key: licenseToDelete.key, reason: "تم حذف الترخيص" },
+        { onConflict: "license_key" }
+      );
+
       const { error } = await supabase.from("licenses").delete().eq("id", licenseToDelete.id);
       if (error) throw error;
 
@@ -288,7 +294,7 @@ const Licenses = () => {
 
       toast({
         title: "تم الحذف",
-        description: "تم حذف الترخيص بنجاح",
+        description: "تم حذف الترخيص وإضافة مفتاحه للقائمة السوداء",
       });
       fetchLicenses();
     } catch (error) {
@@ -347,6 +353,15 @@ const Licenses = () => {
         headers: { Authorization: `Bearer ${session?.access_token}` },
       });
       if (error) throw error;
+
+      // Revoke the old key so it can't be reused
+      if (data.oldKey) {
+        await supabase.from("revoked_keys" as any).upsert(
+          { license_key: data.oldKey, reason: `تم تجديد المفتاح — استُبدل بـ ${data.newKey}` },
+          { onConflict: "license_key" }
+        );
+      }
+
       toast({
         title: "✅ تم تجديد المفتاح",
         description: data.notified

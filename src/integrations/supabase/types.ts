@@ -507,6 +507,27 @@ export type Database = {
           },
         ]
       }
+      revoked_keys: {
+        Row: {
+          id: string
+          license_key: string
+          reason: string | null
+          revoked_at: string
+        }
+        Insert: {
+          id?: string
+          license_key: string
+          reason?: string | null
+          revoked_at?: string
+        }
+        Update: {
+          id?: string
+          license_key?: string
+          reason?: string | null
+          revoked_at?: string
+        }
+        Relationships: []
+      }
       rustdesk_ids: {
         Row: {
           created_at: string
