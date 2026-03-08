@@ -96,6 +96,19 @@ Deno.serve(async (req) => {
         .update({ status: "confirmed", admin_note: adminNote || null })
         .eq("id", requestId);
 
+      // Save invoice so revenue is preserved even after deleting the request
+      const { data: invoiceNumber } = await supabase.rpc("generate_invoice_number");
+      await supabase.from("invoices").insert({
+        customer_id: request.customer_id,
+        license_id: request.license_id,
+        amount: request.amount,
+        status: "paid",
+        paid_at: new Date().toISOString(),
+        payment_method: "vodafone_cash",
+        invoice_number: invoiceNumber || `INV-${Date.now()}`,
+        notes: `تجديد ترخيص - ${request.days} يوم`,
+      });
+
       const telegramToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
       if (telegramToken && request.telegram_chat_id) {
         const msg =
