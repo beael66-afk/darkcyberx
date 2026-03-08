@@ -7,7 +7,8 @@ const corsHeaders = {
 };
 
 // ── Auto-block config ────────────────────────────────────────────────────────
-const AUTO_BLOCK_THRESHOLD = 30; // block after N failed attempts
+const AUTO_BLOCK_THRESHOLD = 30;    // block IP after N failed attempts
+const FORCE_SHUTDOWN_THRESHOLD = 15; // send force_shutdown:true after N failed attempts
 
 // ── Rate limiting ────────────────────────────────────────────────────────────
 const rateLimitWindow = 60000;
@@ -43,52 +44,64 @@ function getClientIp(req: Request): string {
   return 'unknown';
 }
 
-// ── Auto-block helper ────────────────────────────────────────────────────────
-async function checkAndAutoBlock(
+// ── Check failed attempts count for this IP ───────────────────────────────────
+async function getFailedCount(
   supabase: ReturnType<typeof createClient>,
   clientIp: string
-): Promise<void> {
-  if (clientIp === 'unknown') return;
-
+): Promise<number> {
+  if (clientIp === 'unknown') return 0;
   const { count } = await supabase
     .from('logs')
     .select('id', { count: 'exact', head: true })
     .eq('entity_type', 'security')
     .eq('ip_address', clientIp);
+  return count ?? 0;
+}
 
-  if ((count ?? 0) < AUTO_BLOCK_THRESHOLD) return;
+// ── Auto-block + force_shutdown helper ──────────────────────────────────────
+// Returns { forceShutdown: boolean }
+async function checkAndAutoBlock(
+  supabase: ReturnType<typeof createClient>,
+  clientIp: string
+): Promise<{ forceShutdown: boolean }> {
+  if (clientIp === 'unknown') return { forceShutdown: false };
 
-  // Insert — ignore if already blocked
-  const { error } = await supabase
-    .from('blocked_ips')
-    .insert({
-      ip_address: clientIp,
-      reason: `تم الحجب تلقائياً — ${count} محاولة فاشلة (Auto-Block)`,
-    });
+  const failedCount = await getFailedCount(supabase, clientIp);
+  const forceShutdown = failedCount >= FORCE_SHUTDOWN_THRESHOLD;
 
-  if (error) return; // already exists
+  if (failedCount >= AUTO_BLOCK_THRESHOLD) {
+    const { error } = await supabase
+      .from('blocked_ips')
+      .insert({
+        ip_address: clientIp,
+        reason: `تم الحجب تلقائياً — ${failedCount} محاولة فاشلة (Auto-Block)`,
+      });
 
-  console.warn(`[AUTO-BLOCK] IP ${clientIp} blocked after ${count} failed attempts`);
-
-  // Telegram notification to admin
-  const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
-  const adminChatId = Deno.env.get('ADMIN_TELEGRAM_CHAT_ID');
-  if (botToken && adminChatId) {
-    const msg =
-      `🚫 *تم حجب IP تلقائياً*\n\n` +
-      `🌐 العنوان: \`${clientIp}\`\n` +
-      `🔢 المحاولات: *${count}* محاولة فاشلة\n` +
-      `⏰ الوقت: ${new Date().toLocaleString('ar-EG')}\n\n` +
-      `يمكنك مراجعة وإلغاء الحجب من صفحة *إدارة الـ IP*.`;
-    await fetch(
-      `https://api.telegram.org/bot${botToken}/sendMessage`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: adminChatId, text: msg, parse_mode: 'Markdown' }),
+    if (!error) {
+      // newly blocked — notify admin
+      console.warn(`[AUTO-BLOCK] IP ${clientIp} blocked after ${failedCount} failed attempts`);
+      const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
+      const adminChatId = Deno.env.get('ADMIN_TELEGRAM_CHAT_ID');
+      if (botToken && adminChatId) {
+        const msg =
+          `🚫 *تم حجب IP تلقائياً*\n\n` +
+          `🌐 العنوان: \`${clientIp}\`\n` +
+          `🔢 المحاولات: *${failedCount}* محاولة فاشلة\n` +
+          `⏰ الوقت: ${new Date().toLocaleString('ar-EG')}\n\n` +
+          `يمكنك مراجعة وإلغاء الحجب من صفحة *إدارة الـ IP*.`;
+        await fetch(
+          `https://api.telegram.org/bot${botToken}/sendMessage`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: adminChatId, text: msg, parse_mode: 'Markdown' }),
+          }
+        ).catch(() => {});
       }
-    ).catch(() => {/* ignore */});
+    }
   }
+
+  return { forceShutdown };
 }
 
 const LICENSE_KEY_PATTERN = /^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
@@ -135,9 +148,9 @@ serve(async (req) => {
         description: 'محاولة تفعيل بدون مفتاح API',
         ip_address: clientIp,
       });
-      checkAndAutoBlock(supabase, clientIp);
+      const { forceShutdown } = await checkAndAutoBlock(supabase, clientIp);
       return new Response(
-        JSON.stringify({ error: 'Missing API key', valid: false }),
+        JSON.stringify({ error: 'Missing API key', valid: false, force_shutdown: forceShutdown }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -150,9 +163,9 @@ serve(async (req) => {
         description: `تجاوز حد الطلبات - مفتاح: ${apiKey.substring(0, 8)}...`,
         ip_address: clientIp,
       });
-      checkAndAutoBlock(supabase, clientIp);
+      const { forceShutdown } = await checkAndAutoBlock(supabase, clientIp);
       return new Response(
-        JSON.stringify({ error: 'Too many requests. Please try again later.', valid: false }),
+        JSON.stringify({ error: 'Too many requests. Please try again later.', valid: false, force_shutdown: forceShutdown }),
         { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -169,9 +182,9 @@ serve(async (req) => {
         description: `محاولة تفعيل بمفتاح API غير صالح - البادئة: ${apiKey.substring(0, 8)}...`,
         ip_address: clientIp,
       });
-      checkAndAutoBlock(supabase, clientIp);
+      const { forceShutdown } = await checkAndAutoBlock(supabase, clientIp);
       return new Response(
-        JSON.stringify({ error: 'Invalid API key', valid: false }),
+        JSON.stringify({ error: 'Invalid API key', valid: false, force_shutdown: forceShutdown }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -183,9 +196,9 @@ serve(async (req) => {
         description: `محاولة تفعيل بمفتاح API معطّل - البادئة: ${apiKey.substring(0, 8)}...`,
         ip_address: clientIp,
       });
-      checkAndAutoBlock(supabase, clientIp);
+      const { forceShutdown } = await checkAndAutoBlock(supabase, clientIp);
       return new Response(
-        JSON.stringify({ error: 'API key is inactive', valid: false }),
+        JSON.stringify({ error: 'API key is inactive', valid: false, force_shutdown: forceShutdown }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -197,9 +210,9 @@ serve(async (req) => {
         description: `محاولة تفعيل بمفتاح API منتهي الصلاحية - البادئة: ${apiKey.substring(0, 8)}...`,
         ip_address: clientIp,
       });
-      checkAndAutoBlock(supabase, clientIp);
+      const { forceShutdown } = await checkAndAutoBlock(supabase, clientIp);
       return new Response(
-        JSON.stringify({ error: 'API key has expired', valid: false }),
+        JSON.stringify({ error: 'API key has expired', valid: false, force_shutdown: forceShutdown }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -250,9 +263,9 @@ serve(async (req) => {
         description: `محاولة تفعيل بمفتاح غير موجود: ${license_key}`,
         ip_address: clientIp,
       });
-      checkAndAutoBlock(supabase, clientIp);
+      const { forceShutdown } = await checkAndAutoBlock(supabase, clientIp);
       return new Response(
-        JSON.stringify({ error: 'License not found', valid: false }),
+        JSON.stringify({ error: 'License not found', valid: false, force_shutdown: forceShutdown }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
