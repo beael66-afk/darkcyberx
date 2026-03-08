@@ -215,7 +215,7 @@ const RustDeskIds = () => {
       ) : (
         <div className="space-y-4">
           {grouped.map((group) => {
-            const isCollapsed = collapsedCustomers.has(group.customer_id);
+            const isCollapsed = !openCustomers.has(group.customer_id);
             return (
               <Card key={group.customer_id} className="overflow-hidden border shadow-sm">
                 {/* Customer Header */}
