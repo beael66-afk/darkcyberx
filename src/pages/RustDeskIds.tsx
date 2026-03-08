@@ -106,14 +106,8 @@ const RustDeskIds = () => {
     window.open(`https://rustdesk.com/web/#${cleanId}`, "_blank");
   };
 
-  const toggleCustomer = (customerId: string) => {
-    setOpenCustomers(prev => {
-      const next = new Set(prev);
-      if (next.has(customerId)) next.delete(customerId);
-      else next.add(customerId);
-      return next;
-    });
-  };
+
+
 
   // Group entries by customer
   const grouped: CustomerGroup[] = [];
