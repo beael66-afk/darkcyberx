@@ -39,9 +39,13 @@ export const CreateAccountDialog = ({ customerId, customerName, customerEmail, o
 
       if (error) throw error;
 
-      setTempPassword(data.tempPassword);
-      setShowPassword(true);
+      // tempPassword only returned when email service not configured
+      if (data.tempPassword) {
+        setTempPassword(data.tempPassword);
+        setShowPassword(true);
+      }
       toast.success(data.message || "تم إنشاء الحساب بنجاح");
+      if (!data.tempPassword) setOpen(false);
       onSuccess();
     } catch (error: any) {
       toast.error(error.message || "فشل إنشاء الحساب");

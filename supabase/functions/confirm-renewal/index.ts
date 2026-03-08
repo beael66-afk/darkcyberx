@@ -18,7 +18,6 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Verify the calling user is admin
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -34,7 +33,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check admin role
     const { data: roleData } = await supabase
       .from("user_roles")
       .select("role")
@@ -48,15 +46,21 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { requestId, action, adminNote } = await req.json();
+    const body = await req.json();
+    const { requestId, action, adminNote } = body;
 
-    if (!requestId || !action) {
-      return new Response(JSON.stringify({ error: "Missing requestId or action" }), {
+    // Input validation
+    if (!requestId || typeof requestId !== "string" || !/^[0-9a-f-]{36}$/i.test(requestId)) {
+      return new Response(JSON.stringify({ error: "معرف الطلب غير صالح" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (!action || !["confirm", "reject"].includes(action)) {
+      return new Response(JSON.stringify({ error: "الإجراء غير صالح" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Fetch the renewal request
     const { data: request, error: fetchError } = await supabase
       .from("renewal_requests")
       .select("*, licenses(id, license_key, expire_at, status, products(name)), customers(name)")
@@ -65,40 +69,33 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (fetchError || !request) {
-      return new Response(JSON.stringify({ error: "Request not found or already processed" }), {
+      return new Response(JSON.stringify({ error: "الطلب غير موجود أو تمت معالجته مسبقاً" }), {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     if (action === "confirm") {
-      // Calculate new expiry date
       const currentExpiry = request.licenses?.expire_at ? new Date(request.licenses.expire_at) : new Date();
       const baseDate = currentExpiry > new Date() ? currentExpiry : new Date();
       baseDate.setDate(baseDate.getDate() + request.days);
 
-      // Update license
       const { error: licenseError } = await supabase
         .from("licenses")
-        .update({
-          status: "active",
-          expire_at: baseDate.toISOString(),
-        })
+        .update({ status: "active", expire_at: baseDate.toISOString() })
         .eq("id", request.license_id);
 
       if (licenseError) {
-        console.error("License update error:", licenseError);
-        return new Response(JSON.stringify({ error: "Failed to update license" }), {
+        console.error("License update error:", licenseError.message);
+        return new Response(JSON.stringify({ error: "حدث خطأ في الخادم" }), {
           status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      // Update request status
       await supabase
         .from("renewal_requests")
         .update({ status: "confirmed", admin_note: adminNote || null })
         .eq("id", requestId);
 
-      // Notify customer via Telegram
       const telegramToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
       if (telegramToken && request.telegram_chat_id) {
         const msg =
@@ -131,7 +128,6 @@ Deno.serve(async (req) => {
         .update({ status: "rejected", admin_note: adminNote || null })
         .eq("id", requestId);
 
-      // Notify customer
       const telegramToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
       if (telegramToken && request.telegram_chat_id) {
         const msg =
@@ -155,13 +151,13 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ error: "Invalid action" }), {
+    return new Response(JSON.stringify({ error: "إجراء غير صالح" }), {
       status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
   } catch (error: any) {
     console.error("Confirm renewal error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: "حدث خطأ في الخادم" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

@@ -8,10 +8,9 @@ const corsHeaders = {
 
 // Rate limiting configuration
 const rateLimitWindow = 60000; // 1 minute
-const maxRequestsPerWindow = 30; // Max 30 requests per minute per API key
+const maxRequestsPerWindow = 30;
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 
-// Clean up old entries every 5 minutes
 setInterval(() => {
   const now = Date.now();
   for (const [key, value] of rateLimitMap.entries()) {
@@ -21,29 +20,24 @@ setInterval(() => {
   }
 }, 300000);
 
-// Rate limiting function
 function checkRateLimit(apiKey: string): boolean {
   const now = Date.now();
   const limitData = rateLimitMap.get(apiKey);
 
   if (!limitData || now > limitData.resetTime) {
-    rateLimitMap.set(apiKey, {
-      count: 1,
-      resetTime: now + rateLimitWindow
-    });
+    rateLimitMap.set(apiKey, { count: 1, resetTime: now + rateLimitWindow });
     return true;
   }
 
-  if (limitData.count >= maxRequestsPerWindow) {
-    return false;
-  }
-
+  if (limitData.count >= maxRequestsPerWindow) return false;
   limitData.count++;
   return true;
 }
 
+// License key pattern: XXXX-XXXX-XXXX-XXXX (alphanumeric uppercase)
+const LICENSE_KEY_PATTERN = /^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
+
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -54,7 +48,6 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Get API key from header
     const apiKey = req.headers.get('x-api-key');
     if (!apiKey) {
       return new Response(
@@ -63,16 +56,14 @@ serve(async (req) => {
       );
     }
 
-    // Check rate limit
     if (!checkRateLimit(apiKey)) {
-      console.warn(`Rate limit exceeded for API key: ${apiKey.substring(0, 8)}...`);
+      console.warn(`Rate limit exceeded for API key prefix: ${apiKey.substring(0, 8)}...`);
       return new Response(
         JSON.stringify({ error: 'Too many requests. Please try again later.', valid: false }),
         { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Verify API key using hash comparison (secure - no plaintext lookup)
     const { data: apiKeyData, error: apiKeyError } = await supabase
       .rpc('validate_api_key_by_value', { api_key_value: apiKey })
       .single();
@@ -99,74 +90,78 @@ serve(async (req) => {
       );
     }
 
-    // Update last_used_at using hash comparison (secure)
     await supabase.rpc('update_api_key_last_used', { api_key_value: apiKey });
 
-    // Get license key from request
-    const { license_key, hwid, device_name, os_info } = await req.json();
+    // Parse and validate request body
+    let body: Record<string, unknown>;
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(
+        JSON.stringify({ error: 'Invalid request body', valid: false }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-    if (!license_key) {
+    const { license_key, hwid, device_name, os_info } = body;
+
+    if (!license_key || typeof license_key !== 'string') {
       return new Response(
         JSON.stringify({ error: 'Missing license key', valid: false }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Validate license
+    // Validate license key format
+    if (!LICENSE_KEY_PATTERN.test(license_key)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid license key format', valid: false }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate optional fields length
+    const safeHwid = hwid && typeof hwid === 'string' ? hwid.slice(0, 255) : undefined;
+    const safeDeviceName = device_name && typeof device_name === 'string' ? device_name.slice(0, 200) : undefined;
+    const safeOsInfo = os_info && typeof os_info === 'string' ? os_info.slice(0, 200) : undefined;
+
     const { data: license, error: licenseError } = await supabase
       .from('licenses')
-      .select(`
-        *,
-        customer:customers(*),
-        product:products(*)
-      `)
+      .select(`*, customer:customers(*), product:products(*)`)
       .eq('license_key', license_key)
       .single();
 
     if (licenseError || !license) {
       console.log('License validation failed: key not found');
       return new Response(
-        JSON.stringify({ 
-          error: 'License not found', 
-          valid: false 
-        }),
+        JSON.stringify({ error: 'License not found', valid: false }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Check license status
     if (license.status !== 'active') {
       return new Response(
-        JSON.stringify({ 
-          error: `License is ${license.status}`, 
+        JSON.stringify({
+          error: `License is ${license.status}`,
           valid: false,
-          license: {
-            key: license.license_key,
-            status: license.status
-          }
+          license: { key: license.license_key, status: license.status }
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Check expiration
     if (license.expire_at && new Date(license.expire_at) < new Date()) {
       return new Response(
-        JSON.stringify({ 
-          error: 'License has expired', 
+        JSON.stringify({
+          error: 'License has expired',
           valid: false,
-          license: {
-            key: license.license_key,
-            status: 'expired',
-            expire_at: license.expire_at
-          }
+          license: { key: license.license_key, status: 'expired', expire_at: license.expire_at }
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Check device if HWID provided
-    if (hwid) {
+    if (safeHwid) {
       const { data: devices } = await supabase
         .from('devices')
         .select('*')
@@ -174,31 +169,26 @@ serve(async (req) => {
         .eq('is_active', true);
 
       const deviceCount = devices?.length || 0;
-      const existingDevice = devices?.find(d => d.hwid === hwid);
+      const existingDevice = devices?.find(d => d.hwid === safeHwid);
 
       if (!existingDevice && deviceCount >= license.max_devices) {
         return new Response(
-          JSON.stringify({ 
-            error: 'Maximum devices reached', 
+          JSON.stringify({
+            error: 'Maximum devices reached',
             valid: false,
-            license: {
-              key: license.license_key,
-              max_devices: license.max_devices,
-              current_devices: deviceCount
-            }
+            license: { key: license.license_key, max_devices: license.max_devices, current_devices: deviceCount }
           }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
-      // Register or update device
       if (existingDevice) {
         await supabase
           .from('devices')
-          .update({ 
+          .update({
             last_verified: new Date().toISOString(),
-            device_name: device_name || existingDevice.device_name,
-            os_info: os_info || existingDevice.os_info
+            device_name: safeDeviceName || existingDevice.device_name,
+            os_info: safeOsInfo || existingDevice.os_info
           })
           .eq('id', existingDevice.id);
       } else {
@@ -206,27 +196,26 @@ serve(async (req) => {
           .from('devices')
           .insert({
             license_id: license.id,
-            hwid: hwid,
-            device_name: device_name,
-            os_info: os_info,
+            hwid: safeHwid,
+            device_name: safeDeviceName,
+            os_info: safeOsInfo,
             last_verified: new Date().toISOString()
           });
       }
     }
 
-    // Log the validation
     await supabase
       .from('logs')
       .insert({
         entity_type: 'license',
         entity_id: license.id,
-        action: 'validate',
-        description: `License validated via API: ${license_key}`,
+        action: 'verified',
+        description: `License validated via API`,
         user_id: apiKeyData.user_id
       });
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         valid: true,
         license: {
           key: license.license_key,
@@ -242,9 +231,8 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in validate-license function:', error instanceof Error ? error.message : 'Unknown error');
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
-      JSON.stringify({ error: errorMessage, valid: false }),
+      JSON.stringify({ error: 'Internal server error', valid: false }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

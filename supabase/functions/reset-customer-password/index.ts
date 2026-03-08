@@ -5,17 +5,26 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// HTML escape to prevent XSS in email templates
+function escapeHtml(text: string): string {
+  const map: Record<string, string> = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;",
+  };
+  return text.replace(/[&<>"']/g, (m) => map[m]);
+}
+
 Deno.serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Verify admin authorization
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      console.log("No authorization header provided");
       return new Response(
         JSON.stringify({ error: "غير مصرح" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -28,12 +37,10 @@ Deno.serve(async (req) => {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    // Verify the caller's token and check admin role
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
 
     if (authError || !user) {
-      console.log("Invalid token:", authError?.message);
       return new Response(
         JSON.stringify({ error: "رمز غير صالح" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -49,23 +56,28 @@ Deno.serve(async (req) => {
       .single();
 
     if (roleError || !adminRole) {
-      console.log("User is not an admin:", user.id);
       return new Response(
         JSON.stringify({ error: "يجب أن تكون مسؤولاً لتنفيذ هذا الإجراء" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const { email, customerName } = await req.json();
+    const body = await req.json();
+    const { email, customerName } = body;
 
-    if (!email) {
+    // Input validation
+    if (!email || typeof email !== "string" || email.length > 255 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return new Response(
-        JSON.stringify({ error: "البريد الإلكتروني مطلوب" }),
+        JSON.stringify({ error: "البريد الإلكتروني غير صالح" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`Admin ${user.id} resetting password for customer: ${email}`);
+    const safeName = customerName && typeof customerName === "string"
+      ? escapeHtml(customerName.trim().slice(0, 200))
+      : "العميل";
+
+    console.log(`Admin ${user.id} resetting password for customer`);
 
     // Generate a new temporary password
     const generatePassword = () => {
@@ -81,14 +93,14 @@ Deno.serve(async (req) => {
 
     // Find the user by email
     const { data: users, error: listError } = await supabaseAdmin.auth.admin.listUsers();
-    
+
     if (listError) {
-      console.error("Error listing users:", listError);
+      console.error("Error listing users");
       throw new Error("فشل البحث عن المستخدم");
     }
 
     const customerUser = users.users.find((u) => u.email === email);
-    
+
     if (!customerUser) {
       return new Response(
         JSON.stringify({ error: "لم يتم العثور على حساب بهذا البريد الإلكتروني" }),
@@ -103,13 +115,13 @@ Deno.serve(async (req) => {
     );
 
     if (updateError) {
-      console.error("Error updating password:", updateError);
+      console.error("Error updating password");
       throw new Error("فشل تحديث كلمة المرور");
     }
 
     // Send email with new credentials using Resend
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-    
+
     if (!RESEND_API_KEY) {
       console.error("RESEND_API_KEY not configured");
       return new Response(
@@ -131,10 +143,10 @@ Deno.serve(async (req) => {
         html: `
           <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <h2 style="color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">كلمة مرور جديدة</h2>
-            <p>مرحباً <strong>${customerName}</strong>،</p>
+            <p>مرحباً <strong>${safeName}</strong>،</p>
             <p>تم إعادة تعيين كلمة المرور الخاصة بحسابك. يمكنك الآن تسجيل الدخول باستخدام البيانات التالية:</p>
             <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <p style="margin: 5px 0;"><strong>البريد الإلكتروني:</strong> ${email}</p>
+              <p style="margin: 5px 0;"><strong>البريد الإلكتروني:</strong> ${escapeHtml(email)}</p>
               <p style="margin: 5px 0;"><strong>كلمة المرور الجديدة:</strong> <code style="background-color: #e9ecef; padding: 2px 8px; border-radius: 4px;">${newPassword}</code></p>
             </div>
             <p style="color: #dc3545;"><strong>⚠️ تنبيه:</strong> يُنصح بشدة بتغيير كلمة المرور بعد تسجيل الدخول الأول.</p>
@@ -146,34 +158,30 @@ Deno.serve(async (req) => {
     });
 
     if (!emailResponse.ok) {
-      const errorText = await emailResponse.text();
-      console.error("Error sending email:", errorText);
-      // Password was updated but email failed - still return success with warning
+      console.error("Error sending email");
+      // Password was updated but email failed - return success without exposing password
       return new Response(
-        JSON.stringify({ 
-          success: true, 
-          warning: "تم تحديث كلمة المرور ولكن فشل إرسال البريد الإلكتروني",
-          newPassword: newPassword // Return password so admin can share it manually
+        JSON.stringify({
+          success: true,
+          warning: "تم تحديث كلمة المرور ولكن فشل إرسال البريد الإلكتروني، يرجى التواصل مع العميل مباشرة",
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`Password reset successful for: ${email}`);
+    console.log(`Password reset successful for admin-initiated request`);
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: "تم إرسال كلمة المرور الجديدة بنجاح",
-        newPassword: newPassword // Return password so admin can see it
+      JSON.stringify({
+        success: true,
+        message: "تم إرسال كلمة المرور الجديدة بنجاح إلى بريد العميل الإلكتروني",
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : "حدث خطأ غير متوقع";
     console.error("Error in reset-customer-password:", error);
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: "حدث خطأ في الخادم" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
