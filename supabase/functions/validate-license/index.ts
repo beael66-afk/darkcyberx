@@ -117,6 +117,40 @@ serve(async (req) => {
 
     const clientIp = getClientIp(req);
 
+    // ── HWID Block Check (FIRST — before everything) ──────────────────────────
+    // Read body early to extract hwid for immediate hardware-level blocking
+    let rawBody: Record<string, unknown> = {};
+    try {
+      const cloned = req.clone();
+      rawBody = await cloned.json();
+    } catch { /* ignore parse errors here, handled later */ }
+
+    const earlyHwid = rawBody?.hwid && typeof rawBody.hwid === 'string'
+      ? (rawBody.hwid as string).slice(0, 255)
+      : null;
+
+    if (earlyHwid) {
+      const { data: blockedHwid } = await supabase
+        .from('blocked_hwids')
+        .select('id')
+        .eq('hwid', earlyHwid)
+        .maybeSingle();
+
+      if (blockedHwid) {
+        console.warn(`[HWID BLOCK] Blocked hardware attempted access: ${earlyHwid.substring(0, 16)}...`);
+        supabase.from('logs').insert({
+          entity_type: 'security',
+          action: 'verified',
+          description: `جهاز محظور حاول التفعيل (HWID Block)`,
+          ip_address: clientIp,
+        }).catch(() => {});
+        return new Response(
+          JSON.stringify({ error: 'Access denied', valid: false, force_shutdown: true }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     // ── IP Block Check ────────────────────────────────────────────────────────
     const { data: blockedIp } = await supabase
       .from('blocked_ips')
@@ -126,14 +160,14 @@ serve(async (req) => {
 
     if (blockedIp) {
       console.warn(`Blocked IP attempted access: ${clientIp}`);
-      await supabase.from('logs').insert({
+      supabase.from('logs').insert({
         entity_type: 'security',
         action: 'verified',
         description: `Blocked IP attempted license validation`,
         ip_address: clientIp,
-      });
+      }).catch(() => {});
       return new Response(
-        JSON.stringify({ error: 'Access denied', valid: false }),
+        JSON.stringify({ error: 'Access denied', valid: false, force_shutdown: true }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
