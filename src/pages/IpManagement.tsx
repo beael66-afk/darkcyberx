@@ -344,6 +344,11 @@ function IpDetailDrawer({ ip, isOpen, onClose }: { ip: IpActivity | null; isOpen
                         sandbox="allow-scripts allow-same-origin"
                       />
                     </div>
+                    <div className="flex gap-2 flex-wrap">
+                      <a href={`https://maps.google.com/maps?q=${geoInfo.lat},${geoInfo.lon}&z=12`} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">🗺️ Google Maps ↗</a>
+                      <span className="text-xs text-muted-foreground">|</span>
+                      <a href={`https://www.openstreetmap.org/?mlat=${geoInfo.lat}&mlon=${geoInfo.lon}#map=12/${geoInfo.lat}/${geoInfo.lon}`} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">🌍 OpenStreetMap ↗</a>
+                    </div>
                   </div>
 
                 </div>
