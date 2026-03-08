@@ -193,6 +193,32 @@ serve(async (req) => {
     }
 
     if (safeHwid) {
+      // Check if this HWID exists but is disabled (blocked device)
+      const { data: blockedDevice } = await supabase
+        .from('devices')
+        .select('id, is_active')
+        .eq('license_id', license.id)
+        .eq('hwid', safeHwid)
+        .eq('is_active', false)
+        .maybeSingle();
+
+      if (blockedDevice) {
+        console.warn(`Blocked device attempted validation: ${safeHwid.substring(0, 16)}...`);
+        await supabase.from('logs').insert({
+          entity_type: 'security',
+          action: 'verified',
+          description: `Blocked device attempted license validation`,
+          ip_address: clientIp,
+        });
+        return new Response(
+          JSON.stringify({
+            error: 'Device is blocked. Please contact support.',
+            valid: false,
+          }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       const { data: devices } = await supabase
         .from('devices')
         .select('*')

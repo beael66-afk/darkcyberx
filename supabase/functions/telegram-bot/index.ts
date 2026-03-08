@@ -63,16 +63,46 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Handle admin action: get file URL from Telegram
+    // Handle admin action: proxy file download from Telegram (never expose token URL to client)
     if (body?.action === "get_file" && body?.file_id) {
+      // Require auth for this action to prevent unauthenticated access
+      const authHeader = req.headers.get("authorization");
+      if (!authHeader) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const adminClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+        { global: { headers: { Authorization: authHeader } } }
+      );
+      const { data: { user } } = await adminClient.auth.getUser();
+      if (!user) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
+      if (!isAdmin) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
       const fileRes = await fetch(`${TELEGRAM_API}${TELEGRAM_BOT_TOKEN}/getFile?file_id=${body.file_id}`);
       const fileData = await fileRes.json();
       if (!fileData.ok) {
         return new Response(JSON.stringify({ error: "File not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       const filePath = fileData.result.file_path;
+      // Proxy the file server-side — never return the token URL to the client
       const fileUrl = `https://api.telegram.org/file/bot${TELEGRAM_BOT_TOKEN}/${filePath}`;
-      return new Response(JSON.stringify({ file_url: fileUrl }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const downloadRes = await fetch(fileUrl);
+      if (!downloadRes.ok) {
+        return new Response(JSON.stringify({ error: "File download failed" }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      return new Response(downloadRes.body, {
+        status: 200,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": downloadRes.headers.get("Content-Type") || "application/octet-stream",
+          "Content-Disposition": `attachment; filename="${filePath.split("/").pop()}"`,
+        },
+      });
     }
 
     const update = body;
