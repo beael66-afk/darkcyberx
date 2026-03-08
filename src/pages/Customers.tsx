@@ -319,8 +319,6 @@ const Customers = () => {
                     </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground">{customer.email}</TableCell>
-                  <TableCell className="text-muted-foreground">{customer.phone || "—"}</TableCell>
-                  <TableCell className="text-muted-foreground">{customer.company || "—"}</TableCell>
                   <TableCell>
                     {linkedCustomerIds.has(customer.id) ? (
                       <Badge variant="default" className="bg-green-500/15 text-green-700 dark:text-green-400 hover:bg-green-500/20 border-none text-xs gap-1">
