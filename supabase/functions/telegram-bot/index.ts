@@ -186,6 +186,36 @@ Deno.serve(async (req) => {
       return new Response("OK", { status: 200 });
     }
 
+    if (state?.step === "awaiting_rustdesk_edit_label") {
+      const newLabel = text.trim() === "." ? state.data?.oldLabel : (text.trim() || null);
+      await setState(supabase, chatId, "awaiting_rustdesk_edit_id", {
+        deviceId: state.data?.deviceId,
+        oldId: state.data?.oldId,
+        newLabel,
+      });
+      await sendMessage(chatId, TELEGRAM_BOT_TOKEN,
+        "━━━━━━━━━━━━━━━━━━━━━\n" +
+        "🔢 *أرسل ID الجهاز الجديد*\n" +
+        "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+        `الحالي: \`${state.data?.oldId}\`\n\n` +
+        "_(أو أرسل `.` للإبقاء على نفس الـ ID)_",
+        "Markdown"
+      );
+      return new Response("OK", { status: 200 });
+    }
+
+    if (state?.step === "awaiting_rustdesk_edit_id") {
+      const rawId = text.trim().replace(/\s+/g, "");
+      const newId = rawId === "." ? state.data?.oldId : rawId;
+      if (!newId || newId.length < 6) {
+        await sendMessage(chatId, TELEGRAM_BOT_TOKEN, "⚠️ الـ ID يبدو غير صحيح. أرسل الـ ID أو أرسل `.` للإبقاء:");
+        return new Response("OK", { status: 200 });
+      }
+      await handleRustDeskEditDevice(supabase, chatId, state.data?.deviceId, newId, state.data?.newLabel, TELEGRAM_BOT_TOKEN);
+      await clearState(supabase, chatId);
+      return new Response("OK", { status: 200 });
+    }
+
     if (state?.step === "awaiting_days") {
       if (/^\d+$/.test(text)) {
         await handleDaysInput(supabase, chatId, parseInt(text), state.data?.licenseKey, TELEGRAM_BOT_TOKEN);
