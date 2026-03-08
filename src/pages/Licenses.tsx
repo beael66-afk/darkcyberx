@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Copy, Trash2, Edit, FileSpreadsheet, FileText, KeyRound, Loader2 } from "lucide-react";
+import { Plus, Search, Copy, Trash2, Edit, FileSpreadsheet, FileText, KeyRound, Loader2, PauseCircle, PlayCircle } from "lucide-react";
 import { exportToExcel, exportToCSV } from "@/lib/exportUtils";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -73,6 +73,7 @@ const Licenses = () => {
   const [regenerateLicense, setRegenerateLicense] = useState<License | null>(null);
   const [isRegenerateDialogOpen, setIsRegenerateDialogOpen] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [suspendingId, setSuspendingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<{
     customer_id: string;
     product_id: string;
@@ -299,6 +300,40 @@ const Licenses = () => {
     } finally {
       setIsDeleteDialogOpen(false);
       setLicenseToDelete(null);
+    }
+  };
+
+  const toggleSuspend = async (license: License) => {
+    const isSuspended = license.status === "suspended";
+    const newStatus = isSuspended ? "active" : "suspended";
+    setSuspendingId(license.id);
+    try {
+      const { error } = await supabase
+        .from("licenses")
+        .update({ status: newStatus })
+        .eq("id", license.id);
+      if (error) throw error;
+
+      await logActivity({
+        action: "updated",
+        entityType: "license",
+        entityId: license.id,
+        description: isSuspended
+          ? `تم إعادة تفعيل الترخيص: ${license.license_key}`
+          : `تم تعليق الترخيص: ${license.license_key}`,
+      });
+
+      toast({
+        title: isSuspended ? "تم التفعيل" : "تم التعليق",
+        description: isSuspended
+          ? `تم إعادة تفعيل الترخيص ${license.license_key}`
+          : `تم تعليق الترخيص ${license.license_key}`,
+      });
+      fetchLicenses();
+    } catch {
+      toast({ title: "خطأ", description: "فشل تغيير حالة الترخيص", variant: "destructive" });
+    } finally {
+      setSuspendingId(null);
     }
   };
 
@@ -581,6 +616,26 @@ const Licenses = () => {
                           title="تعديل"
                         >
                           <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => toggleSuspend(license)}
+                          disabled={suspendingId === license.id || license.status === "expired"}
+                          title={license.status === "suspended" ? "إعادة تفعيل" : "تعليق"}
+                          className={
+                            license.status === "suspended"
+                              ? "text-success hover:text-success/80 hover:bg-success/10"
+                              : "text-warning hover:text-warning/80 hover:bg-warning/10"
+                          }
+                        >
+                          {suspendingId === license.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : license.status === "suspended" ? (
+                            <PlayCircle className="h-4 w-4" />
+                          ) : (
+                            <PauseCircle className="h-4 w-4" />
+                          )}
                         </Button>
                         <Button
                           variant="ghost"
