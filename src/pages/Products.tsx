@@ -277,7 +277,7 @@ const Products = () => {
                 <TableRow key={product.id}>
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell>{product.version || "-"}</TableCell>
-                  <TableCell>{product.price ? `$${product.price}` : "-"}</TableCell>
+                  <TableCell>{product.price ? `${product.price} ج.م` : "-"}</TableCell>
                   <TableCell>
                     <Badge variant={product.is_active ? "default" : "secondary"}>
                       {product.is_active ? "نشط" : "غير نشط"}
