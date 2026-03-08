@@ -74,6 +74,8 @@ const RustDeskIds = () => {
 
   const openRustDeskApp = (rustdeskId: string) => {
     const cleanId = rustdeskId.replace(/\s+/g, "");
+    navigator.clipboard.writeText(RUSTDESK_PASSWORD);
+    toast.success("تم نسخ كلمة المرور للحافظة 🔑", { description: RUSTDESK_PASSWORD });
     window.location.href = `rustdesk://connection/new/${cleanId}`;
   };
 
