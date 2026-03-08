@@ -360,6 +360,9 @@ async function handleCallbackQuery(supabase: any, query: any, token: string) {
     case "rustdesk_add_new":
       await handleRustDeskAddNew(supabase, chatId, token);
       break;
+    case "download_rustdesk":
+      await handleDownloadRustDesk(chatId, token);
+      break;
     default:
       if (data.startsWith("renew_")) {
         const licenseKey = data.replace("renew_", "");
