@@ -186,6 +186,36 @@ Deno.serve(async (req) => {
       return new Response("OK", { status: 200 });
     }
 
+    if (state?.step === "awaiting_rustdesk_edit_label") {
+      const newLabel = text.trim() === "." ? state.data?.oldLabel : (text.trim() || null);
+      await setState(supabase, chatId, "awaiting_rustdesk_edit_id", {
+        deviceId: state.data?.deviceId,
+        oldId: state.data?.oldId,
+        newLabel,
+      });
+      await sendMessage(chatId, TELEGRAM_BOT_TOKEN,
+        "━━━━━━━━━━━━━━━━━━━━━\n" +
+        "🔢 *أرسل ID الجهاز الجديد*\n" +
+        "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+        `الحالي: \`${state.data?.oldId}\`\n\n` +
+        "_(أو أرسل `.` للإبقاء على نفس الـ ID)_",
+        "Markdown"
+      );
+      return new Response("OK", { status: 200 });
+    }
+
+    if (state?.step === "awaiting_rustdesk_edit_id") {
+      const rawId = text.trim().replace(/\s+/g, "");
+      const newId = rawId === "." ? state.data?.oldId : rawId;
+      if (!newId || newId.length < 6) {
+        await sendMessage(chatId, TELEGRAM_BOT_TOKEN, "⚠️ الـ ID يبدو غير صحيح. أرسل الـ ID أو أرسل `.` للإبقاء:");
+        return new Response("OK", { status: 200 });
+      }
+      await handleRustDeskEditDevice(supabase, chatId, state.data?.deviceId, newId, state.data?.newLabel, TELEGRAM_BOT_TOKEN);
+      await clearState(supabase, chatId);
+      return new Response("OK", { status: 200 });
+    }
+
     if (state?.step === "awaiting_days") {
       if (/^\d+$/.test(text)) {
         await handleDaysInput(supabase, chatId, parseInt(text), state.data?.licenseKey, TELEGRAM_BOT_TOKEN);
@@ -336,6 +366,9 @@ async function handleCallbackQuery(supabase: any, query: any, token: string) {
       } else if (data.startsWith("rustdesk_delete_")) {
         const deviceId = data.replace("rustdesk_delete_", "");
         await handleRustDeskDeleteDevice(supabase, chatId, deviceId, token);
+      } else if (data.startsWith("rustdesk_edit_")) {
+        const deviceId = data.replace("rustdesk_edit_", "");
+        await handleRustDeskEditStart(supabase, chatId, deviceId, token);
       }
       break;
   }
@@ -911,7 +944,10 @@ async function handleRustDeskRegister(supabase: any, chatId: number, token: stri
     existingMsg = "📋 *أجهزتك المسجّلة:*\n";
     devices.forEach((d: any, i: number) => {
       existingMsg += `${i + 1}. \`${d.rustdesk_id}\`${d.device_label ? ` — ${d.device_label}` : ""}\n`;
-      buttons.push([{ text: `🗑️ حذف: ${d.device_label || d.rustdesk_id}`, callback_data: `rustdesk_delete_${d.id}` }]);
+      buttons.push([
+        { text: `✏️ تعديل: ${d.device_label || d.rustdesk_id}`, callback_data: `rustdesk_edit_${d.id}` },
+        { text: `🗑️ حذف`, callback_data: `rustdesk_delete_${d.id}` },
+      ]);
     });
     existingMsg += "\n";
   }
@@ -960,6 +996,82 @@ async function handleRustDeskDeleteDevice(supabase: any, chatId: number, deviceI
 
   await sendMessageWithKeyboard(chatId, token,
     "✅ *تم حذف الجهاز بنجاح!*",
+    { inline_keyboard: [[{ text: "🖥️ إدارة الأجهزة", callback_data: "rustdesk_register" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
+    "Markdown"
+  );
+}
+
+async function handleRustDeskEditStart(supabase: any, chatId: number, deviceId: string, token: string) {
+  const customer = await getCustomerByChatId(supabase, chatId);
+  if (!customer) return;
+
+  const { data: device } = await supabase
+    .from("rustdesk_ids")
+    .select("rustdesk_id, device_label")
+    .eq("id", deviceId)
+    .eq("customer_id", customer.customer_id)
+    .maybeSingle();
+
+  if (!device) {
+    await sendMessage(chatId, token, "❌ الجهاز غير موجود.");
+    return;
+  }
+
+  await setState(supabase, chatId, "awaiting_rustdesk_edit_label", {
+    deviceId,
+    oldId: device.rustdesk_id,
+    oldLabel: device.device_label,
+  });
+
+  await sendMessage(chatId, token,
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "✏️ *تعديل بيانات الجهاز*\n" +
+    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+    `🔢 ID الحالي: \`${device.rustdesk_id}\`\n` +
+    `🏷️ الاسم الحالي: ${device.device_label || "—"}\n\n` +
+    "*أرسل الاسم الجديد للجهاز* (اختياري)\n" +
+    "_(أو أرسل `.` للإبقاء على نفس الاسم)_",
+    "Markdown"
+  );
+}
+
+async function handleRustDeskEditDevice(supabase: any, chatId: number, deviceId: string, newId: string, newLabel: string | null, token: string) {
+  const customer = await getCustomerByChatId(supabase, chatId);
+  if (!customer) return;
+
+  // Check if new ID conflicts with another device (not the same device)
+  if (newId) {
+    const { data: conflict } = await supabase
+      .from("rustdesk_ids")
+      .select("id, customer_id")
+      .eq("rustdesk_id", newId)
+      .neq("id", deviceId)
+      .maybeSingle();
+
+    if (conflict) {
+      await sendMessage(chatId, token, `⚠️ هذا الـ ID \`${newId}\` مسجّل مسبقاً لجهاز آخر.`, "Markdown");
+      return;
+    }
+  }
+
+  const { error } = await supabase
+    .from("rustdesk_ids")
+    .update({ rustdesk_id: newId, device_label: newLabel, updated_at: new Date().toISOString() })
+    .eq("id", deviceId)
+    .eq("customer_id", customer.customer_id);
+
+  if (error) {
+    await sendMessage(chatId, token, "❌ حدث خطأ أثناء التعديل. حاول مرة أخرى.");
+    return;
+  }
+
+  await sendMessageWithKeyboard(chatId, token,
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "✅ *تم تعديل بيانات الجهاز بنجاح!*\n" +
+    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+    `🔢 ID الجديد: \`${newId}\`\n` +
+    (newLabel ? `🏷️ الاسم الجديد: ${newLabel}\n` : "") +
+    "\n🔑 *كلمة المرور للاتصال:* `123456medoissaA`",
     { inline_keyboard: [[{ text: "🖥️ إدارة الأجهزة", callback_data: "rustdesk_register" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
     "Markdown"
   );
