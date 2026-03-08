@@ -15,6 +15,7 @@ import {
   Bot,
   ShoppingCart,
   Shield,
+  MonitorPlay,
 } from "lucide-react";
 import {
   Sidebar,
