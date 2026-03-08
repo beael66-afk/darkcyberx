@@ -303,6 +303,40 @@ const Licenses = () => {
     }
   };
 
+  const toggleSuspend = async (license: License) => {
+    const isSuspended = license.status === "suspended";
+    const newStatus = isSuspended ? "active" : "suspended";
+    setSuspendingId(license.id);
+    try {
+      const { error } = await supabase
+        .from("licenses")
+        .update({ status: newStatus })
+        .eq("id", license.id);
+      if (error) throw error;
+
+      await logActivity({
+        action: "updated",
+        entityType: "license",
+        entityId: license.id,
+        description: isSuspended
+          ? `تم إعادة تفعيل الترخيص: ${license.license_key}`
+          : `تم تعليق الترخيص: ${license.license_key}`,
+      });
+
+      toast({
+        title: isSuspended ? "تم التفعيل" : "تم التعليق",
+        description: isSuspended
+          ? `تم إعادة تفعيل الترخيص ${license.license_key}`
+          : `تم تعليق الترخيص ${license.license_key}`,
+      });
+      fetchLicenses();
+    } catch {
+      toast({ title: "خطأ", description: "فشل تغيير حالة الترخيص", variant: "destructive" });
+    } finally {
+      setSuspendingId(null);
+    }
+  };
+
   const handleRegenerate = async () => {
     if (!regenerateLicense) return;
     setIsRegenerating(true);
