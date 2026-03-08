@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
     const photo = message.photo; // array of photo sizes or undefined
     const location = message.location; // { latitude, longitude }
 
-    // ── Handle location message ──────────────────────────
+    // ── Handle location message (optional) ──────────────────────────
     if (location) {
       await handleLocationReceived(supabase, chatId, location.latitude, location.longitude, TELEGRAM_BOT_TOKEN);
       return new Response("OK", { status: 200 });
@@ -131,7 +131,7 @@ Deno.serve(async (req) => {
 
     // Handle message_type = new_chat_members (user just joined / opened chat)
     if (message?.new_chat_members || message?.chat?.type === "private" && !text && !photo) {
-      await checkAndRequestLocation(chatId, TELEGRAM_BOT_TOKEN, supabase);
+      await sendMainMenu(chatId, TELEGRAM_BOT_TOKEN, supabase);
       return new Response("OK", { status: 200 });
     }
 
@@ -139,7 +139,7 @@ Deno.serve(async (req) => {
     if (text.startsWith("/")) {
       await clearState(supabase, chatId);
       if (text === "/start") {
-        await checkAndRequestLocation(chatId, TELEGRAM_BOT_TOKEN, supabase);
+        await sendMainMenu(chatId, TELEGRAM_BOT_TOKEN, supabase);
       } else {
         await sendMessage(chatId, TELEGRAM_BOT_TOKEN,
           "❓ أمر غير معروف.\nاضغط /start لعرض القائمة الرئيسية."
@@ -307,23 +307,8 @@ async function clearState(supabase: any, chatId: number) {
     .eq("telegram_chat_id", chatId);
 }
 
-// ─── Location Handling ─────────────────────────────────
-async function checkAndRequestLocation(chatId: number, token: string, supabase: any) {
-  // Check if location already saved (in telegram_links)
-  const { data: existingLink } = await supabase
-    .from("telegram_links")
-    .select("latitude")
-    .eq("telegram_chat_id", chatId)
-    .maybeSingle();
-
-  // If already has location OR location is saved → go to main menu
-  if (existingLink && existingLink.latitude !== null) {
-    await sendMainMenu(chatId, token, supabase);
-    return;
-  }
-
-  // Also check if there's NO link yet (brand new user) — still ask for location first
-  // Request location using Reply Keyboard
+// ─── Location Handling (Optional) ──────────────────────
+async function sendLocationRequestKeyboard(chatId: number, token: string) {
   await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -331,10 +316,10 @@ async function checkAndRequestLocation(chatId: number, token: string, supabase: 
       chat_id: chatId,
       text:
         "━━━━━━━━━━━━━━━━━━━━━\n" +
-        "📍 *تحديد الموقع الجغرافي*\n" +
+        "📍 *مشاركة الموقع الجغرافي*\n" +
         "━━━━━━━━━━━━━━━━━━━━━\n\n" +
-        "لاستخدام البوت، نحتاج تحديد موقعك الجغرافي مرة واحدة فقط.\n\n" +
-        "اضغط الزر أدناه لمشاركة موقعك 👇",
+        "هذه الميزة متاحة فقط من *تطبيق الهاتف* 📱\n\n" +
+        "اضغط الزر أدناه لمشاركة موقعك (اختياري):",
       parse_mode: "Markdown",
       reply_markup: {
         keyboard: [[{ text: "📍 مشاركة موقعي", request_location: true }]],
@@ -415,6 +400,7 @@ async function sendMainMenu(chatId: number, token: string, supabase?: any) {
         [{ text: "🔑 ريسيت المفتاح (مسح الأجهزة)", callback_data: "reset_key" }],
         [{ text: "🖥️ تسجيل / تعديل ID جهاز", callback_data: "rustdesk_register" }],
         [{ text: "⬇️ تحميل RustDesk", callback_data: "download_rustdesk" }],
+        [{ text: "📍 مشاركة موقعي (اختياري)", callback_data: "share_location" }],
         [{ text: "❓ المساعدة", callback_data: "help" }],
       ],
     };
@@ -489,6 +475,9 @@ async function handleCallbackQuery(supabase: any, query: any, token: string) {
       break;
     case "download_rustdesk":
       await handleDownloadRustDesk(chatId, token);
+      break;
+    case "share_location":
+      await sendLocationRequestKeyboard(chatId, token);
       break;
     default:
       if (data.startsWith("renew_")) {
