@@ -42,6 +42,9 @@ interface RegistrationRequest {
   status: string;
   admin_note: string | null;
   created_at: string;
+  requested_days: number | null;
+  amount: number | null;
+  receipt_note: string | null;
 }
 
 interface Product {
