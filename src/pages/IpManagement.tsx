@@ -335,7 +335,7 @@ function IpDetailDrawer({ ip, isOpen, onClose }: { ip: IpActivity | null; isOpen
                       📍 {geoInfo.lat.toFixed(4)}, {geoInfo.lon.toFixed(4)}
                     </p>
                     <a
-                      href={`https://www.google.com/maps?q=${geoInfo.lat},${geoInfo.lon}`}
+                      href={`https://maps.google.com/maps?q=${geoInfo.lat},${geoInfo.lon}&z=12`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-xs text-primary hover:underline"
