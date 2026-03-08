@@ -59,7 +59,6 @@ async function getFailedCount(
 }
 
 // ── Auto-block + force_shutdown helper ──────────────────────────────────────
-// Returns { forceShutdown: boolean }
 async function checkAndAutoBlock(
   supabase: ReturnType<typeof createClient>,
   clientIp: string
@@ -78,7 +77,6 @@ async function checkAndAutoBlock(
       });
 
     if (!error) {
-      // newly blocked — notify admin
       console.warn(`[AUTO-BLOCK] IP ${clientIp} blocked after ${failedCount} failed attempts`);
       const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
       const adminChatId = Deno.env.get('ADMIN_TELEGRAM_CHAT_ID');
@@ -242,6 +240,30 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: 'Invalid license key format', valid: false }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // ── Revoked Key Check ─────────────────────────────────────────────────────
+    // Keys that were deleted or regenerated are blacklisted here.
+    // Treat them as security threats (403) to trigger Auto-Block.
+    const { data: revokedKey } = await supabase
+      .from('revoked_keys')
+      .select('id, reason')
+      .eq('license_key', license_key)
+      .maybeSingle();
+
+    if (revokedKey) {
+      console.warn(`[REVOKED KEY] Attempt with revoked key: ${license_key}`);
+      await supabase.from('logs').insert({
+        entity_type: 'security',
+        action: 'verified',
+        description: `محاولة تفعيل بمفتاح ملغى: ${license_key}`,
+        ip_address: clientIp,
+      });
+      const { forceShutdown } = await checkAndAutoBlock(supabase, clientIp);
+      return new Response(
+        JSON.stringify({ error: 'Access denied', valid: false, force_shutdown: forceShutdown }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
