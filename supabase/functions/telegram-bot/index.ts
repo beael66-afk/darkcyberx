@@ -234,6 +234,7 @@ async function sendMainMenu(chatId: number, token: string, supabase?: any) {
       inline_keyboard: [
         [{ text: "📋 عرض تراخيصي", callback_data: "my_licenses" }],
         [{ text: "🔄 تجديد ترخيص", callback_data: "renew" }],
+        [{ text: "🖥️ تسجيل / تعديل ID جهاز", callback_data: "rustdesk_register" }],
         [{ text: "❓ المساعدة", callback_data: "help" }],
       ],
     };
