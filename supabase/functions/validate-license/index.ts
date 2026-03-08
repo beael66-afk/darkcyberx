@@ -383,11 +383,6 @@ serve(async (req) => {
   }
 });
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
-};
-
 // Rate limiting configuration
 const rateLimitWindow = 60000; // 1 minute
 const maxRequestsPerWindow = 30;
