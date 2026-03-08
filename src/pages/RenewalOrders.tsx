@@ -42,6 +42,9 @@ interface RegistrationRequest {
   status: string;
   admin_note: string | null;
   created_at: string;
+  requested_days: number | null;
+  amount: number | null;
+  receipt_note: string | null;
 }
 
 interface Product {
@@ -121,7 +124,7 @@ const ApproveRegDialog = ({
 }) => {
   const [maxDevices, setMaxDevices] = useState(1);
   const [selectedProduct, setSelectedProduct] = useState<string>("");
-  const [renewalDays, setRenewalDays] = useState<string>("");
+  const [renewalDays, setRenewalDays] = useState<string>(request.requested_days ? String(request.requested_days) : "");
   const [createLicense, setCreateLicense] = useState(true);
 
   const { data: products } = useQuery({
@@ -675,6 +678,9 @@ const RenewalOrders = () => {
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
                   <TableHead className="font-semibold">الاسم</TableHead>
                   <TableHead className="font-semibold">البريد الإلكتروني</TableHead>
+                  <TableHead className="font-semibold">الأيام</TableHead>
+                  <TableHead className="font-semibold">المبلغ</TableHead>
+                  <TableHead className="font-semibold">إيصال الدفع</TableHead>
                   <TableHead className="font-semibold">الحالة</TableHead>
                   <TableHead className="font-semibold">التاريخ</TableHead>
                   <TableHead className="font-semibold text-left">الإجراءات</TableHead>
@@ -682,9 +688,9 @@ const RenewalOrders = () => {
               </TableHeader>
               <TableBody>
                 {regLoading ? (
-                  <TableRow><TableCell colSpan={5} className="text-center py-12 text-muted-foreground">جاري التحميل...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="text-center py-12 text-muted-foreground">جاري التحميل...</TableCell></TableRow>
                 ) : filteredRegRequests?.length === 0 ? (
-                  <TableRow><TableCell colSpan={5} className="text-center py-12"><div className="flex flex-col items-center gap-2 text-muted-foreground"><UserPlus className="h-10 w-10 opacity-30" /><p>لا توجد طلبات تسجيل</p></div></TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="text-center py-12"><div className="flex flex-col items-center gap-2 text-muted-foreground"><UserPlus className="h-10 w-10 opacity-30" /><p>لا توجد طلبات تسجيل</p></div></TableCell></TableRow>
                 ) : (
                   filteredRegRequests?.map((req) => {
                     const config = statusConfig[req.status] || statusConfig.pending;
@@ -698,6 +704,37 @@ const RenewalOrders = () => {
                           </div>
                         </TableCell>
                         <TableCell className="text-sm">{req.email}</TableCell>
+                        <TableCell className="font-semibold">{req.requested_days ? `${req.requested_days} يوم` : "—"}</TableCell>
+                        <TableCell className="font-semibold">{req.amount ? `${req.amount} جنيه` : "—"}</TableCell>
+                        <TableCell>
+                          {req.receipt_note ? (
+                            <div className="max-w-[200px] flex flex-col gap-1">
+                              {req.receipt_note.startsWith("[صورة إيصال]") ? (
+                                <>
+                                  <Badge variant="outline" className="gap-1 text-xs">🖼️ صورة إيصال مرفقة</Badge>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 text-xs gap-1"
+                                    onClick={() => {
+                                      const match = req.receipt_note!.match(/file_id:\s*(\S+)/);
+                                      const fileId = match ? match[1] : req.receipt_note!.replace("[صورة إيصال] ", "").trim();
+                                      setReceiptFileId(fileId);
+                                    }}
+                                  >
+                                    🔍 عرض الصورة
+                                  </Button>
+                                </>
+                              ) : (
+                                <p className="text-xs text-muted-foreground truncate" title={req.receipt_note}>
+                                  📝 {req.receipt_note}
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
                         <TableCell><Badge variant={config.variant} className="gap-1"><StatusIcon className="h-3 w-3" />{config.label}</Badge></TableCell>
                         <TableCell className="text-muted-foreground text-sm">
                           <div className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{new Date(req.created_at).toLocaleDateString("ar-EG", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</div>

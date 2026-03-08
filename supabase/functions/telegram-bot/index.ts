@@ -126,7 +126,27 @@ Deno.serve(async (req) => {
         await sendMessage(chatId, TELEGRAM_BOT_TOKEN, "❌ بريد إلكتروني غير صحيح. حاول مرة أخرى:");
         return new Response("OK", { status: 200 });
       }
-      await handleRegistrationSubmit(supabase, chatId, state.data?.name, text.toLowerCase(), TELEGRAM_BOT_TOKEN);
+      // Check email validity first, then ask for days
+      await handleRegistrationEmailStep(supabase, chatId, state.data?.name, text.toLowerCase(), TELEGRAM_BOT_TOKEN);
+      return new Response("OK", { status: 200 });
+    }
+
+    if (state?.step === "awaiting_reg_days") {
+      if (/^\d+$/.test(text)) {
+        const days = parseInt(text);
+        if (days < 1 || days > 365) {
+          await sendMessage(chatId, TELEGRAM_BOT_TOKEN, "⚠️ يرجى إدخال عدد أيام بين 1 و 365:");
+          return new Response("OK", { status: 200 });
+        }
+        await handleRegDaysInput(supabase, chatId, days, state.data, TELEGRAM_BOT_TOKEN);
+        return new Response("OK", { status: 200 });
+      }
+      await sendMessage(chatId, TELEGRAM_BOT_TOKEN, "⚠️ أدخل رقم صحيح (عدد الأيام):");
+      return new Response("OK", { status: 200 });
+    }
+
+    if (state?.step === "awaiting_reg_receipt") {
+      await handleRegReceiptSubmit(supabase, chatId, text, photo, state.data, TELEGRAM_BOT_TOKEN);
       await clearState(supabase, chatId);
       return new Response("OK", { status: 200 });
     }
@@ -298,7 +318,8 @@ async function handleRegisterStart(supabase: any, chatId: number, token: string)
   );
 }
 
-async function handleRegistrationSubmit(supabase: any, chatId: number, name: string, email: string, token: string) {
+// Step 2: validate email, check duplicates, then ask for days
+async function handleRegistrationEmailStep(supabase: any, chatId: number, name: string, email: string, token: string) {
   const { data: existingCustomer } = await supabase
     .from("customers")
     .select("id")
@@ -311,13 +332,14 @@ async function handleRegistrationSubmit(supabase: any, chatId: number, name: str
       "إذا كنت تريد ربط حسابك، اضغط الزر أدناه:",
       { inline_keyboard: [[{ text: "🔗 ربط حساب موجود", callback_data: "link_account" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
     );
+    await clearState(supabase, chatId);
     return;
   }
 
   const { data: existingReq } = await supabase
     .from("registration_requests")
     .select("id")
-    .eq("email", email)
+    .ilike("email", email)
     .eq("status", "pending")
     .maybeSingle();
 
@@ -326,12 +348,80 @@ async function handleRegistrationSubmit(supabase: any, chatId: number, name: str
       "⏳ يوجد طلب تسجيل قيد المراجعة بالفعل لهذا البريد.\nسيتم إبلاغك فور الموافقة.",
       { inline_keyboard: [[{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
     );
+    await clearState(supabase, chatId);
+    return;
+  }
+
+  // Email is valid — move to asking for days
+  await setState(supabase, chatId, "awaiting_reg_days", { name, email });
+  await sendMessage(chatId, token,
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "📅 *كم يوم تريد الاشتراك؟*\n" +
+    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+    "💰 *الأسعار:*\n" +
+    "• اليوم = 10 جنيه\n" +
+    "• 30 يوم = 300 جنيه\n\n" +
+    "أرسل عدد الأيام (مثال: `30`)\n" +
+    "━━━━━━━━━━━━━━━━━━━━━",
+    "Markdown"
+  );
+}
+
+// Step 3: receive days, show payment instructions, ask for receipt
+async function handleRegDaysInput(supabase: any, chatId: number, days: number, stateData: any, token: string) {
+  const amount = days * PRICE_PER_DAY;
+  await setState(supabase, chatId, "awaiting_reg_receipt", { ...stateData, days, amount });
+  await sendMessage(chatId, token,
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "💰 *تفاصيل الاشتراك*\n" +
+    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+    `📅 عدد الأيام: *${days} يوم*\n` +
+    `💵 المبلغ: *${amount} جنيه*\n\n` +
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "📱 *خطوات الدفع:*\n\n" +
+    `1️⃣ حوّل *${amount} جنيه* على:\n` +
+    `📞 \`${PAYMENT_NUMBER}\`\n` +
+    "_(فودافون كاش)_\n\n" +
+    "2️⃣ أرسل *صورة الإيصال* أو *رقم العملية* الآن 👇\n\n" +
+    "━━━━━━━━━━━━━━━━━━━━━",
+    "Markdown"
+  );
+}
+
+// Step 4: receive receipt, save registration request
+async function handleRegReceiptSubmit(supabase: any, chatId: number, text: string, photo: any[] | undefined, stateData: any, token: string) {
+  const { name, email, days, amount } = stateData || {};
+
+  if (!name || !email || !days) {
+    await sendMessage(chatId, token, "❌ حدث خطأ. ابدأ من جديد بالضغط /start");
+    return;
+  }
+
+  let receiptNote = "";
+  if (photo && photo.length > 0) {
+    const bestPhoto = photo[photo.length - 1];
+    receiptNote = `[صورة إيصال] file_id: ${bestPhoto.file_id}`;
+    if (text) receiptNote += `\nملاحظة: ${text}`;
+  } else if (text) {
+    receiptNote = text;
+  } else {
+    await sendMessage(chatId, token, "⚠️ أرسل صورة الإيصال أو رقم العملية:");
+    // re-enter state so they can send again
+    await setState(supabase, chatId, "awaiting_reg_receipt", stateData);
     return;
   }
 
   const { error } = await supabase
     .from("registration_requests")
-    .insert({ telegram_chat_id: chatId, name, email, status: "pending" });
+    .insert({
+      telegram_chat_id: chatId,
+      name,
+      email,
+      status: "pending",
+      requested_days: days,
+      amount,
+      receipt_note: receiptNote,
+    });
 
   if (error) {
     console.error("Registration request error:", error);
@@ -339,13 +429,18 @@ async function handleRegistrationSubmit(supabase: any, chatId: number, name: str
     return;
   }
 
-  // Notify admin about new registration
+  const isPhoto = photo && photo.length > 0;
+
+  // Notify admin
   await notifyAdmin(token,
     "━━━━━━━━━━━━━━━━━━━━━\n" +
     "🆕 *طلب تسجيل جديد!*\n" +
     "━━━━━━━━━━━━━━━━━━━━━\n\n" +
     `👤 الاسم: *${name}*\n` +
-    `📧 البريد: *${email}*\n\n` +
+    `📧 البريد: *${email}*\n` +
+    `📅 الأيام: *${days} يوم*\n` +
+    `💵 المبلغ: *${amount} جنيه*\n` +
+    `📎 الإيصال: ${isPhoto ? "صورة 🖼️" : "نص 📝"}\n\n` +
     "⚡ افتح لوحة التحكم للموافقة أو الرفض\n" +
     "━━━━━━━━━━━━━━━━━━━━━"
   );
@@ -355,7 +450,9 @@ async function handleRegistrationSubmit(supabase: any, chatId: number, name: str
     "✅ *تم إرسال طلب التسجيل بنجاح!*\n" +
     "━━━━━━━━━━━━━━━━━━━━━\n\n" +
     `👤 الاسم: *${name}*\n` +
-    `📧 البريد: *${email}*\n\n` +
+    `📧 البريد: *${email}*\n` +
+    `📅 الأيام المطلوبة: *${days} يوم*\n` +
+    `💵 المبلغ: *${amount} جنيه*\n\n` +
     "⏳ سيتم مراجعة طلبك من الإدارة.\n" +
     "سيتم إبلاغك فور التفعيل ✅",
     { inline_keyboard: [[{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
