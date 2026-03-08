@@ -60,24 +60,21 @@ export const DashboardLayout = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <AppSidebar />
-        <main className="flex-1 flex flex-col min-w-0">
-          {/* ── Header ── */}
-          <header className="h-14 border-b border-border/60 bg-background/80 backdrop-blur-md flex items-center px-6 gap-4 sticky top-0 z-20">
-            {/* subtle gold line at top */}
-            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
-            <SidebarTrigger className="text-muted-foreground hover:text-primary transition-colors" />
-            <div className="flex-1" />
-            <ThemeToggle />
-          </header>
+      <AppSidebar />
+      <main className="flex-1 flex flex-col min-w-0 bg-background">
+        {/* ── Header ── */}
+        <header className="h-14 border-b border-border/60 bg-background/80 backdrop-blur-md flex items-center px-6 gap-4 sticky top-0 z-20 relative">
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+          <SidebarTrigger className="text-muted-foreground hover:text-primary transition-colors" />
+          <div className="flex-1" />
+          <ThemeToggle />
+        </header>
 
-          {/* ── Page Content ── */}
-          <div className="flex-1 p-6 overflow-auto">
-            <Outlet />
-          </div>
-        </main>
-      </div>
+        {/* ── Page Content ── */}
+        <div className="flex-1 p-6 overflow-auto">
+          <Outlet />
+        </div>
+      </main>
       <AiAssistant />
     </SidebarProvider>
   );
