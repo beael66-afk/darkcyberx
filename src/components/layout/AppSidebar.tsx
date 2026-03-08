@@ -44,6 +44,7 @@ const menuItems = [
   { title: "إعدادات الإشعارات", url: "/notification-settings", icon: Bell },
   { title: "بوت التليجرام", url: "/telegram-settings", icon: Bot },
   { title: "الطلبات", url: "/renewal-orders", icon: ShoppingCart },
+  { title: "إدارة الـ IP", url: "/ip-management", icon: Shield },
   { title: "الإعدادات", url: "/settings", icon: Settings },
 ];
 
