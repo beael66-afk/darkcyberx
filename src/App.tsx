@@ -82,6 +82,7 @@ const App = () => (
               <Route path="/alerts" element={<Alerts />} />
               <Route path="/legacy-monitor" element={<LegacyMonitor />} />
               <Route path="/rustdesk-ids" element={<RustDeskIds />} />
+              <Route path="/api-integration" element={<ApiIntegration />} />
               <Route path="/settings" element={<Settings />} />
             </Route>
             
