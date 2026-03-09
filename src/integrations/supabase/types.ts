@@ -446,6 +446,7 @@ export type Database = {
           email: string
           id: string
           name: string
+          receipt_image_path: string | null
           receipt_note: string | null
           requested_days: number | null
           status: string
@@ -459,6 +460,7 @@ export type Database = {
           email: string
           id?: string
           name: string
+          receipt_image_path?: string | null
           receipt_note?: string | null
           requested_days?: number | null
           status?: string
@@ -472,6 +474,7 @@ export type Database = {
           email?: string
           id?: string
           name?: string
+          receipt_image_path?: string | null
           receipt_note?: string | null
           requested_days?: number | null
           status?: string
@@ -489,6 +492,7 @@ export type Database = {
           days: number
           id: string
           license_id: string
+          receipt_image_path: string | null
           receipt_note: string | null
           status: string
           telegram_chat_id: number | null
@@ -502,6 +506,7 @@ export type Database = {
           days: number
           id?: string
           license_id: string
+          receipt_image_path?: string | null
           receipt_note?: string | null
           status?: string
           telegram_chat_id?: number | null
@@ -515,6 +520,7 @@ export type Database = {
           days?: number
           id?: string
           license_id?: string
+          receipt_image_path?: string | null
           receipt_note?: string | null
           status?: string
           telegram_chat_id?: number | null
