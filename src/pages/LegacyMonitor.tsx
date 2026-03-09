@@ -98,6 +98,15 @@ export default function LegacyMonitor() {
     },
   });
 
+  // Fetch already blocked HWIDs
+  const { data: blockedHwids = [] } = useQuery({
+    queryKey: ["blocked-hwids-set"],
+    queryFn: async () => {
+      const { data } = await supabase.from("blocked_hwids").select("hwid");
+      return (data ?? []).map((r) => r.hwid);
+    },
+  });
+
   const blockIpMutation = useMutation({
     mutationFn: async ({ ip, reason }: { ip: string; reason: string }) => {
       const { error } = await supabase.from("blocked_ips").insert({
@@ -110,6 +119,24 @@ export default function LegacyMonitor() {
       toast({ title: "✅ تم الحجب", description: `تم حجب IP: ${vars.ip}` });
       queryClient.invalidateQueries({ queryKey: ["blocked-ips-set"] });
       setBlockDialog(null);
+    },
+    onError: (e: Error) => {
+      toast({ title: "خطأ", description: e.message, variant: "destructive" });
+    },
+  });
+
+  const blockHwidMutation = useMutation({
+    mutationFn: async ({ hwid, reason }: { hwid: string; reason: string }) => {
+      const { error } = await supabase.from("blocked_hwids").insert({
+        hwid,
+        reason: reason || "حجب من صفحة مراقبة الأداة القديمة",
+      });
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => {
+      toast({ title: "✅ تم حجب الجهاز", description: `HWID: ${vars.hwid.substring(0, 20)}...` });
+      queryClient.invalidateQueries({ queryKey: ["blocked-hwids-set"] });
+      setBlockHwidDialog(null);
     },
     onError: (e: Error) => {
       toast({ title: "خطأ", description: e.message, variant: "destructive" });
