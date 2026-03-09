@@ -375,13 +375,34 @@ export default function ApiCredentials() {
       toast({
         title: value ? "🔴 تم إيقاف الـ Endpoint القديم" : "🟢 تم تشغيل الـ Endpoint القديم",
         description: value
-          ? "أي طلب للأداة القديمة سيحصل على force_shutdown فوراً"
+          ? "أي طلب للأداة القديمة سيحصل على الرد المخصص"
           : "الـ Endpoint القديم يعمل مجدداً",
       });
     } catch (error) {
       toast({ title: "خطأ", description: "فشل تغيير الإعداد", variant: "destructive" });
     } finally {
       setKillSwitchLoading(false);
+    }
+  };
+
+  const saveKillSwitchResponse = async () => {
+    // Validate JSON first
+    try { JSON.parse(killSwitchResponse); } catch {
+      toast({ title: "خطأ", description: "الرد المخصص ليس JSON صالح", variant: "destructive" });
+      return;
+    }
+    setKillSwitchResponseSaving(true);
+    try {
+      const { error } = await supabase
+        .from('notification_settings')
+        .update({ kill_switch_response: killSwitchResponse })
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+      if (error) throw error;
+      toast({ title: "✅ تم الحفظ", description: "تم حفظ الرد المخصص بنجاح" });
+    } catch {
+      toast({ title: "خطأ", description: "فشل حفظ الرد المخصص", variant: "destructive" });
+    } finally {
+      setKillSwitchResponseSaving(false);
     }
   };
 
