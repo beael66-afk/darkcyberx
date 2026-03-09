@@ -167,24 +167,22 @@ export default function LegacyMonitor() {
   // ─── Quad Block ────────────────────────────────────────────────────────────
   const quadBlockMutation = useMutation({
     mutationFn: async ({ ip, hwid, licenseKey, licenseId }: QuadTarget) => {
-      const ops: Promise<{ error: { message: string } | null }>[] = [];
-
       if (!blockedIps.includes(ip)) {
-        ops.push(supabase.from("blocked_ips").insert({ ip_address: ip, reason: "حجب رباعي من مراقبة الأداة القديمة" }).then(r => ({ error: r.error })));
+        const r = await supabase.from("blocked_ips").insert({ ip_address: ip, reason: "حجب رباعي من مراقبة الأداة القديمة" });
+        if (r.error) throw new Error(r.error.message);
       }
       if (hwid && !blockedHwids.includes(hwid)) {
-        ops.push(supabase.from("blocked_hwids").insert({ hwid, reason: "حجب رباعي من مراقبة الأداة القديمة" }).then(r => ({ error: r.error })));
+        const r = await supabase.from("blocked_hwids").insert({ hwid, reason: "حجب رباعي من مراقبة الأداة القديمة" });
+        if (r.error) throw new Error(r.error.message);
       }
       if (licenseId && licenseStatuses[licenseKey ?? ""]?.status !== "suspended") {
-        ops.push(supabase.from("licenses").update({ status: "suspended" }).eq("id", licenseId).then(r => ({ error: r.error })));
+        const r = await supabase.from("licenses").update({ status: "suspended" }).eq("id", licenseId);
+        if (r.error) throw new Error(r.error.message);
       }
       if (licenseKey && !revokedKeys.includes(licenseKey)) {
-        ops.push(supabase.from("revoked_keys").insert({ license_key: licenseKey, reason: "حجب رباعي من مراقبة الأداة القديمة" }).then(r => ({ error: r.error })));
+        const r = await supabase.from("revoked_keys").insert({ license_key: licenseKey, reason: "حجب رباعي من مراقبة الأداة القديمة" });
+        if (r.error) throw new Error(r.error.message);
       }
-
-      const results = await Promise.all(ops);
-      const failed = results.find((r) => r?.error);
-      if (failed?.error) throw new Error(failed.error.message);
     },
     onSuccess: () => {
       toast({ title: "🔴 حجب رباعي مكتمل", description: "تم تطبيق جميع الطبقات الأربعة بنجاح." });
@@ -199,25 +197,10 @@ export default function LegacyMonitor() {
   // ─── Quad Unblock ──────────────────────────────────────────────────────────
   const quadUnblockMutation = useMutation({
     mutationFn: async ({ ip, hwid, licenseKey, licenseId }: QuadTarget) => {
-      const ops: Promise<unknown>[] = [
-        supabase.from("blocked_ips").delete().eq("ip_address", ip),
-      ];
-
-      if (hwid) {
-        ops.push(supabase.from("blocked_hwids").delete().eq("hwid", hwid));
-      }
-
-      if (licenseId) {
-        ops.push(
-          supabase.from("licenses").update({ status: "active" }).eq("id", licenseId)
-        );
-      }
-
-      if (licenseKey) {
-        ops.push(supabase.from("revoked_keys").delete().eq("license_key", licenseKey));
-      }
-
-      await Promise.all(ops);
+      await supabase.from("blocked_ips").delete().eq("ip_address", ip);
+      if (hwid) await supabase.from("blocked_hwids").delete().eq("hwid", hwid);
+      if (licenseId) await supabase.from("licenses").update({ status: "active" }).eq("id", licenseId);
+      if (licenseKey) await supabase.from("revoked_keys").delete().eq("license_key", licenseKey);
     },
     onSuccess: () => {
       toast({ title: "🟢 تم فك الحجب الرباعي", description: "تم رفع جميع القيود بنجاح." });
