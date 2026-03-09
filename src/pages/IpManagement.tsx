@@ -375,7 +375,7 @@ function IpDetailDrawer({ ip, isOpen, onClose }: { ip: IpActivity | null; isOpen
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">التصنيف</p>
-                    <p className="font-semibold text-destructive">سبام / غير معروف</p>
+                    <p className="font-semibold text-muted-foreground">غير معروف</p>
                   </div>
                   <XCircle className="h-5 w-5 text-destructive ml-auto" />
                 </>
