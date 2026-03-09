@@ -373,9 +373,32 @@ export default function LegacyMonitor() {
                       </TableCell>
                       <TableCell>
                         {parsed.hwid ? (
-                          <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
-                            {parsed.hwid.substring(0, 20)}...
-                          </code>
+                          <div className="flex items-center gap-2">
+                            <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
+                              {parsed.hwid.substring(0, 20)}...
+                            </code>
+                            {blockedHwids.includes(parsed.hwid) ? (
+                              <Badge variant="destructive" className="text-xs gap-1 shrink-0">
+                                <Cpu className="h-3 w-3" />
+                                محجوب
+                              </Badge>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-6 text-xs px-2 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground shrink-0"
+                                onClick={() =>
+                                  setBlockHwidDialog({
+                                    hwid: parsed.hwid!,
+                                    reason: `حجب من مراقبة الأداة القديمة — مفتاح: ${parsed.licenseKey ?? "غير محدد"} — IP: ${ip}`,
+                                  })
+                                }
+                              >
+                                <Cpu className="h-3 w-3 ml-1" />
+                                حجب HWID
+                              </Button>
+                            )}
+                          </div>
                         ) : (
                           <span className="text-muted-foreground text-xs">—</span>
                         )}
@@ -384,7 +407,7 @@ export default function LegacyMonitor() {
                         {isBlocked ? (
                           <Badge variant="destructive" className="text-xs gap-1">
                             <Shield className="h-3 w-3" />
-                            محجوب
+                            IP محجوب
                           </Badge>
                         ) : (
                           <Badge variant="secondary" className="text-xs gap-1">
@@ -410,7 +433,7 @@ export default function LegacyMonitor() {
                           </Button>
                         )}
                         {isBlocked && (
-                          <span className="text-xs text-muted-foreground">تم الحجب</span>
+                          <span className="text-xs text-muted-foreground">تم حجب الـ IP</span>
                         )}
                       </TableCell>
                     </TableRow>
