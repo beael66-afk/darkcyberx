@@ -544,6 +544,8 @@ const IpManagement = () => {
   // Fetch IP activity from logs
   const { data: ipActivity, isLoading: activityLoading, refetch: refetchActivity } = useQuery({
     queryKey: ["ip-activity"],
+    refetchInterval: 3000,
+    refetchIntervalInBackground: true,
     queryFn: async () => {
       const [logsRes, blockedRes, licensesRes] = await Promise.all([
         supabase
@@ -558,7 +560,7 @@ const IpManagement = () => {
       ]);
 
       const logs = logsRes.data || [];
-      const blockedSet = new Set((blockedRes.data || []).map(b => b.ip_address));
+      const blockedSet = new Set((blockedRes.data || []).map((b) => b.ip_address));
 
       const licenseToCustomer = new Map<string, string>();
       for (const lic of licensesRes.data || []) {
@@ -571,7 +573,11 @@ const IpManagement = () => {
 
       const licKeyRegex = /([A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4})/;
 
-      const ipMap = new Map<string, { count: number; lastSeen: string; entityIds: Set<string>; attemptedKeys: Set<string> }>();
+      const ipMap = new Map<
+        string,
+        { count: number; lastSeen: string; entityIds: Set<string>; attemptedKeys: Set<string> }
+      >();
+
       for (const log of logs) {
         if (!log.ip_address) continue;
         const existing = ipMap.get(log.ip_address);
@@ -583,7 +589,12 @@ const IpManagement = () => {
           const keys = new Set<string>();
           if (log.entity_id) ids.add(log.entity_id);
           if (extractedKey) keys.add(extractedKey);
-          ipMap.set(log.ip_address, { count: 1, lastSeen: log.created_at || "", entityIds: ids, attemptedKeys: keys });
+          ipMap.set(log.ip_address, {
+            count: 1,
+            lastSeen: log.created_at || "",
+            entityIds: ids,
+            attemptedKeys: keys,
+          });
         } else {
           existing.count++;
           if (log.entity_id) existing.entityIds.add(log.entity_id);
