@@ -490,7 +490,7 @@ export default function ApiCredentials() {
                 <CardTitle className="text-base">مفتاح إيقاف الـ Endpoint القديم</CardTitle>
                 <CardDescription className="mt-1">
                   {killOldEndpoint
-                    ? "🔴 الـ Endpoint القديم موقوف — أي أداة قديمة تحصل على force_shutdown فوراً"
+                    ? "🔴 الـ Endpoint القديم موقوف — أي أداة قديمة تحصل على الرد المخصص فوراً"
                     : "🟢 الـ Endpoint القديم يعمل — يمكن للأدوات القديمة الاتصال به حالياً"
                   }
                 </CardDescription>
@@ -508,7 +508,7 @@ export default function ApiCredentials() {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div className="p-3 bg-muted rounded-lg">
               <p className="font-medium mb-1">🔴 Endpoint قديم (للأداة القديمة)</p>
@@ -517,6 +517,41 @@ export default function ApiCredentials() {
             <div className="p-3 bg-muted rounded-lg">
               <p className="font-medium mb-1">🟢 Endpoint جديد (للأداة الجديدة)</p>
               <code className="text-xs text-muted-foreground break-all">.../functions/v1/validate-v2</code>
+            </div>
+          </div>
+          {/* Custom kill switch response */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">الرد المخصص عند الإيقاف (JSON)</Label>
+            <p className="text-xs text-muted-foreground">
+              هذا الرد هو اللي بيرجع للأداة القديمة لما تحاول تتصل — اكتب أي رد يخليها توقف (مثل: License not found أو Invalid key).
+            </p>
+            <div className="flex gap-2">
+              <textarea
+                className="flex-1 min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm font-mono resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                value={killSwitchResponse}
+                onChange={(e) => setKillSwitchResponse(e.target.value)}
+                placeholder='{"valid":false,"error":"License not found"}'
+                dir="ltr"
+              />
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <Button size="sm" variant="outline" onClick={() => setKillSwitchResponse('{"valid":false,"error":"License not found"}')}>
+                License not found
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setKillSwitchResponse('{"valid":false,"error":"Invalid license key","force_shutdown":true}')}>
+                Invalid + Shutdown
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setKillSwitchResponse('{"valid":false}')}>
+                فقط valid: false
+              </Button>
+              <Button
+                size="sm"
+                onClick={saveKillSwitchResponse}
+                disabled={killSwitchResponseSaving}
+                className="mr-auto"
+              >
+                {killSwitchResponseSaving ? "جاري الحفظ..." : "حفظ الرد"}
+              </Button>
             </div>
           </div>
         </CardContent>
