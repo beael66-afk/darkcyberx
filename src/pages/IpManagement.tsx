@@ -839,9 +839,9 @@ const IpManagement = () => {
                           </div>
                         ) : (
                           <div className="flex flex-col gap-1">
-                            <Badge variant="outline" className="gap-1 text-xs text-destructive border-destructive/30 bg-destructive/5 w-fit">
+                            <Badge variant="outline" className="gap-1 text-xs text-muted-foreground border-border bg-muted/40 w-fit">
                               <AlertTriangle className="h-3 w-3" />
-                              سبام
+                              غير معروف
                             </Badge>
                             {(item.attempted_keys || []).length > 0 && (
                               <div className="flex flex-col gap-0.5">
