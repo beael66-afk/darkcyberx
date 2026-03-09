@@ -6,8 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
 };
 
-// ── Auto-block config ────────────────────────────────────────────────────────
-const AUTO_BLOCK_THRESHOLD = 30;    // block IP after N failed attempts
+// ── Security response config ────────────────────────────────────────────────
 const FORCE_SHUTDOWN_THRESHOLD = 15; // send force_shutdown:true after N failed attempts
 
 // ── Rate limiting ────────────────────────────────────────────────────────────
@@ -58,7 +57,7 @@ async function getFailedCount(
   return count ?? 0;
 }
 
-// ── Auto-block + force_shutdown helper ──────────────────────────────────────
+// ── Force shutdown helper (auto-block disabled) ──────────────────────────────
 async function checkAndAutoBlock(
   supabase: ReturnType<typeof createClient>,
   clientIp: string
@@ -68,37 +67,7 @@ async function checkAndAutoBlock(
   const failedCount = await getFailedCount(supabase, clientIp);
   const forceShutdown = failedCount >= FORCE_SHUTDOWN_THRESHOLD;
 
-  if (failedCount >= AUTO_BLOCK_THRESHOLD) {
-    const { error } = await supabase
-      .from('blocked_ips')
-      .insert({
-        ip_address: clientIp,
-        reason: `تم الحجب تلقائياً — ${failedCount} محاولة فاشلة (Auto-Block)`,
-      });
-
-    if (!error) {
-      console.warn(`[AUTO-BLOCK] IP ${clientIp} blocked after ${failedCount} failed attempts`);
-      const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
-      const adminChatId = Deno.env.get('ADMIN_TELEGRAM_CHAT_ID');
-      if (botToken && adminChatId) {
-        const msg =
-          `🚫 *تم حجب IP تلقائياً*\n\n` +
-          `🌐 العنوان: \`${clientIp}\`\n` +
-          `🔢 المحاولات: *${failedCount}* محاولة فاشلة\n` +
-          `⏰ الوقت: ${new Date().toLocaleString('ar-EG')}\n\n` +
-          `يمكنك مراجعة وإلغاء الحجب من صفحة *إدارة الـ IP*.`;
-        await fetch(
-          `https://api.telegram.org/bot${botToken}/sendMessage`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: adminChatId, text: msg, parse_mode: 'Markdown' }),
-          }
-        ).catch(() => {});
-      }
-    }
-  }
-
+  // Auto-inserting into blocked_ips has been disabled to avoid blocking legitimate customers
   return { forceShutdown };
 }
 
@@ -433,9 +402,10 @@ serve(async (req) => {
         console.warn(`Blocked device attempted validation: ${safeHwid.substring(0, 16)}...`);
         await supabase.from('logs').insert({
           entity_type: 'security',
+          entity_id: license.id,
           action: 'verified',
-          description: `Blocked device attempted license validation`,
-          ip_address: clientIp,
+          description: `Blocked device attempted license validation - ${license.license_key}`,
+          ip_address: clientIp || 'unknown',
         });
         return new Response(
           JSON.stringify({ error: 'Device is blocked. Please contact support.', valid: false }),
@@ -485,14 +455,18 @@ serve(async (req) => {
       }
     }
 
-    await supabase.from('logs').insert({
+    const { error: logError } = await supabase.from('logs').insert({
       entity_type: 'license',
       entity_id: license.id,
       action: 'verified',
-      description: `License validated via API`,
+      description: `License validated via API - ${license.license_key}`,
       user_id: apiKeyData.user_id,
-      ip_address: clientIp,
+      ip_address: clientIp || 'unknown',
     });
+    
+    if (logError) {
+      console.error('Failed to insert validation log:', logError.message);
+    }
 
     return new Response(
       JSON.stringify({
