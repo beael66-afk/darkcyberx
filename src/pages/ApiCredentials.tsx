@@ -452,13 +452,13 @@ export default function ApiCredentials() {
       </div>
 
       {/* Kill Switch Card */}
-      <Card className={killOldEndpoint ? "border-destructive" : "border-green-500"}>
+      <Card className={killOldEndpoint ? "border-destructive" : "border-border"}>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {killOldEndpoint
                 ? <ShieldOff className="h-5 w-5 text-destructive" />
-                : <Shield className="h-5 w-5 text-green-600" />
+                : <Shield className="h-5 w-5 text-primary" />
               }
               <div>
                 <CardTitle className="text-base">مفتاح إيقاف الـ Endpoint القديم</CardTitle>
