@@ -375,7 +375,7 @@ function IpDetailDrawer({ ip, isOpen, onClose }: { ip: IpActivity | null; isOpen
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">التصنيف</p>
-                    <p className="font-semibold text-destructive">سبام / غير معروف</p>
+                    <p className="font-semibold text-muted-foreground">غير معروف</p>
                   </div>
                   <XCircle className="h-5 w-5 text-destructive ml-auto" />
                 </>
@@ -591,10 +591,25 @@ const IpManagement = () => {
       return Array.from(ipMap.entries())
         .map(([ip, { count, lastSeen, entityIds, attemptedKeys }]) => {
           let customerName: string | null = null;
+
           for (const id of entityIds) {
             const name = licenseToCustomer.get(id);
-            if (name) { customerName = name; break; }
+            if (name) {
+              customerName = name;
+              break;
+            }
           }
+
+          if (!customerName) {
+            for (const key of attemptedKeys) {
+              const name = licenseToCustomer.get(key);
+              if (name) {
+                customerName = name;
+                break;
+              }
+            }
+          }
+
           return {
             ip_address: ip,
             request_count: count,
@@ -824,9 +839,9 @@ const IpManagement = () => {
                           </div>
                         ) : (
                           <div className="flex flex-col gap-1">
-                            <Badge variant="outline" className="gap-1 text-xs text-destructive border-destructive/30 bg-destructive/5 w-fit">
+                            <Badge variant="outline" className="gap-1 text-xs text-muted-foreground border-border bg-muted/40 w-fit">
                               <AlertTriangle className="h-3 w-3" />
-                              سبام
+                              غير معروف
                             </Badge>
                             {(item.attempted_keys || []).length > 0 && (
                               <div className="flex flex-col gap-0.5">
