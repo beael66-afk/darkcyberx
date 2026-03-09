@@ -838,6 +838,230 @@ export default function ApiIntegration() {
           </Card>
         </TabsContent>
 
+        {/* ── Webhooks ── */}
+        <TabsContent value="webhooks" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Bell className="h-5 w-5 text-primary" />
+                إشعارات Webhook — انتهاء التراخيص
+              </CardTitle>
+              <CardDescription>استقبل إشعارات تلقائية عند اقتراب أو انتهاء صلاحية التراخيص</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* How it works */}
+              <div>
+                <h3 className="font-semibold mb-3">كيف يعمل؟</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="p-4 border rounded-lg space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="rounded-full h-6 w-6 p-0 flex items-center justify-center">1</Badge>
+                      <span className="font-semibold">سجّل Webhook URL</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">حدد عنوان URL الذي سيستقبل الإشعارات (مثلاً سيرفرك أو Zapier أو n8n)</p>
+                  </div>
+                  <div className="p-4 border rounded-lg space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="rounded-full h-6 w-6 p-0 flex items-center justify-center">2</Badge>
+                      <span className="font-semibold">النظام يفحص التراخيص</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">يتم فحص التراخيص يومياً وإرسال إشعار قبل الانتهاء بالأيام المحددة</p>
+                  </div>
+                  <div className="p-4 border rounded-lg space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="rounded-full h-6 w-6 p-0 flex items-center justify-center">3</Badge>
+                      <span className="font-semibold">استقبل POST request</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">يصلك طلب POST مع بيانات الترخيص والعميل وموعد الانتهاء</p>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Webhook Payload */}
+              <div>
+                <h3 className="font-semibold mb-2">هيكل الإشعار (Webhook Payload)</h3>
+                <div className="relative">
+                  <pre className="bg-muted rounded-lg p-4 text-sm overflow-x-auto">{JSON.stringify({
+                    event: "license.expiring_soon",
+                    timestamp: "2026-03-09T08:00:00Z",
+                    data: {
+                      license_id: "uuid-here",
+                      license_key: "ABCD-1234-EFGH-5678",
+                      status: "active",
+                      expire_at: "2026-03-12T00:00:00Z",
+                      days_remaining: 3,
+                      customer: {
+                        id: "uuid-here",
+                        name: "اسم العميل",
+                        email: "customer@example.com"
+                      },
+                      product: {
+                        id: "uuid-here",
+                        name: "اسم المنتج"
+                      }
+                    }
+                  }, null, 2)}</pre>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="absolute top-2 left-2"
+                    onClick={() => copyToClipboard(JSON.stringify({
+                      event: "license.expiring_soon",
+                      timestamp: "2026-03-09T08:00:00Z",
+                      data: {
+                        license_id: "uuid-here",
+                        license_key: "ABCD-1234-EFGH-5678",
+                        status: "active",
+                        expire_at: "2026-03-12T00:00:00Z",
+                        days_remaining: 3,
+                        customer: { id: "uuid-here", name: "اسم العميل", email: "customer@example.com" },
+                        product: { id: "uuid-here", name: "اسم المنتج" }
+                      }
+                    }, null, 2), "webhook-payload")}
+                  >
+                    {copied === "webhook-payload" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Event Types */}
+              <div>
+                <h3 className="font-semibold mb-2">أنواع الأحداث (Event Types)</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3 p-3 border rounded-lg">
+                    <Badge className="bg-yellow-500/10 text-yellow-500">license.expiring_soon</Badge>
+                    <span className="text-sm">الترخيص سينتهي قريباً (حسب أيام التنبيه المحددة في الإعدادات)</span>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 border rounded-lg">
+                    <Badge className="bg-red-500/10 text-red-500">license.expired</Badge>
+                    <span className="text-sm">انتهت صلاحية الترخيص اليوم</span>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 border rounded-lg">
+                    <Badge className="bg-green-500/10 text-green-500">license.renewed</Badge>
+                    <span className="text-sm">تم تجديد الترخيص بنجاح</span>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 border rounded-lg">
+                    <Badge className="bg-blue-500/10 text-blue-500">license.created</Badge>
+                    <span className="text-sm">تم إنشاء ترخيص جديد</span>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Webhook Headers */}
+              <div>
+                <h3 className="font-semibold mb-2">Headers المُرسلة مع الإشعار</h3>
+                <div className="bg-muted rounded-lg p-4 font-mono text-sm space-y-1">
+                  <div><span className="text-primary">Content-Type</span>: <span className="text-muted-foreground">application/json</span></div>
+                  <div><span className="text-primary">X-Webhook-Event</span>: <span className="text-muted-foreground">license.expiring_soon</span></div>
+                  <div><span className="text-primary">X-Webhook-Signature</span>: <span className="text-muted-foreground">sha256=...</span> <Badge variant="outline" className="text-[10px]">للتحقق من المصدر</Badge></div>
+                  <div><span className="text-primary">X-Webhook-Timestamp</span>: <span className="text-muted-foreground">1709971200</span></div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Verification Example */}
+              <div>
+                <h3 className="font-semibold mb-2">مثال: التحقق من صحة الإشعار (Node.js)</h3>
+                <div className="relative">
+                  <pre className="bg-muted rounded-lg p-4 text-sm overflow-x-auto">{`const crypto = require('crypto');
+
+function verifyWebhook(payload, signature, secret) {
+  const expected = 'sha256=' + crypto
+    .createHmac('sha256', secret)
+    .update(payload)
+    .digest('hex');
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expected)
+  );
+}
+
+// في Express.js
+app.post('/webhook/licenses', (req, res) => {
+  const signature = req.headers['x-webhook-signature'];
+  const isValid = verifyWebhook(
+    JSON.stringify(req.body),
+    signature,
+    'YOUR_WEBHOOK_SECRET'
+  );
+
+  if (!isValid) {
+    return res.status(401).json({ error: 'Invalid signature' });
+  }
+
+  const { event, data } = req.body;
+
+  switch (event) {
+    case 'license.expiring_soon':
+      console.log(\`⚠️ ترخيص \${data.license_key} سينتهي خلال \${data.days_remaining} يوم\`);
+      // أرسل تنبيه للعميل
+      break;
+    case 'license.expired':
+      console.log(\`❌ انتهى ترخيص \${data.license_key}\`);
+      // إيقاف الخدمة أو إرسال تذكير
+      break;
+  }
+
+  res.json({ received: true });
+});`}</pre>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="absolute top-2 left-2"
+                    onClick={() => copyToClipboard(`const crypto = require('crypto');\n\nfunction verifyWebhook(payload, signature, secret) {\n  const expected = 'sha256=' + crypto.createHmac('sha256', secret).update(payload).digest('hex');\n  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));\n}`, "webhook-verify")}
+                  >
+                    {copied === "webhook-verify" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Best Practices */}
+              <div>
+                <h3 className="font-semibold mb-3">أفضل الممارسات</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 border rounded-lg space-y-2">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <Shield className="h-4 w-4 text-primary" />
+                      تحقق من التوقيع دائماً
+                    </h4>
+                    <p className="text-sm text-muted-foreground">استخدم X-Webhook-Signature للتأكد من أن الإشعار من مصدر موثوق وليس مزوراً</p>
+                  </div>
+                  <div className="p-4 border rounded-lg space-y-2">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <Zap className="h-4 w-4 text-primary" />
+                      رد بسرعة (200 OK)
+                    </h4>
+                    <p className="text-sm text-muted-foreground">أرسل رد 200 فوراً ثم عالج البيانات في الخلفية. Timeout بعد 30 ثانية يعتبر فشل</p>
+                  </div>
+                  <div className="p-4 border rounded-lg space-y-2">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                      تعامل مع التكرار
+                    </h4>
+                    <p className="text-sm text-muted-foreground">قد يُعاد إرسال الإشعار عند الفشل. استخدم license_id + event كـ idempotency key</p>
+                  </div>
+                  <div className="p-4 border rounded-lg space-y-2">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <Server className="h-4 w-4 text-muted-foreground" />
+                      إعادة المحاولة
+                    </h4>
+                    <p className="text-sm text-muted-foreground">عند فشل الإرسال، يُعاد المحاولة 3 مرات بفاصل 1، 5، 30 دقيقة</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* ── Security ── */}
         <TabsContent value="security" className="space-y-4">
           <Card>
