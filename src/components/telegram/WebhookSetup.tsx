@@ -74,20 +74,22 @@ const WebhookSetup = () => {
       const { data, error } = await supabase.functions.invoke("telegram-bot", {
         body: { action: "set_webhook" },
       });
-      if (error) throw error;
+      if (error) throw new Error(error.message || "invoke error");
       if (data?.ok) {
         toast.success("تم تفعيل Webhook بنجاح ✅");
-        // auto-check after activation
-        await checkWebhook();
       } else {
         toast.error(`فشل التفعيل: ${data?.description || "خطأ غير معروف"}`);
       }
-    } catch {
-      toast.error("حدث خطأ أثناء تفعيل الـ Webhook");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "خطأ غير معروف";
+      toast.error(`حدث خطأ أثناء تفعيل الـ Webhook: ${msg}`);
     } finally {
       setIsActivating(false);
     }
+    // فحص الحالة بعد التفعيل بشكل مستقل
+    await checkWebhook();
   };
+
 
   const isActive = webhookInfo?.result?.url && webhookInfo.result.url.length > 0;
   const isCorrectUrl = webhookInfo?.result?.url === WEBHOOK_URL;
@@ -205,7 +207,7 @@ const WebhookSetup = () => {
           <div className="rounded-lg border bg-muted/30 p-4 space-y-2 text-sm">
             <div className="flex items-center gap-2 font-medium">
               {isActive && isCorrectUrl ? (
-                <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                <CheckCircle2 className="h-4 w-4 text-success" />
               ) : (
                 <WifiOff className="h-4 w-4 text-destructive" />
               )}
@@ -219,7 +221,7 @@ const WebhookSetup = () => {
                 </span>
               </div>
               {isActive && !isCorrectUrl && (
-                <p className="text-xs text-amber-500 dark:text-amber-400">
+                <p className="text-xs text-warning">
                   ⚠️ الرابط المُسجّل يختلف عن رابط هذا المشروع — اضغط "تفعيل" لتحديثه.
                 </p>
               )}
