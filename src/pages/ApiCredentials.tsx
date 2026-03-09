@@ -4,7 +4,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Copy, Check, Plus, Trash2, Power, PowerOff, ShieldOff, Shield } from "lucide-react";
+import { Copy, Check, Plus, Trash2, Power, PowerOff, ShieldOff, Shield, BookOpen } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
@@ -424,6 +425,10 @@ export default function ApiCredentials() {
           <p className="text-muted-foreground">
             إدارة مفاتيح API وأمثلة التكامل
           </p>
+          <Link to="/api-integration" className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline mt-2">
+            <BookOpen className="h-4 w-4" />
+            دليل تكامل API الكامل
+          </Link>
         </div>
         <Dialog open={showNewKeyDialog} onOpenChange={setShowNewKeyDialog}>
           <DialogTrigger asChild>
