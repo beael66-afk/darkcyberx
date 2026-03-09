@@ -402,9 +402,10 @@ serve(async (req) => {
         console.warn(`Blocked device attempted validation: ${safeHwid.substring(0, 16)}...`);
         await supabase.from('logs').insert({
           entity_type: 'security',
+          entity_id: license.id,
           action: 'verified',
-          description: `Blocked device attempted license validation`,
-          ip_address: clientIp,
+          description: `Blocked device attempted license validation - ${license.license_key}`,
+          ip_address: clientIp || 'unknown',
         });
         return new Response(
           JSON.stringify({ error: 'Device is blocked. Please contact support.', valid: false }),
