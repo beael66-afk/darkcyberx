@@ -425,6 +425,10 @@ export default function ApiCredentials() {
           <p className="text-muted-foreground">
             إدارة مفاتيح API وأمثلة التكامل
           </p>
+          <Link to="/api-integration" className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline mt-2">
+            <BookOpen className="h-4 w-4" />
+            دليل تكامل API الكامل
+          </Link>
         </div>
         <Dialog open={showNewKeyDialog} onOpenChange={setShowNewKeyDialog}>
           <DialogTrigger asChild>
