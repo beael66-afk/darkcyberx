@@ -213,8 +213,8 @@ export default function LegacyMonitor() {
 
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 bg-orange-500/10 rounded-lg">
-              <Globe className="h-5 w-5 text-orange-500" />
+        <div className="p-2 bg-warning/10 rounded-lg">
+              <Globe className="h-5 w-5 text-warning" />
             </div>
             <div>
               <p className="text-xs text-muted-foreground">عناوين IP مختلفة</p>
@@ -225,8 +225,8 @@ export default function LegacyMonitor() {
 
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 bg-yellow-500/10 rounded-lg">
-              <Key className="h-5 w-5 text-yellow-500" />
+            <div className="p-2 bg-secondary rounded-lg">
+              <Key className="h-5 w-5 text-secondary-foreground" />
             </div>
             <div>
               <p className="text-xs text-muted-foreground">مفاتيح مختلفة</p>

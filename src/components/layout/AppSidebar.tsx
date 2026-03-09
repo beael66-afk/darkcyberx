@@ -18,6 +18,7 @@ import {
   MonitorPlay,
   ShieldAlert,
   Cpu,
+  RadioTower,
 } from "lucide-react";
 import {
   Sidebar,

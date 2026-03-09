@@ -26,6 +26,7 @@ const RustDeskIds = lazy(() => import("./pages/RustDeskIds"));
 const IpManagement = lazy(() => import("./pages/IpManagement"));
 const BlockedHwids = lazy(() => import("./pages/BlockedHwids"));
 const Alerts = lazy(() => import("./pages/Alerts"));
+const LegacyMonitor = lazy(() => import("./pages/LegacyMonitor"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 
