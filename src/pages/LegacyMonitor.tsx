@@ -588,6 +588,38 @@ export default function LegacyMonitor() {
         </DialogContent>
       </Dialog>
 
+      {/* Suspend License Dialog */}
+      <Dialog open={!!suspendDialog} onOpenChange={() => setSuspendDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <PauseCircle className="h-5 w-5" />
+              تأكيد إيقاف الترخيص
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">
+              سيتم تغيير حالة الترخيص إلى <strong>موقوف</strong> — لن يتمكن العميل من التفعيل بالأداة الجديدة أو تجديد الترخيص.
+            </p>
+            <code className="block bg-muted px-4 py-2 rounded text-sm font-mono text-center">
+              {suspendDialog?.licenseKey}
+            </code>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSuspendDialog(null)}>
+              إلغاء
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => suspendDialog && suspendLicenseMutation.mutate(suspendDialog)}
+              disabled={suspendLicenseMutation.isPending}
+            >
+              {suspendLicenseMutation.isPending ? "جاري الإيقاف..." : "تأكيد الإيقاف"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Block HWID Dialog */}
       <Dialog open={!!blockHwidDialog} onOpenChange={() => setBlockHwidDialog(null)}>
         <DialogContent>
