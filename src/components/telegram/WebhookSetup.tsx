@@ -74,20 +74,22 @@ const WebhookSetup = () => {
       const { data, error } = await supabase.functions.invoke("telegram-bot", {
         body: { action: "set_webhook" },
       });
-      if (error) throw error;
+      if (error) throw new Error(error.message || "invoke error");
       if (data?.ok) {
         toast.success("تم تفعيل Webhook بنجاح ✅");
-        // auto-check after activation
-        await checkWebhook();
       } else {
         toast.error(`فشل التفعيل: ${data?.description || "خطأ غير معروف"}`);
       }
-    } catch {
-      toast.error("حدث خطأ أثناء تفعيل الـ Webhook");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "خطأ غير معروف";
+      toast.error(`حدث خطأ أثناء تفعيل الـ Webhook: ${msg}`);
     } finally {
       setIsActivating(false);
     }
+    // فحص الحالة بعد التفعيل بشكل مستقل
+    await checkWebhook();
   };
+
 
   const isActive = webhookInfo?.result?.url && webhookInfo.result.url.length > 0;
   const isCorrectUrl = webhookInfo?.result?.url === WEBHOOK_URL;
