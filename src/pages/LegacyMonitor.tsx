@@ -591,7 +591,7 @@ export default function LegacyMonitor() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="text-xs border-emerald-500 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950"
+                                className="text-xs border-primary text-primary hover:bg-primary/10"
                                 onClick={() => setQuadUnblockDialog(quadTarget)}
                               >
                                 <Unlock className="h-3 w-3 ml-1" />
