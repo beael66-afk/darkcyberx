@@ -114,6 +114,8 @@ function IpDetailDrawer({ ip, isOpen, onClose }: { ip: IpActivity | null; isOpen
   const { data: logs, isLoading: logsLoading } = useQuery({
     queryKey: ["ip-logs", ip?.ip_address],
     enabled: isOpen && !!ip?.ip_address,
+    refetchInterval: isOpen ? 2000 : false,
+    refetchIntervalInBackground: true,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("logs")
