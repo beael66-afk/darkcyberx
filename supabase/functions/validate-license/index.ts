@@ -120,14 +120,19 @@ serve(async (req) => {
     // ── Kill Switch: if old endpoint is disabled, reject all requests ─────────
     const { data: settings } = await supabase
       .from('notification_settings')
-      .select('kill_old_endpoint')
+      .select('kill_old_endpoint, kill_switch_response')
       .limit(1)
       .single();
 
     if (settings?.kill_old_endpoint === true) {
       console.warn(`[KILL SWITCH] Old endpoint blocked request from ${clientIp}`);
+      // Use custom response if set, otherwise default
+      let killBody: object = { error: 'Service discontinued. Please update your tool.', valid: false, force_shutdown: true };
+      if (settings.kill_switch_response) {
+        try { killBody = JSON.parse(settings.kill_switch_response); } catch { /* keep default */ }
+      }
       return new Response(
-        JSON.stringify({ error: 'Service discontinued. Please update your tool.', valid: false, force_shutdown: true }),
+        JSON.stringify(killBody),
         { status: 410, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
