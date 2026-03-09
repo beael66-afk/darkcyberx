@@ -390,7 +390,9 @@ serve(async (req) => {
     }
 
     if (safeHwid) {
-      const { data: blockedDevice } = await supabase
+      // Check if the device was previously deactivated (e.g. after key regeneration)
+      // If so, re-activate it since the license is valid
+      const { data: inactiveDevice } = await supabase
         .from('devices')
         .select('id, is_active')
         .eq('license_id', license.id)
@@ -398,19 +400,18 @@ serve(async (req) => {
         .eq('is_active', false)
         .maybeSingle();
 
-      if (blockedDevice) {
-        console.warn(`Blocked device attempted validation: ${safeHwid.substring(0, 16)}...`);
-        await supabase.from('logs').insert({
-          entity_type: 'security',
-          entity_id: license.id,
-          action: 'verified',
-          description: `Blocked device attempted license validation - ${license.license_key}`,
-          ip_address: clientIp || 'unknown',
-        });
-        return new Response(
-          JSON.stringify({ error: 'Device is blocked. Please contact support.', valid: false }),
-          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+      if (inactiveDevice) {
+        await supabase
+          .from('devices')
+          .update({
+            is_active: true,
+            last_verified: new Date().toISOString(),
+            device_name: safeDeviceName || undefined,
+            os_info: safeOsInfo || undefined,
+          })
+          .eq('id', inactiveDevice.id);
+
+        console.log(`[REACTIVATE] Device ${safeHwid.substring(0, 16)}... reactivated for license ${license.license_key}`);
       }
 
       const { data: devices } = await supabase
