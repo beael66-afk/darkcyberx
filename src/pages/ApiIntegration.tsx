@@ -560,7 +560,7 @@ export default function ApiIntegration() {
       </Card>
 
       <Tabs defaultValue="endpoints" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="endpoints" className="gap-1 text-xs sm:text-sm">
             <Globe className="h-4 w-4" />
             <span className="hidden sm:inline">Endpoints</span>
@@ -576,6 +576,10 @@ export default function ApiIntegration() {
           <TabsTrigger value="code" className="gap-1 text-xs sm:text-sm">
             <Code2 className="h-4 w-4" />
             <span className="hidden sm:inline">أمثلة</span>
+          </TabsTrigger>
+          <TabsTrigger value="webhooks" className="gap-1 text-xs sm:text-sm">
+            <Bell className="h-4 w-4" />
+            <span className="hidden sm:inline">Webhooks</span>
           </TabsTrigger>
           <TabsTrigger value="security" className="gap-1 text-xs sm:text-sm">
             <Shield className="h-4 w-4" />
