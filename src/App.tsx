@@ -27,6 +27,7 @@ const IpManagement = lazy(() => import("./pages/IpManagement"));
 const BlockedHwids = lazy(() => import("./pages/BlockedHwids"));
 const Alerts = lazy(() => import("./pages/Alerts"));
 const LegacyMonitor = lazy(() => import("./pages/LegacyMonitor"));
+const ApiIntegration = lazy(() => import("./pages/ApiIntegration"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 
