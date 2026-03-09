@@ -6,8 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
 };
 
-// ── Auto-block config ────────────────────────────────────────────────────────
-const AUTO_BLOCK_THRESHOLD = 30;
+// ── Security response config ────────────────────────────────────────────────
 const FORCE_SHUTDOWN_THRESHOLD = 15;
 
 // ── Rate limiting ────────────────────────────────────────────────────────────
