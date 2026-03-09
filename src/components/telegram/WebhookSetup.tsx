@@ -15,6 +15,7 @@ import {
   Link2,
   Bot,
   RefreshCw,
+  Zap,
 } from "lucide-react";
 import {
   Tooltip,
@@ -40,6 +41,7 @@ interface WebhookInfo {
 const WebhookSetup = () => {
   const [webhookInfo, setWebhookInfo] = useState<WebhookInfo | null>(null);
   const [isChecking, setIsChecking] = useState(false);
+  const [isActivating, setIsActivating] = useState(false);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -66,8 +68,29 @@ const WebhookSetup = () => {
     }
   };
 
+  const activateWebhook = async () => {
+    setIsActivating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("telegram-bot", {
+        body: { action: "set_webhook" },
+      });
+      if (error) throw error;
+      if (data?.ok) {
+        toast.success("تم تفعيل Webhook بنجاح ✅");
+        // auto-check after activation
+        await checkWebhook();
+      } else {
+        toast.error(`فشل التفعيل: ${data?.description || "خطأ غير معروف"}`);
+      }
+    } catch {
+      toast.error("حدث خطأ أثناء تفعيل الـ Webhook");
+    } finally {
+      setIsActivating(false);
+    }
+  };
+
   const isActive = webhookInfo?.result?.url && webhookInfo.result.url.length > 0;
-  const setWebhookCommand = `https://api.telegram.org/bot{YOUR_TOKEN}/setWebhook?url=${WEBHOOK_URL}`;
+  const isCorrectUrl = webhookInfo?.result?.url === WEBHOOK_URL;
 
   return (
     <Card className="border shadow-sm">
@@ -79,10 +102,10 @@ const WebhookSetup = () => {
           </CardTitle>
           {webhookInfo && (
             <Badge
-              variant={isActive ? "default" : "destructive"}
+              variant={isActive && isCorrectUrl ? "default" : "destructive"}
               className="gap-1"
             >
-              {isActive ? (
+              {isActive && isCorrectUrl ? (
                 <>
                   <Wifi className="h-3 w-3" />
                   متصل
@@ -90,7 +113,7 @@ const WebhookSetup = () => {
               ) : (
                 <>
                   <WifiOff className="h-3 w-3" />
-                  غير متصل
+                  {isActive ? "رابط مختلف" : "غير متصل"}
                 </>
               )}
             </Badge>
@@ -101,10 +124,10 @@ const WebhookSetup = () => {
         {/* Step 1: Project URL */}
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-sm font-medium">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold shrink-0">
               1
             </span>
-            رابط المشروع (Webhook URL)
+            رابط الـ Webhook الخاص بمشروعك
           </div>
           <div className="flex items-center gap-2">
             <code className="flex-1 rounded-md bg-muted px-3 py-2 text-sm font-mono break-all">
@@ -126,49 +149,34 @@ const WebhookSetup = () => {
           </div>
         </div>
 
-        {/* Step 2: Set Webhook Command */}
+        {/* Step 2: Activate directly */}
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-sm font-medium">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold shrink-0">
               2
             </span>
-            أمر تفعيل الـ Webhook
+            تفعيل الـ Webhook مباشرة
           </div>
           <p className="text-xs text-muted-foreground">
-            افتح الرابط التالي في المتصفح (استبدل <code className="bg-muted px-1 rounded">{"{YOUR_TOKEN}"}</code> بتوكن البوت):
+            اضغط الزر لربط بوت التليجرام بهذا المشروع تلقائياً — لا حاجة للمتصفح.
           </p>
-          <div className="flex items-center gap-2">
-            <code className="flex-1 rounded-md bg-muted px-3 py-2 text-xs font-mono break-all leading-relaxed">
-              {setWebhookCommand}
-            </code>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="icon"
-                  variant="outline"
-                  className="shrink-0"
-                  onClick={() => copyToClipboard(setWebhookCommand)}
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>نسخ الأمر</TooltipContent>
-            </Tooltip>
-          </div>
-        </div>
-
-        {/* Step 3: Test Connection */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
-              3
-            </span>
-            اختبار الاتصال
-          </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <Button
+              onClick={activateWebhook}
+              disabled={isActivating || isChecking}
+              className="gap-2"
+            >
+              {isActivating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Zap className="h-4 w-4" />
+              )}
+              {isActivating ? "جاري التفعيل..." : "تفعيل Webhook الآن"}
+            </Button>
+            <Button
+              variant="outline"
               onClick={checkWebhook}
-              disabled={isChecking}
+              disabled={isChecking || isActivating}
               className="gap-2"
             >
               {isChecking ? (
@@ -176,14 +184,14 @@ const WebhookSetup = () => {
               ) : (
                 <RefreshCw className="h-4 w-4" />
               )}
-              فحص حالة الـ Webhook
+              فحص الحالة
             </Button>
             <a
               href="https://t.me/BotFather"
               target="_blank"
               rel="noopener noreferrer"
             >
-              <Button variant="outline" className="gap-2">
+              <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground">
                 <Bot className="h-4 w-4" />
                 BotFather
                 <ExternalLink className="h-3 w-3" />
@@ -196,7 +204,7 @@ const WebhookSetup = () => {
         {webhookInfo?.result && (
           <div className="rounded-lg border bg-muted/30 p-4 space-y-2 text-sm">
             <div className="flex items-center gap-2 font-medium">
-              {isActive ? (
+              {isActive && isCorrectUrl ? (
                 <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
               ) : (
                 <WifiOff className="h-4 w-4 text-destructive" />
@@ -204,12 +212,17 @@ const WebhookSetup = () => {
               تفاصيل الـ Webhook
             </div>
             <div className="grid gap-1.5 text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <Link2 className="h-3.5 w-3.5 shrink-0" />
+              <div className="flex items-start gap-2">
+                <Link2 className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                 <span className="font-mono text-xs break-all">
                   {webhookInfo.result.url || "غير مُعد"}
                 </span>
               </div>
+              {isActive && !isCorrectUrl && (
+                <p className="text-xs text-amber-500 dark:text-amber-400">
+                  ⚠️ الرابط المُسجّل يختلف عن رابط هذا المشروع — اضغط "تفعيل" لتحديثه.
+                </p>
+              )}
               <div>
                 تحديثات معلقة: <strong>{webhookInfo.result.pending_update_count}</strong>
               </div>
