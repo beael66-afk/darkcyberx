@@ -109,6 +109,51 @@ export default function LegacyMonitor() {
     },
   });
 
+  // Fetch license statuses for keys seen in logs
+  const { data: licenseStatuses = {} } = useQuery({
+    queryKey: ["legacy-license-statuses"],
+    queryFn: async () => {
+      const { data: logsData } = await supabase
+        .from("logs")
+        .select("description")
+        .eq("entity_type", "legacy_tool")
+        .limit(500);
+      const keys = [
+        ...new Set(
+          (logsData ?? [])
+            .map((l) => parseDescription(l.description).licenseKey)
+            .filter(Boolean) as string[]
+        ),
+      ];
+      if (keys.length === 0) return {};
+      const { data } = await supabase
+        .from("licenses")
+        .select("id, license_key, status")
+        .in("license_key", keys);
+      const map: Record<string, { id: string; status: string }> = {};
+      (data ?? []).forEach((l) => { map[l.license_key] = { id: l.id, status: l.status ?? "active" }; });
+      return map;
+    },
+  });
+
+  const suspendLicenseMutation = useMutation({
+    mutationFn: async ({ licenseId }: { licenseId: string; licenseKey: string }) => {
+      const { error } = await supabase
+        .from("licenses")
+        .update({ status: "suspended" })
+        .eq("id", licenseId);
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => {
+      toast({ title: "⛔ تم إيقاف الترخيص", description: `المفتاح: ${vars.licenseKey}` });
+      queryClient.invalidateQueries({ queryKey: ["legacy-license-statuses"] });
+      setSuspendDialog(null);
+    },
+    onError: (e: Error) => {
+      toast({ title: "خطأ", description: e.message, variant: "destructive" });
+    },
+  });
+
   const blockIpMutation = useMutation({
     mutationFn: async ({ ip, reason }: { ip: string; reason: string }) => {
       const { error } = await supabase.from("blocked_ips").insert({
