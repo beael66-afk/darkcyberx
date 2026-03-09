@@ -451,6 +451,51 @@ export default function ApiCredentials() {
         </Dialog>
       </div>
 
+      {/* Kill Switch Card */}
+      <Card className={killOldEndpoint ? "border-destructive" : "border-green-500"}>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {killOldEndpoint
+                ? <ShieldOff className="h-5 w-5 text-destructive" />
+                : <Shield className="h-5 w-5 text-green-600" />
+              }
+              <div>
+                <CardTitle className="text-base">مفتاح إيقاف الـ Endpoint القديم</CardTitle>
+                <CardDescription className="mt-1">
+                  {killOldEndpoint
+                    ? "🔴 الـ Endpoint القديم موقوف — أي أداة قديمة تحصل على force_shutdown فوراً"
+                    : "🟢 الـ Endpoint القديم يعمل — يمكن للأدوات القديمة الاتصال به حالياً"
+                  }
+                </CardDescription>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground">
+                {killOldEndpoint ? "موقوف" : "يعمل"}
+              </span>
+              <Switch
+                checked={killOldEndpoint}
+                onCheckedChange={toggleKillSwitch}
+                disabled={killSwitchLoading}
+              />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="p-3 bg-muted rounded-lg">
+              <p className="font-medium mb-1">🔴 Endpoint قديم (للأداة القديمة)</p>
+              <code className="text-xs text-muted-foreground break-all">.../functions/v1/validate-license</code>
+            </div>
+            <div className="p-3 bg-muted rounded-lg">
+              <p className="font-medium mb-1">🟢 Endpoint جديد (للأداة الجديدة)</p>
+              <code className="text-xs text-muted-foreground break-all">.../functions/v1/validate-v2</code>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>مفاتيح API الخاصة بك</CardTitle>
