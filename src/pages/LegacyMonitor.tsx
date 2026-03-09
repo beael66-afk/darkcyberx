@@ -167,48 +167,24 @@ export default function LegacyMonitor() {
   // ─── Quad Block ────────────────────────────────────────────────────────────
   const quadBlockMutation = useMutation({
     mutationFn: async ({ ip, hwid, licenseKey, licenseId }: QuadTarget) => {
-      const ops: Promise<unknown>[] = [];
+      const ops: Promise<{ error: { message: string } | null }>[] = [];
 
-      // 1. Block IP (skip if already blocked)
       if (!blockedIps.includes(ip)) {
-        ops.push(
-          supabase.from("blocked_ips").insert({
-            ip_address: ip,
-            reason: "حجب رباعي من مراقبة الأداة القديمة",
-          })
-        );
+        ops.push(supabase.from("blocked_ips").insert({ ip_address: ip, reason: "حجب رباعي من مراقبة الأداة القديمة" }).then(r => ({ error: r.error })));
       }
-
-      // 2. Block HWID
       if (hwid && !blockedHwids.includes(hwid)) {
-        ops.push(
-          supabase.from("blocked_hwids").insert({
-            hwid,
-            reason: "حجب رباعي من مراقبة الأداة القديمة",
-          })
-        );
+        ops.push(supabase.from("blocked_hwids").insert({ hwid, reason: "حجب رباعي من مراقبة الأداة القديمة" }).then(r => ({ error: r.error })));
       }
-
-      // 3. Suspend license
       if (licenseId && licenseStatuses[licenseKey ?? ""]?.status !== "suspended") {
-        ops.push(
-          supabase.from("licenses").update({ status: "suspended" }).eq("id", licenseId)
-        );
+        ops.push(supabase.from("licenses").update({ status: "suspended" }).eq("id", licenseId).then(r => ({ error: r.error })));
       }
-
-      // 4. Revoke key
       if (licenseKey && !revokedKeys.includes(licenseKey)) {
-        ops.push(
-          supabase.from("revoked_keys").insert({
-            license_key: licenseKey,
-            reason: "حجب رباعي من مراقبة الأداة القديمة",
-          })
-        );
+        ops.push(supabase.from("revoked_keys").insert({ license_key: licenseKey, reason: "حجب رباعي من مراقبة الأداة القديمة" }).then(r => ({ error: r.error })));
       }
 
       const results = await Promise.all(ops);
-      const failed = results.find((r: any) => r?.error);
-      if (failed) throw (failed as any).error;
+      const failed = results.find((r) => r?.error);
+      if (failed?.error) throw new Error(failed.error.message);
     },
     onSuccess: () => {
       toast({ title: "🔴 حجب رباعي مكتمل", description: "تم تطبيق جميع الطبقات الأربعة بنجاح." });
