@@ -203,15 +203,14 @@ export default function ApiCredentials() {
   const [newKeyName, setNewKeyName] = useState("");
   const [createdKey, setCreatedKey] = useState<string | null>(null);
   const [deleteKeyId, setDeleteKeyId] = useState<string | null>(null);
+  const [killOldEndpoint, setKillOldEndpoint] = useState(false);
+  const [killSwitchLoading, setKillSwitchLoading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchApiKeys();
-    
-    // Refresh data every 30 seconds to show updated last_used_at
+    fetchKillSwitch();
     const interval = setInterval(fetchApiKeys, 30000);
-    
-    // Refresh when user returns to the tab
     const handleVisibilityChange = () => {
       if (!document.hidden) {
         fetchApiKeys();
