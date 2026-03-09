@@ -74,6 +74,7 @@ export default function LegacyMonitor() {
   const [blockDialog, setBlockDialog] = useState<{ ip: string; reason: string } | null>(null);
   const [blockAllDialog, setBlockAllDialog] = useState(false);
   const [blockHwidDialog, setBlockHwidDialog] = useState<{ hwid: string; reason: string } | null>(null);
+  const [suspendDialog, setSuspendDialog] = useState<{ licenseKey: string; licenseId: string } | null>(null);
 
   // Fetch legacy tool logs
   const { data: logs = [], isLoading, refetch } = useQuery({
