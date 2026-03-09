@@ -35,6 +35,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import WebhookSetup from "@/components/telegram/WebhookSetup";
 
 interface TelegramLink {
   id: string;
@@ -159,6 +160,9 @@ const TelegramSettings = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Webhook Setup */}
+      <WebhookSetup />
 
       {/* Search */}
       <div className="relative">

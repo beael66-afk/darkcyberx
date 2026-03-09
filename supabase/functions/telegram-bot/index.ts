@@ -29,6 +29,30 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json();
 
+    // Handle admin action: check webhook status
+    if (body?.action === "check_webhook") {
+      const authHeader = req.headers.get("authorization");
+      if (!authHeader) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const adminClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+        { global: { headers: { Authorization: authHeader } } }
+      );
+      const { data: { user } } = await adminClient.auth.getUser();
+      if (!user) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
+      if (!isAdmin) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const whRes = await fetch(`${TELEGRAM_API}${TELEGRAM_BOT_TOKEN}/getWebhookInfo`);
+      const whInfo = await whRes.json();
+      return new Response(JSON.stringify(whInfo), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     // Handle admin action: notify customer of approval with optional license key
     if (body?.action === "notify_approval") {
       const { chat_id, name, license_key, max_devices } = body;
