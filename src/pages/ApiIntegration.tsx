@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Copy, Check, Download, FileJson, Code2, Globe, Shield, Zap, AlertTriangle, Server, BookOpen } from "lucide-react";
+import { Copy, Check, Download, FileJson, Code2, Globe, Shield, Zap, AlertTriangle, Server, BookOpen, Bell, Webhook } from "lucide-react";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
 const VALIDATE_V1_URL = `${SUPABASE_URL}/functions/v1/validate-license`;
