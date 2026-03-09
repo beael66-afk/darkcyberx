@@ -71,18 +71,36 @@ const ReceiptDialog = ({ fileId, onClose }: { fileId: string; onClose: () => voi
         const { data, error: fnErr } = await supabase.functions.invoke("telegram-bot", {
           body: { action: "get_file", file_id: fileId },
         });
-        if (fnErr || !data?.file_url) {
+
+        if (fnErr) {
+          console.error("Receipt fetch error:", fnErr);
           setError(true);
-        } else {
-          setImageUrl(data.file_url);
+          return;
         }
-      } catch {
+
+        // The function returns the image binary directly
+        if (data instanceof Blob) {
+          const url = URL.createObjectURL(data);
+          setImageUrl(url);
+        } else if (data?.file_url) {
+          // Fallback for JSON response with URL
+          setImageUrl(data.file_url);
+        } else {
+          setError(true);
+        }
+      } catch (e) {
+        console.error("Receipt fetch exception:", e);
         setError(true);
       } finally {
         setLoading(false);
       }
     };
     fetchImage();
+
+    return () => {
+      // Cleanup object URL on unmount
+      if (imageUrl) URL.revokeObjectURL(imageUrl);
+    };
   }, [fileId]);
 
   return (
