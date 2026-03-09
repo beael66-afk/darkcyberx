@@ -117,6 +117,21 @@ serve(async (req) => {
 
     const clientIp = getClientIp(req);
 
+    // ── Kill Switch: if old endpoint is disabled, reject all requests ─────────
+    const { data: settings } = await supabase
+      .from('notification_settings')
+      .select('kill_old_endpoint')
+      .limit(1)
+      .single();
+
+    if (settings?.kill_old_endpoint === true) {
+      console.warn(`[KILL SWITCH] Old endpoint blocked request from ${clientIp}`);
+      return new Response(
+        JSON.stringify({ error: 'Service discontinued. Please update your tool.', valid: false, force_shutdown: true }),
+        { status: 410, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // ── HWID Block Check (FIRST — before everything) ──────────────────────────
     // Read body early to extract hwid for immediate hardware-level blocking
     let rawBody: Record<string, unknown> = {};
