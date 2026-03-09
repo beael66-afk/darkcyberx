@@ -515,6 +515,47 @@ export default function LegacyMonitor() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Block HWID Dialog */}
+      <Dialog open={!!blockHwidDialog} onOpenChange={() => setBlockHwidDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Cpu className="h-5 w-5" />
+              تأكيد حجب الجهاز (HWID)
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">
+              سيتم حجب هذا الجهاز من جميع عمليات التفعيل (الأداة القديمة والجديدة):
+            </p>
+            <code className="block bg-muted px-4 py-2 rounded text-xs font-mono break-all text-center">
+              {blockHwidDialog?.hwid}
+            </code>
+            <Input
+              value={blockHwidDialog?.reason ?? ""}
+              onChange={(e) =>
+                setBlockHwidDialog((prev) => prev ? { ...prev, reason: e.target.value } : null)
+              }
+              placeholder="سبب الحجب..."
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBlockHwidDialog(null)}>
+              إلغاء
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() =>
+                blockHwidDialog && blockHwidMutation.mutate({ hwid: blockHwidDialog.hwid, reason: blockHwidDialog.reason })
+              }
+              disabled={blockHwidMutation.isPending}
+            >
+              {blockHwidMutation.isPending ? "جاري الحجب..." : "تأكيد حجب الجهاز"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
