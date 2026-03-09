@@ -46,6 +46,7 @@ const menuItems = [
   { title: "التقارير", url: "/reports", icon: BarChart3 },
   { title: "السجلات", url: "/logs", icon: ScrollText },
   { title: "بيانات الاعتماد", url: "/api-credentials", icon: Code2 },
+  { title: "دليل تكامل API", url: "/api-integration", icon: BookOpen },
   { title: "إعدادات الإشعارات", url: "/notification-settings", icon: Bell },
   { title: "بوت التليجرام", url: "/telegram-settings", icon: Bot },
   { title: "الطلبات", url: "/renewal-orders", icon: ShoppingCart },
