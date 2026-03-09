@@ -317,8 +317,9 @@ serve(async (req) => {
       if (blockedDevice) {
         await supabase.from('logs').insert({
           entity_type: 'security',
+          entity_id: license.id,
           action: 'verified',
-          description: `Blocked device attempted license validation (v2)`,
+          description: `Blocked device attempted license validation (v2) - ${license.license_key}`,
           ip_address: clientIp,
         });
         return new Response(
