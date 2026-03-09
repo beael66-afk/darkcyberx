@@ -40,6 +40,7 @@ import {
   AlertTriangle,
   Users,
   ShieldX,
+  Cpu,
 } from "lucide-react";
 import { format, subDays, startOfDay } from "date-fns";
 import { arSA } from "date-fns/locale";
