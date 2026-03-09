@@ -529,6 +529,8 @@ const IpManagement = () => {
   // Fetch blocked IPs
   const { data: blockedIps, isLoading: blockedLoading } = useQuery({
     queryKey: ["blocked-ips"],
+    refetchInterval: 3000,
+    refetchIntervalInBackground: true,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("blocked_ips")
