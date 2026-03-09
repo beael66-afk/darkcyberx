@@ -221,7 +221,7 @@ const WebhookSetup = () => {
                 </span>
               </div>
               {isActive && !isCorrectUrl && (
-                <p className="text-xs text-amber-500 dark:text-amber-400">
+                <p className="text-xs text-warning">
                   ⚠️ الرابط المُسجّل يختلف عن رابط هذا المشروع — اضغط "تفعيل" لتحديثه.
                 </p>
               )}
