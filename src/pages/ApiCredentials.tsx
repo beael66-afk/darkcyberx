@@ -573,7 +573,13 @@ export default function ApiCredentials() {
           {loading ? (
             <p className="text-center text-muted-foreground">جاري التحميل...</p>
           ) : apiKeys.length === 0 ? (
-            <p className="text-center text-muted-foreground">لا توجد مفاتيح API. أنشئ مفتاحاً للبدء</p>
+            <div className="text-center py-8 space-y-4">
+              <p className="text-muted-foreground">لا توجد مفاتيح API. أنشئ مفتاحاً للبدء</p>
+              <Button onClick={() => setShowNewKeyDialog(true)}>
+                <Plus className="h-4 w-4" />
+                إنشاء مفتاح جديد
+              </Button>
+            </div>
           ) : (
             <div className="space-y-3">
               {apiKeys.map((apiKey) => (
