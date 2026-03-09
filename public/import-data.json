@@ -1,0 +1,1988 @@
+{
+  "exported_at": "2026-03-09T03:03:52.160Z",
+  "version": "1.0",
+  "tables": {
+    "products": [
+      {
+        "id": "b090595e-2b14-47b0-8708-25d56853d65b",
+        "name": "اشتراك التوفير",
+        "description": "",
+        "version": "1.0.0",
+        "price": 300,
+        "is_active": true,
+        "created_at": "2025-10-16T12:54:29.570072+00:00",
+        "updated_at": "2026-03-08T06:37:09.35332+00:00"
+      }
+    ],
+    "customers": [
+      {
+        "id": "63b6344e-4fad-4010-b06a-4b0ebffb0af3",
+        "name": "Ahmed Elsodany",
+        "email": "aa3061378@gmail.com",
+        "phone": "01009046911",
+        "company": "495752032 - 266372569 ماستر",
+        "notes": "",
+        "created_at": "2026-01-29T00:55:05.002241+00:00",
+        "updated_at": "2026-03-07T20:55:40.068592+00:00",
+        "user_id": null,
+        "account_created": false
+      },
+      {
+        "id": "2a014d96-0c3d-4819-a044-d25321238d44",
+        "name": "Mohamed El Saka",
+        "email": "mohamedsalem00199200@gmail.com",
+        "phone": "01009046911",
+        "company": "",
+        "notes": "",
+        "created_at": "2025-11-06T13:25:22.296944+00:00",
+        "updated_at": "2026-03-07T21:05:37.078174+00:00",
+        "user_id": null,
+        "account_created": false
+      },
+      {
+        "id": "b73f9a68-87c8-4d78-acec-2bdc32020e43",
+        "name": "بسام محمد",
+        "email": "bassammohamed900@gmail.com",
+        "phone": null,
+        "company": null,
+        "notes": null,
+        "created_at": "2026-03-08T00:30:55.277654+00:00",
+        "updated_at": "2026-03-08T00:30:55.277654+00:00",
+        "user_id": null,
+        "account_created": false
+      },
+      {
+        "id": "5938965e-a30d-40e9-b20f-9a3819a70fb4",
+        "name": "ابو حمزه",
+        "email": "eslammohamed6358@gmail.com",
+        "phone": "01009046911",
+        "company": "",
+        "notes": "",
+        "created_at": "2026-02-07T00:01:10.36513+00:00",
+        "updated_at": "2026-03-04T00:20:53.145679+00:00",
+        "user_id": null,
+        "account_created": false
+      },
+      {
+        "id": "977e18ec-b89a-41fc-8f4b-5335906e0013",
+        "name": "Mohamed Dawood",
+        "email": "Rujik2000@gmail.com",
+        "phone": "01201829596",
+        "company": "1360647064 -- 123456medoissaA",
+        "notes": "",
+        "created_at": "2025-12-11T20:03:19.458044+00:00",
+        "updated_at": "2026-03-04T21:29:03.984623+00:00",
+        "user_id": null,
+        "account_created": false
+      },
+      {
+        "id": "00b074bc-e361-454f-9f5c-6616531bf98f",
+        "name": "Ahmed Farag",
+        "email": "ncyber773@gmail.com",
+        "phone": "01025368818",
+        "company": "",
+        "notes": "",
+        "created_at": "2026-01-07T16:07:52.814874+00:00",
+        "updated_at": "2026-03-05T04:32:58.215283+00:00",
+        "user_id": null,
+        "account_created": false
+      },
+      {
+        "id": "e83ae9b7-6f7f-4e0d-aca6-2a6188858c00",
+        "name": "مصطفي جاد  (احس)",
+        "email": "mustafagad255@gmail.com",
+        "phone": "01009046911",
+        "company": "",
+        "notes": "",
+        "created_at": "2026-01-08T13:10:05.202845+00:00",
+        "updated_at": "2026-03-05T14:43:56.836443+00:00",
+        "user_id": null,
+        "account_created": false
+      },
+      {
+        "id": "e7ff2bd0-6c38-49ce-8a4b-ab4738e1e00c",
+        "name": "أسامة بن محمد  (ءسءوس)",
+        "email": "om792608@gmail.com",
+        "phone": "01025273562",
+        "company": "480668771 -- 123456medoissaA",
+        "notes": "",
+        "created_at": "2025-12-25T14:25:49.112012+00:00",
+        "updated_at": "2026-03-06T00:05:16.445966+00:00",
+        "user_id": null,
+        "account_created": false
+      },
+      {
+        "id": "08a955b7-27df-4a27-a249-d4e0baa2699c",
+        "name": "عبدالله خالد",
+        "email": "abdallahazab1998@gmail.com",
+        "phone": "01009046911",
+        "company": "",
+        "notes": "",
+        "created_at": "2026-02-06T18:46:06.445109+00:00",
+        "updated_at": "2026-03-06T19:40:45.203299+00:00",
+        "user_id": null,
+        "account_created": false
+      },
+      {
+        "id": "666b0aba-a642-4ddd-a661-70fc173b8a51",
+        "name": "محمد خالد الكويت",
+        "email": "kinglive04@gmail.com",
+        "phone": "01009046911",
+        "company": "",
+        "notes": "",
+        "created_at": "2026-03-06T22:54:43.06842+00:00",
+        "updated_at": "2026-03-06T22:54:43.06842+00:00",
+        "user_id": null,
+        "account_created": false
+      },
+      {
+        "id": "9ff2b13c-11a0-4164-b367-8a809a5e9407",
+        "name": "Abdo Boghdady",
+        "email": "boghdadyabdo22@gmail.com",
+        "phone": "01009046911",
+        "company": "1516097065 -- 123456medoissaA",
+        "notes": "",
+        "created_at": "2025-12-16T00:02:48.081207+00:00",
+        "updated_at": "2026-03-07T20:44:15.578764+00:00",
+        "user_id": null,
+        "account_created": false
+      },
+      {
+        "id": "b73bc930-0d60-40f0-9ad4-d35bc4dada12",
+        "name": "محمد عيسى",
+        "email": "darkcyberx2025@gmail.com",
+        "phone": "",
+        "company": "",
+        "notes": "",
+        "created_at": "2026-02-18T06:13:22.195917+00:00",
+        "updated_at": "2026-02-18T06:13:22.195917+00:00",
+        "user_id": null,
+        "account_created": false
+      },
+      {
+        "id": "042dd047-5ca4-4e4a-b47b-d3be9a6c9ab5",
+        "name": "Mohamed Hidar",
+        "email": "hidar683@gmail.com",
+        "phone": "01000704522",
+        "company": "1992109139",
+        "notes": "",
+        "created_at": "2026-01-07T22:31:06.050651+00:00",
+        "updated_at": "2026-02-22T03:00:48.927906+00:00",
+        "user_id": null,
+        "account_created": false
+      },
+      {
+        "id": "f8f0f7d5-342c-4623-bc0c-75845e5e83c7",
+        "name": "احمد ابوالعزيز",
+        "email": "ahmedboala90@gmail.com",
+        "phone": "01095256276",
+        "company": "Opa2 -- 414818120  --Opa1 -- 273984574 -- Ahmed12300456",
+        "notes": "",
+        "created_at": "2025-11-01T18:18:19.615248+00:00",
+        "updated_at": "2026-03-03T20:48:07.564+00:00",
+        "user_id": null,
+        "account_created": false
+      },
+      {
+        "id": "093d7564-5483-4ebf-af30-65ad5c0babdf",
+        "name": "Mohamed Khaled",
+        "email": "mk784285@gmail.com",
+        "phone": "01009046911",
+        "company": "",
+        "notes": "",
+        "created_at": "2026-02-19T20:26:53.081267+00:00",
+        "updated_at": "2026-03-03T20:57:29.664433+00:00",
+        "user_id": null,
+        "account_created": false
+      },
+      {
+        "id": "33fea5da-9797-420b-938f-182d1f907b13",
+        "name": "ابو رحيم",
+        "email": "mk7842855@gmail.com",
+        "phone": null,
+        "company": null,
+        "notes": null,
+        "created_at": "2026-03-03T22:14:01.499182+00:00",
+        "updated_at": "2026-03-03T22:14:01.499182+00:00",
+        "user_id": null,
+        "account_created": false
+      }
+    ],
+    "licenses": [
+      {
+        "id": "07bd20b4-3bae-455e-9c06-247cac9c92cd",
+        "license_key": "EATT-9AO8-WJY7-VYPP",
+        "customer_id": "666b0aba-a642-4ddd-a661-70fc173b8a51",
+        "product_id": "b090595e-2b14-47b0-8708-25d56853d65b",
+        "status": "active",
+        "max_devices": 1,
+        "expire_at": "2026-04-07T00:00:00+00:00",
+        "notes": null,
+        "created_at": "2026-03-06T22:55:07.598089+00:00",
+        "updated_at": "2026-03-06T22:55:07.598089+00:00"
+      },
+      {
+        "id": "dffebad8-7e2d-46c6-80c3-d146aa59a83e",
+        "license_key": "F03N-PB6W-F9KL-54SO",
+        "customer_id": "093d7564-5483-4ebf-af30-65ad5c0babdf",
+        "product_id": "b090595e-2b14-47b0-8708-25d56853d65b",
+        "status": "active",
+        "max_devices": 7,
+        "expire_at": "2026-03-24T00:00:00+00:00",
+        "notes": null,
+        "created_at": "2026-02-19T20:27:15.310861+00:00",
+        "updated_at": "2026-03-07T00:14:47.702716+00:00"
+      },
+      {
+        "id": "ec60b533-0209-4509-8dfe-75f99410bb40",
+        "license_key": "E41X-ST4D-C281-5MDH",
+        "customer_id": "08a955b7-27df-4a27-a249-d4e0baa2699c",
+        "product_id": "b090595e-2b14-47b0-8708-25d56853d65b",
+        "status": "active",
+        "max_devices": 14,
+        "expire_at": "2026-04-21T00:00:00+00:00",
+        "notes": null,
+        "created_at": "2026-02-06T19:14:41.026526+00:00",
+        "updated_at": "2026-03-07T00:27:01.234395+00:00"
+      },
+      {
+        "id": "20946b34-6086-412b-a38d-0d3fe955ab88",
+        "license_key": "O06E-9G1T-UR77-PMC5",
+        "customer_id": "00b074bc-e361-454f-9f5c-6616531bf98f",
+        "product_id": "b090595e-2b14-47b0-8708-25d56853d65b",
+        "status": "active",
+        "max_devices": 5,
+        "expire_at": "2026-04-06T02:13:51.708+00:00",
+        "notes": null,
+        "created_at": "2026-01-07T16:08:10.978591+00:00",
+        "updated_at": "2026-03-07T02:13:51.73838+00:00"
+      },
+      {
+        "id": "0faea0b9-f6d2-4952-a583-175d5bd9c838",
+        "license_key": "3ZD7-QEMM-W1FV-T9QB",
+        "customer_id": "e83ae9b7-6f7f-4e0d-aca6-2a6188858c00",
+        "product_id": "b090595e-2b14-47b0-8708-25d56853d65b",
+        "status": "active",
+        "max_devices": 16,
+        "expire_at": "2026-04-07T00:00:00+00:00",
+        "notes": null,
+        "created_at": "2026-01-08T13:10:30.624422+00:00",
+        "updated_at": "2026-03-07T15:29:36.193627+00:00"
+      },
+      {
+        "id": "9aa48d03-39cd-48bd-ada9-6a88bb604c96",
+        "license_key": "4KFS-PJ82-7AJ1-IVP6",
+        "customer_id": "2a014d96-0c3d-4819-a044-d25321238d44",
+        "product_id": "b090595e-2b14-47b0-8708-25d56853d65b",
+        "status": "active",
+        "max_devices": 8,
+        "expire_at": "2026-04-20T00:00:00+00:00",
+        "notes": null,
+        "created_at": "2025-12-21T14:43:12.080337+00:00",
+        "updated_at": "2026-03-07T21:22:42.525084+00:00"
+      },
+      {
+        "id": "98d16078-c62b-4df2-85d6-88b498fbabe7",
+        "license_key": "OF05-63CC-YIPD-ILU2",
+        "customer_id": "33fea5da-9797-420b-938f-182d1f907b13",
+        "product_id": "b090595e-2b14-47b0-8708-25d56853d65b",
+        "status": "active",
+        "max_devices": 7,
+        "expire_at": "2026-04-04T00:00:00+00:00",
+        "notes": null,
+        "created_at": "2026-03-03T22:14:45.082202+00:00",
+        "updated_at": "2026-03-07T23:11:36.806381+00:00"
+      },
+      {
+        "id": "39e2f9b7-c18f-4a29-b0d0-763c7fbf25b5",
+        "license_key": "A54M-38VB-9887-7B7O",
+        "customer_id": "042dd047-5ca4-4e4a-b47b-d3be9a6c9ab5",
+        "product_id": "b090595e-2b14-47b0-8708-25d56853d65b",
+        "status": "active",
+        "max_devices": 11,
+        "expire_at": "2026-04-08T00:00:00+00:00",
+        "notes": null,
+        "created_at": "2026-03-05T01:33:46.270905+00:00",
+        "updated_at": "2026-03-08T00:11:36.714058+00:00"
+      },
+      {
+        "id": "f182bc53-62f7-4a05-9ce9-464e78dddf25",
+        "license_key": "T7FN-FZ3Y-CAMV-P6SO",
+        "customer_id": "f8f0f7d5-342c-4623-bc0c-75845e5e83c7",
+        "product_id": "b090595e-2b14-47b0-8708-25d56853d65b",
+        "status": "active",
+        "max_devices": 34,
+        "expire_at": "2026-04-05T00:00:00+00:00",
+        "notes": null,
+        "created_at": "2025-12-18T18:04:18.674478+00:00",
+        "updated_at": "2026-03-03T23:53:30.410212+00:00"
+      },
+      {
+        "id": "49ca45da-92e7-48c7-889b-e9729a93a587",
+        "license_key": "N63W-WYZE-X4JB-0YNB",
+        "customer_id": "5938965e-a30d-40e9-b20f-9a3819a70fb4",
+        "product_id": "b090595e-2b14-47b0-8708-25d56853d65b",
+        "status": "active",
+        "max_devices": 18,
+        "expire_at": "2026-04-06T00:00:00+00:00",
+        "notes": null,
+        "created_at": "2026-02-07T00:06:56.535323+00:00",
+        "updated_at": "2026-03-04T00:26:27.806668+00:00"
+      },
+      {
+        "id": "c5e83bef-bb44-48a5-b06f-be33e9bc4129",
+        "license_key": "IKPR-D0GD-8LEQ-S0OG",
+        "customer_id": "b73f9a68-87c8-4d78-acec-2bdc32020e43",
+        "product_id": "b090595e-2b14-47b0-8708-25d56853d65b",
+        "status": "suspended",
+        "max_devices": 10,
+        "expire_at": "2026-04-08T00:00:00+00:00",
+        "notes": null,
+        "created_at": "2026-03-08T00:30:55.874929+00:00",
+        "updated_at": "2026-03-08T22:39:09.642087+00:00"
+      },
+      {
+        "id": "575da366-e1e5-4cdb-8749-04a9cfc2c33a",
+        "license_key": "G1G2-LZUN-J2Q5-13IF",
+        "customer_id": "b73bc930-0d60-40f0-9ad4-d35bc4dada12",
+        "product_id": "b090595e-2b14-47b0-8708-25d56853d65b",
+        "status": "active",
+        "max_devices": 1,
+        "expire_at": null,
+        "notes": null,
+        "created_at": "2026-03-07T20:47:51.026634+00:00",
+        "updated_at": "2026-03-09T01:01:34.097083+00:00"
+      },
+      {
+        "id": "b61c0ec1-40e9-44c1-91da-5a295991f22f",
+        "license_key": "3AO0-7PZ3-U2IG-72Z9",
+        "customer_id": null,
+        "product_id": "b090595e-2b14-47b0-8708-25d56853d65b",
+        "status": "suspended",
+        "max_devices": 1,
+        "expire_at": "2020-01-01T00:00:00+00:00",
+        "notes": null,
+        "created_at": "2026-03-09T00:52:07.351299+00:00",
+        "updated_at": "2026-03-09T01:21:21.652199+00:00"
+      },
+      {
+        "id": "31668488-56c9-4071-82ae-86ee3e06ac5b",
+        "license_key": "8BAI-FX3Q-3FQ2-AN2K",
+        "customer_id": "9ff2b13c-11a0-4164-b367-8a809a5e9407",
+        "product_id": "b090595e-2b14-47b0-8708-25d56853d65b",
+        "status": "active",
+        "max_devices": 11,
+        "expire_at": "2026-03-14T00:00:00+00:00",
+        "notes": null,
+        "created_at": "2025-12-16T00:03:24.215019+00:00",
+        "updated_at": "2026-02-13T19:17:44.211316+00:00"
+      },
+      {
+        "id": "87b1ca35-0f48-4cf9-845b-598a31c6e30a",
+        "license_key": "7T4J-3BBK-02AK-UJ7E",
+        "customer_id": "977e18ec-b89a-41fc-8f4b-5335906e0013",
+        "product_id": "b090595e-2b14-47b0-8708-25d56853d65b",
+        "status": "active",
+        "max_devices": 9,
+        "expire_at": "2026-03-16T00:00:00+00:00",
+        "notes": null,
+        "created_at": "2025-12-11T20:03:52.240034+00:00",
+        "updated_at": "2026-02-16T09:31:56.431993+00:00"
+      },
+      {
+        "id": "5cbf9764-4be7-4910-8bd9-1c1448b2de49",
+        "license_key": "JO8V-5J7I-24KO-S68G",
+        "customer_id": "e7ff2bd0-6c38-49ce-8a4b-ab4738e1e00c",
+        "product_id": "b090595e-2b14-47b0-8708-25d56853d65b",
+        "status": "active",
+        "max_devices": 10,
+        "expire_at": "2026-03-25T00:00:00+00:00",
+        "notes": null,
+        "created_at": "2025-12-25T17:51:07.970094+00:00",
+        "updated_at": "2026-02-25T15:05:44.747625+00:00"
+      },
+      {
+        "id": "ce005c80-55ca-414a-90cc-7c267c576e54",
+        "license_key": "0CJO-V61O-F08F-1Z1F",
+        "customer_id": "63b6344e-4fad-4010-b06a-4b0ebffb0af3",
+        "product_id": "b090595e-2b14-47b0-8708-25d56853d65b",
+        "status": "active",
+        "max_devices": 11,
+        "expire_at": "2026-03-28T00:00:00+00:00",
+        "notes": null,
+        "created_at": "2026-01-29T00:55:32.151792+00:00",
+        "updated_at": "2026-02-26T21:59:00.660718+00:00"
+      }
+    ],
+    "devices": [
+      {
+        "id": "8bfcd7e3-c569-4e29-9504-3acc1f976e1a",
+        "license_id": "49ca45da-92e7-48c7-889b-e9729a93a587",
+        "hwid": "61b0c9552f7c43882b8f3e34e7edb0eb3272b37f52f82b739d529e2bce28f22a",
+        "device_name": "PC-03",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-08T21:47:47.984+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T21:24:16.990175+00:00"
+      },
+      {
+        "id": "8212c598-5539-4613-ad95-d3d8aed9bc51",
+        "license_id": "ec60b533-0209-4509-8dfe-75f99410bb40",
+        "hwid": "c59e576586114c9baaca86bbe89540baf91995c6e8ae3e917798e1d284cc60af",
+        "device_name": "PC-13",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-09T01:05:53.36+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T02:18:04.587271+00:00"
+      },
+      {
+        "id": "6d7db50d-6479-49c7-9d79-f76bfbbe11ec",
+        "license_id": "f182bc53-62f7-4a05-9ce9-464e78dddf25",
+        "hwid": "1d0596c49b950d3a8b07fa8351b62b01db86386c515b685de6b6f7ae7df83495",
+        "device_name": "PC-12",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T16:43:55.901+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T09:41:17.649842+00:00"
+      },
+      {
+        "id": "64e7af68-4664-4191-8e8c-545ac39860e2",
+        "license_id": "49ca45da-92e7-48c7-889b-e9729a93a587",
+        "hwid": "f8124b36268a457a4e82de7e90e49e54677df51454705e9d01dc65d638b40695",
+        "device_name": "PC-16",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-08T22:56:07.769+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T22:56:07.800648+00:00"
+      },
+      {
+        "id": "f5e7f238-0768-4079-9d44-3540cb5f042b",
+        "license_id": "ec60b533-0209-4509-8dfe-75f99410bb40",
+        "hwid": "419003d85ef7797fe60a4348eda158cccdb9cb94142835621c7220a4544896a1",
+        "device_name": "PC-03",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-09T01:32:47.714+00:00",
+        "is_active": true,
+        "created_at": "2026-03-06T20:54:52.960151+00:00"
+      },
+      {
+        "id": "e8406c04-d7fb-4fb3-b54e-3258f6958225",
+        "license_id": "f182bc53-62f7-4a05-9ce9-464e78dddf25",
+        "hwid": "33a0e759d05336c2b9909a497698fa51b2bd4bde24314f658be90e9707c36de4",
+        "device_name": "PC-13",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-09T02:03:11.284+00:00",
+        "is_active": true,
+        "created_at": "2026-03-06T23:39:11.573093+00:00"
+      },
+      {
+        "id": "56a1192e-08f0-4ea0-8a52-d1da4673aa6b",
+        "license_id": "dffebad8-7e2d-46c6-80c3-d146aa59a83e",
+        "hwid": "30a6fa9fd4ecae4770cddd20dc98bf836c551464408a637e4463684212f98b58",
+        "device_name": "VIPER3",
+        "os_info": "Microsoft Windows NT 10.0.26200.0",
+        "last_verified": "2026-03-08T23:19:52.411+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T10:11:32.316367+00:00"
+      },
+      {
+        "id": "384d3a2e-3049-404f-9ae7-ff2b3a782994",
+        "license_id": "5cbf9764-4be7-4910-8bd9-1c1448b2de49",
+        "hwid": "bf2e5e1585d0321799b7f26fd4498e38e93080674cff70bac5144a626bc6e6d5",
+        "device_name": "PC-05",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T17:25:43.33+00:00",
+        "is_active": true,
+        "created_at": "2026-03-01T11:18:17.079083+00:00"
+      },
+      {
+        "id": "44df9cba-7ce0-40c8-9814-2541dd7ec924",
+        "license_id": "31668488-56c9-4071-82ae-86ee3e06ac5b",
+        "hwid": "35733d1801890a8d317228988282043f5bf5f20be46ac2186b5584296519364a",
+        "device_name": "PC-06",
+        "os_info": "Microsoft Windows NT 10.0.22631.0",
+        "last_verified": "2026-03-09T02:08:29.913+00:00",
+        "is_active": true,
+        "created_at": "2026-03-01T09:09:27.270463+00:00"
+      },
+      {
+        "id": "6828bf1d-f1dd-4e16-a23e-01bfee879f99",
+        "license_id": "39e2f9b7-c18f-4a29-b0d0-763c7fbf25b5",
+        "hwid": "e9ede0785d9efcff6f499f659855ab4e696765d902dfa85321648b0c28643e77",
+        "device_name": "PC-04",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-08T20:15:50.885+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T01:29:32.514283+00:00"
+      },
+      {
+        "id": "3c04c001-2aa9-4f1a-80ee-0432f847d370",
+        "license_id": "f182bc53-62f7-4a05-9ce9-464e78dddf25",
+        "hwid": "cb58c93a9bc6a722f556a8d49a486c9fd825d77f779291fc5342aebc90fc709e",
+        "device_name": "PC-07",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-08T19:12:14.753+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T06:47:27.874715+00:00"
+      },
+      {
+        "id": "d11af5a6-b68b-4db9-bf67-973ddb11d5b2",
+        "license_id": "9aa48d03-39cd-48bd-ada9-6a88bb604c96",
+        "hwid": "b914fbaf38fd7dc060fe3304025c47abf7f3d65b499cefddf67dcff1e56eccb2",
+        "device_name": "PC-03",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-08T22:07:04.88+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T11:27:03.688519+00:00"
+      },
+      {
+        "id": "545b6f10-a8d7-44d2-a91c-ae4de8eef82f",
+        "license_id": "49ca45da-92e7-48c7-889b-e9729a93a587",
+        "hwid": "aadbae6bd75a1f9cd21a6229e9fb65e5e44aacf55341aa6cca6406766af31658",
+        "device_name": "PC-05",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T22:08:11.333+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T20:32:27.794924+00:00"
+      },
+      {
+        "id": "b738a2c7-738d-474f-8bbc-d0289a567119",
+        "license_id": "39e2f9b7-c18f-4a29-b0d0-763c7fbf25b5",
+        "hwid": "1561662645a4c35514505d2aa300fa2b4459a12ab4825635f8ffb3a269db00b0",
+        "device_name": "PC-10",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-09T02:38:15.747+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T01:34:37.39333+00:00"
+      },
+      {
+        "id": "ce4ec31c-33e3-4467-800c-d0cc1392c3ab",
+        "license_id": "87b1ca35-0f48-4cf9-845b-598a31c6e30a",
+        "hwid": "5dcd5b032d74c211adea5bf9c8dba4111293b1aaf29a18068dc1cceed2d7d68e",
+        "device_name": "PC-04",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T20:04:04.975+00:00",
+        "is_active": true,
+        "created_at": "2026-03-01T10:05:53.929262+00:00"
+      },
+      {
+        "id": "6db6fcfb-a292-4161-ab26-b64d034ec5fa",
+        "license_id": "0faea0b9-f6d2-4952-a583-175d5bd9c838",
+        "hwid": "3ac857fdab250a7405a5abbc4ce7b3d2f7bf668070e04de9236183c479ce80bd",
+        "device_name": "M05",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T20:27:31.164+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T20:16:38.509764+00:00"
+      },
+      {
+        "id": "ac95ad39-a661-49b2-9b1f-79ccb5665b2c",
+        "license_id": "0faea0b9-f6d2-4952-a583-175d5bd9c838",
+        "hwid": "3987bda9606be6ea3bcdadb33a12af7084c687ffb38f48c0ab73fc90241127b1",
+        "device_name": "M07",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T19:15:05.906+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T18:42:16.127715+00:00"
+      },
+      {
+        "id": "66fa19d0-a9b1-4a5a-8b83-31c4441f36a8",
+        "license_id": "0faea0b9-f6d2-4952-a583-175d5bd9c838",
+        "hwid": "536b01a9a0fe41c5a563dc34000bcc72d207c38f8fe3e59c0178fffcd07627e0",
+        "device_name": "M11",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T18:32:19.369+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T16:57:05.694057+00:00"
+      },
+      {
+        "id": "47592d6b-f4c3-4a4e-838d-cce903cc9a39",
+        "license_id": "98d16078-c62b-4df2-85d6-88b498fbabe7",
+        "hwid": "a74fd9f10afa8e3bd84747266996684f69643a2a6708c2167b4feb2b97d09d2f",
+        "device_name": "MASTER2",
+        "os_info": "Microsoft Windows NT 10.0.28000.0",
+        "last_verified": "2026-03-08T20:42:38.509+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T16:33:31.576813+00:00"
+      },
+      {
+        "id": "6d8f8161-1387-4b47-992a-e7e523d5f8d4",
+        "license_id": "f182bc53-62f7-4a05-9ce9-464e78dddf25",
+        "hwid": "a45b9a19d8e1340e6ef02d5e58ed34a692ae029e884d956ba1299dd7c224044f",
+        "device_name": "PC-02",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-08T17:05:40.226+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T00:10:37.604282+00:00"
+      },
+      {
+        "id": "ec577661-eaa7-435f-a368-d4f1dedec0b9",
+        "license_id": "9aa48d03-39cd-48bd-ada9-6a88bb604c96",
+        "hwid": "fcb27785b2627d890936f157e7569921689f92e6ad58dd87706ea5067e1147e2",
+        "device_name": "PC-06",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-08T20:49:47.712+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T23:56:09.998004+00:00"
+      },
+      {
+        "id": "0493d095-7e9a-4ad0-927f-a79729046684",
+        "license_id": "9aa48d03-39cd-48bd-ada9-6a88bb604c96",
+        "hwid": "d62e1f65ea4890f32c4e3b2ebf56fa1065359042af24025a5397be53fe9baa4a",
+        "device_name": "PC-04",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-09T00:19:33.514+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T08:45:35.3217+00:00"
+      },
+      {
+        "id": "50921b91-1995-4ea2-a3a6-fb2c521829f7",
+        "license_id": "f182bc53-62f7-4a05-9ce9-464e78dddf25",
+        "hwid": "0023dbfdfece1da7ad5400c21cf3bde51e8056923c0f55dad55dee8491720973",
+        "device_name": "PC-08",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-08T15:06:05.768+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T06:47:30.162223+00:00"
+      },
+      {
+        "id": "5ab52213-c0fd-481f-adda-2fbadcd73d4d",
+        "license_id": "f182bc53-62f7-4a05-9ce9-464e78dddf25",
+        "hwid": "46a53d535ea71fe7e253ce1011419b132f5e5bd0da9e41bdb5c7c93a94db2381",
+        "device_name": "PC-10",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T20:05:25.221+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T08:22:29.510932+00:00"
+      },
+      {
+        "id": "0c55290b-d0bb-4d43-a80e-e049a38e6f3c",
+        "license_id": "87b1ca35-0f48-4cf9-845b-598a31c6e30a",
+        "hwid": "3b9bf4c0cf754f87155dd2c22cb6abfbbb2d0c54f267b1739078ae0ee8aa37cb",
+        "device_name": "PC-05",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T16:51:33.195+00:00",
+        "is_active": true,
+        "created_at": "2026-03-01T09:54:39.753122+00:00"
+      },
+      {
+        "id": "7d2d34ae-633d-4db5-bfcc-c03dda212b96",
+        "license_id": "f182bc53-62f7-4a05-9ce9-464e78dddf25",
+        "hwid": "394fc8b430c0d02eefe0f65655ee21bdd05e315fab2e591dd3a2d74374a78f83",
+        "device_name": "PC-07",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-08T18:43:10.584+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T11:37:03.827269+00:00"
+      },
+      {
+        "id": "fc8582de-8e73-4ad6-8690-46c240ec36db",
+        "license_id": "f182bc53-62f7-4a05-9ce9-464e78dddf25",
+        "hwid": "5f471ce1f4045f10285fec408f4e897a73b23a5a067a790a240113e4ff6d3221",
+        "device_name": "PC-01",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-08T19:41:11.337+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T12:54:20.421517+00:00"
+      },
+      {
+        "id": "d6db2e39-db7c-4aac-9948-1f17664f6bc9",
+        "license_id": "0faea0b9-f6d2-4952-a583-175d5bd9c838",
+        "hwid": "5a3db833490f23f8006c4217b9fb6d130a338e99ce717ce2513324bf6819af66",
+        "device_name": "M09",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T18:12:34.294+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T17:10:47.335574+00:00"
+      },
+      {
+        "id": "b2218472-476e-43bd-a21b-5aa59e92da68",
+        "license_id": "39e2f9b7-c18f-4a29-b0d0-763c7fbf25b5",
+        "hwid": "c14a1fa04fe9bb9e57dd7e2f754835ff7475259c639deb2ece57552d5dcd6cd2",
+        "device_name": "PC-06",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T23:50:39.329+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T01:32:31.422511+00:00"
+      },
+      {
+        "id": "923839f1-676c-4f3e-aed7-2523e9f125d7",
+        "license_id": "20946b34-6086-412b-a38d-0d3fe955ab88",
+        "hwid": "0e3507ae72680aa27fd8dbc29ba27cb68accd7c43736edaf6b1caa3560a21341",
+        "device_name": "DESKTOP-Q9KC9TT",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T13:11:56.099+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T14:04:24.832035+00:00"
+      },
+      {
+        "id": "592407fc-453d-4e68-a7e9-6c5823a3123b",
+        "license_id": "dffebad8-7e2d-46c6-80c3-d146aa59a83e",
+        "hwid": "06fd6779fbe8583e8d0c97a4e5458f0965f16df12eefdf13fa2466bc4abb3a53",
+        "device_name": "VIPER4",
+        "os_info": "Windows_NT 10.0.26200 x64",
+        "last_verified": "2026-03-09T00:52:53.139+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T10:14:04.496229+00:00"
+      },
+      {
+        "id": "40f3892d-a135-4fe7-9b28-afbf36f9f15e",
+        "license_id": "575da366-e1e5-4cdb-8749-04a9cfc2c33a",
+        "hwid": "a27dba46011ed4af74eaaee44eae6d5b8a148b989732d3a1f581dc3ccc58b156",
+        "device_name": "DCX-USER-6142",
+        "os_info": "Microsoft Windows NT 10.0.26200.0",
+        "last_verified": "2026-03-08T22:09:57.685+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T20:48:02.231025+00:00"
+      },
+      {
+        "id": "5d2997fd-9d18-440d-b708-d6f80199ea83",
+        "license_id": "9aa48d03-39cd-48bd-ada9-6a88bb604c96",
+        "hwid": "3dec37087390498721e1ff14de2197b9e85a99a7eb27d8e3da01429dcab3cc13",
+        "device_name": "PC-05",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-08T22:36:08.908+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T09:25:41.23566+00:00"
+      },
+      {
+        "id": "c95055e5-766b-4922-a4e9-b3d618ca2244",
+        "license_id": "f182bc53-62f7-4a05-9ce9-464e78dddf25",
+        "hwid": "2a13128ee267297f8b58e0476e2b2e9c8085bd4e527cc47289015b4aeeae263f",
+        "device_name": "PC-10",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-08T14:38:56.306+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T09:47:03.886358+00:00"
+      },
+      {
+        "id": "90cffab0-7e83-4cb3-b920-4200ced1028c",
+        "license_id": "39e2f9b7-c18f-4a29-b0d0-763c7fbf25b5",
+        "hwid": "779b921155643d579b873264e5f3ef5669dabe176b2587c54cf061682c10b707",
+        "device_name": "pc-02",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-07T01:36:01.162+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T01:35:16.173862+00:00"
+      },
+      {
+        "id": "948eb186-cf29-4731-b438-9a33dfa65bbb",
+        "license_id": "9aa48d03-39cd-48bd-ada9-6a88bb604c96",
+        "hwid": "e31c67ae25b1b31b2165120773dc79aaf0f0e9f970e4286ac6d2ff00ba8cc417",
+        "device_name": "PC-02",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T11:28:04.073+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T11:28:04.100711+00:00"
+      },
+      {
+        "id": "6880f1bc-0522-4539-970c-a36b1008e8b5",
+        "license_id": "ec60b533-0209-4509-8dfe-75f99410bb40",
+        "hwid": "70e44e58af5c5a784a7371f441dbb8a4d535c57ba6fecdb7175612498c3e07ae",
+        "device_name": "pc-01",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-08T22:44:18.057+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T19:55:54.322617+00:00"
+      },
+      {
+        "id": "674b565d-8c02-4d8f-9335-cc18a3a4ddf0",
+        "license_id": "49ca45da-92e7-48c7-889b-e9729a93a587",
+        "hwid": "e5159f2810c16e112a857649cce0468620a7af417985fbbc6572dbf3f65d4c81",
+        "device_name": "PC-01",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T23:00:49.469+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T23:00:49.496303+00:00"
+      },
+      {
+        "id": "67a30a7b-9f21-4d7d-b5a1-5439e31c5b6b",
+        "license_id": "20946b34-6086-412b-a38d-0d3fe955ab88",
+        "hwid": "33a0e759d05336c2b9909a497698fa51b2bd4bde24314f658be90e9707c36de4",
+        "device_name": "DESKTOP-PBP26L5",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T21:14:14.951+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T02:37:59.961849+00:00"
+      },
+      {
+        "id": "ac986a7a-1a6d-490f-8198-7774398942b0",
+        "license_id": "49ca45da-92e7-48c7-889b-e9729a93a587",
+        "hwid": "5bc3e55b779a46d9cc306fcdeb2094034fbf9f30f41ff376ba2fea7e3808b970",
+        "device_name": "PC-08",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T23:33:20.771+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T20:40:03.173447+00:00"
+      },
+      {
+        "id": "c501c47d-4a9e-43a1-8edc-4669f0f14f05",
+        "license_id": "98d16078-c62b-4df2-85d6-88b498fbabe7",
+        "hwid": "8759986c8daf785e78dedd300570db2bc0b3c1b2a2afba69fab597e9b6709c1b",
+        "device_name": "MASTER4",
+        "os_info": "Microsoft Windows NT 10.0.28000.0",
+        "last_verified": "2026-03-08T18:57:22.242+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T18:57:22.269483+00:00"
+      },
+      {
+        "id": "d5fead08-92ee-4909-80dc-2850367c3c6e",
+        "license_id": "f182bc53-62f7-4a05-9ce9-464e78dddf25",
+        "hwid": "dab12230141878455450d71ee22134fe137c521b7a56d12b37b312f78ce6650c",
+        "device_name": "PC-02",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T21:25:04.326+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T08:36:49.307743+00:00"
+      },
+      {
+        "id": "11280261-e735-4a2c-853b-61df94a4db82",
+        "license_id": "49ca45da-92e7-48c7-889b-e9729a93a587",
+        "hwid": "e3fa5d59ab8534701d9f5a562867f30f264127014c26b14a710237df3016be97",
+        "device_name": "PC-04",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-08T21:25:57.808+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T21:25:57.83258+00:00"
+      },
+      {
+        "id": "4c1dbe22-68da-495e-b18c-d88200242d0e",
+        "license_id": "f182bc53-62f7-4a05-9ce9-464e78dddf25",
+        "hwid": "656131e6f76c5612e45ab039a74d0bd5bc6b8a66cf07c6b0b6ce780f5610caee",
+        "device_name": "PC-04",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T19:54:09.84+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T12:56:29.360065+00:00"
+      },
+      {
+        "id": "e78cc021-3b57-44f3-b1c0-f69d8bf94dce",
+        "license_id": "87b1ca35-0f48-4cf9-845b-598a31c6e30a",
+        "hwid": "0cfc629b13b4d0b53ae57b49d85e1c899189ce68b05a57d2665af2d1c83117de",
+        "device_name": "PC-01",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T17:23:59.921+00:00",
+        "is_active": true,
+        "created_at": "2026-03-01T10:54:42.347667+00:00"
+      },
+      {
+        "id": "80dc3a4a-2bda-4ed1-b059-9a7c3ed71f1c",
+        "license_id": "49ca45da-92e7-48c7-889b-e9729a93a587",
+        "hwid": "3b695583e1a0d26aae8574f0531ed1bef1e6766435a90320cab909e470beaabe",
+        "device_name": "PC-02",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T20:18:12.129+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T20:18:12.164338+00:00"
+      },
+      {
+        "id": "f24b8eb3-94c1-4534-97a9-c4590e485f0a",
+        "license_id": "f182bc53-62f7-4a05-9ce9-464e78dddf25",
+        "hwid": "a3c2b20203c973fe8bda493c82a569ee8d9b00edd205841f83cfbe67a4ffd278",
+        "device_name": "PC-09",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-08T18:19:58.538+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T10:42:04.356248+00:00"
+      },
+      {
+        "id": "772a98b5-e0c9-44a1-b8be-60cd255fdc4e",
+        "license_id": "ec60b533-0209-4509-8dfe-75f99410bb40",
+        "hwid": "095e2f5995115aa3506b150d93bfe6cccd0350001a65e255943fc96954859b29",
+        "device_name": "CCBOOT",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T17:27:57.012+00:00",
+        "is_active": true,
+        "created_at": "2026-03-06T20:39:38.920653+00:00"
+      },
+      {
+        "id": "7e84a39d-5bed-4869-8bb4-3b3e18f4fced",
+        "license_id": "0faea0b9-f6d2-4952-a583-175d5bd9c838",
+        "hwid": "db347e415426576eae2f087ef51d771768c9fd773903a290821d153a1f098a54",
+        "device_name": "M10",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T16:49:16.815+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T16:49:16.846153+00:00"
+      },
+      {
+        "id": "b6518611-0fb4-4743-a6a8-df8afb4b59e6",
+        "license_id": "f182bc53-62f7-4a05-9ce9-464e78dddf25",
+        "hwid": "55cb2abc0568830dd2eb65c256d27b91c7c11de051b8348cd65e12f5dd1bbbd0",
+        "device_name": "PC-05",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-08T16:03:51.648+00:00",
+        "is_active": true,
+        "created_at": "2026-03-06T23:52:48.274835+00:00"
+      },
+      {
+        "id": "6ca00188-86b6-4feb-922c-b271a395f125",
+        "license_id": "39e2f9b7-c18f-4a29-b0d0-763c7fbf25b5",
+        "hwid": "7272ae3ae52b3c32e382239017bce55f07a675cda6fbd8112bc13b5c6610cc0f",
+        "device_name": "PC-03",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-08T21:39:15.673+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T01:32:42.252076+00:00"
+      },
+      {
+        "id": "6b066654-c290-451a-bcf0-ada4afa64295",
+        "license_id": "f182bc53-62f7-4a05-9ce9-464e78dddf25",
+        "hwid": "ffc64c64f5976ef2a76888183ad8b9dc95712796be4385bb01addfac73fd6063",
+        "device_name": "PC-08",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-08T18:10:21.152+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T12:56:25.078613+00:00"
+      },
+      {
+        "id": "180af87b-f10a-4e95-bfb7-3c809febdba6",
+        "license_id": "ec60b533-0209-4509-8dfe-75f99410bb40",
+        "hwid": "dead334db3b22134a48c83606f5af7f3183101311bdaa512dae615441cdeb0ef",
+        "device_name": "PC-11",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-08T20:46:21.726+00:00",
+        "is_active": true,
+        "created_at": "2026-03-06T21:23:18.774959+00:00"
+      },
+      {
+        "id": "5d625024-b413-475a-909e-ecf98144407d",
+        "license_id": "87b1ca35-0f48-4cf9-845b-598a31c6e30a",
+        "hwid": "55316a8264c43dac62f599824398298529707622dbd48d3ad5ecf9e728d46164",
+        "device_name": "PC-03",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T20:04:09.095+00:00",
+        "is_active": true,
+        "created_at": "2026-03-01T12:04:14.633795+00:00"
+      },
+      {
+        "id": "a53c330c-225b-4a03-baaa-ca20ccee4cbd",
+        "license_id": "f182bc53-62f7-4a05-9ce9-464e78dddf25",
+        "hwid": "2dbb724aacec65188e9ce89b26403a019f74337811ee1528aef7b276d9318e8c",
+        "device_name": "PC-04",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-08T18:00:59.256+00:00",
+        "is_active": true,
+        "created_at": "2026-03-06T23:53:37.747731+00:00"
+      },
+      {
+        "id": "55b3dce4-98e2-4b37-b564-27be79e3aebe",
+        "license_id": "0faea0b9-f6d2-4952-a583-175d5bd9c838",
+        "hwid": "ddef4d4e6ca9102b78cb3bf57192ca9a2aceddd627f35d14dee989b905df0ff2",
+        "device_name": "M15",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T20:19:19.747+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T20:19:19.769043+00:00"
+      },
+      {
+        "id": "6053f36c-e4cd-4740-b83e-e8c72053383a",
+        "license_id": "39e2f9b7-c18f-4a29-b0d0-763c7fbf25b5",
+        "hwid": "c1f364a0a2ef42d9fddc453d55f4f3e23dcea019fcbe802e7c3ad05e00dd0d44",
+        "device_name": "PC-08",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-09T00:53:06.684+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T01:32:36.008744+00:00"
+      },
+      {
+        "id": "53cd77d8-c11f-472a-a0bd-d6e63f008cf4",
+        "license_id": "5cbf9764-4be7-4910-8bd9-1c1448b2de49",
+        "hwid": "35b70d9bb945c0e95aeb8b6f45f216f7c280065b047868d080f5698a53a47e74",
+        "device_name": "PC-04",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T21:51:43.862+00:00",
+        "is_active": true,
+        "created_at": "2026-03-01T12:04:42.936637+00:00"
+      },
+      {
+        "id": "36fd3a1d-cfa5-47c8-a3c7-b87653252cb2",
+        "license_id": "ce005c80-55ca-414a-90cc-7c267c576e54",
+        "hwid": "2c9ee99735cdd9470bb558b56e2ac16c128dbfd9a282ca83732861ed0e6a8be9",
+        "device_name": "PC-05",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-09T02:31:45.139+00:00",
+        "is_active": true,
+        "created_at": "2026-03-01T14:30:48.169964+00:00"
+      },
+      {
+        "id": "34c80e6c-b7ff-403d-a350-79d72ba400e0",
+        "license_id": "9aa48d03-39cd-48bd-ada9-6a88bb604c96",
+        "hwid": "5908fc2035cd2035844f1ad73b3f9c86910211875f3795e5d9373898b37c74b0",
+        "device_name": "PC-07",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-08T22:06:19.854+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T11:50:37.838965+00:00"
+      },
+      {
+        "id": "6640eb8c-42b0-4668-bf7d-84bed7389b17",
+        "license_id": "87b1ca35-0f48-4cf9-845b-598a31c6e30a",
+        "hwid": "447573096d44797fea61fd740838bc307e719b5368626ca7775014a6209b7173",
+        "device_name": "PC-07",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T17:10:31.754+00:00",
+        "is_active": true,
+        "created_at": "2026-03-01T16:33:26.563944+00:00"
+      },
+      {
+        "id": "22f1073e-dd36-4c12-ae83-66508e7d95e2",
+        "license_id": "98d16078-c62b-4df2-85d6-88b498fbabe7",
+        "hwid": "a6ef1b35fdf4f502111a8ddb2f6e12aa4f22d2f217b9baf2c7c5657f3488c6d9",
+        "device_name": "Master1",
+        "os_info": "Windows_NT 10.0.28000 x64",
+        "last_verified": "2026-03-08T18:11:42.239+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T17:22:46.786529+00:00"
+      },
+      {
+        "id": "c24c0eca-f600-4f51-98a7-82c0184e163e",
+        "license_id": "5cbf9764-4be7-4910-8bd9-1c1448b2de49",
+        "hwid": "875c13567e614c368353a2ad34d02436a3f49dc3e983a71bf04a2355d53d1b64",
+        "device_name": "PC-03",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T19:41:41.726+00:00",
+        "is_active": true,
+        "created_at": "2026-03-01T12:14:57.648313+00:00"
+      },
+      {
+        "id": "e557da3d-f552-4eb2-8265-650f5662d755",
+        "license_id": "5cbf9764-4be7-4910-8bd9-1c1448b2de49",
+        "hwid": "8f409927df95954679b9f5196a3be4a02ee324f36a38870459d14000bbb87839",
+        "device_name": "PC-02",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T18:30:05.66+00:00",
+        "is_active": true,
+        "created_at": "2026-03-01T12:21:13.610765+00:00"
+      },
+      {
+        "id": "dc6793b6-4cd0-4e5a-bd06-138adeae38b5",
+        "license_id": "dffebad8-7e2d-46c6-80c3-d146aa59a83e",
+        "hwid": "58ab187bcdf4a4ca83df713b11582679873f991ed7b2e6bb867b1d7eaf5dfcfc",
+        "device_name": "VIPER5",
+        "os_info": "Windows_NT 10.0.26200 x64",
+        "last_verified": "2026-03-08T22:21:52.579+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T10:03:23.302259+00:00"
+      },
+      {
+        "id": "2f4f121b-8b6f-4c5d-bfbd-76ed76388f2a",
+        "license_id": "ec60b533-0209-4509-8dfe-75f99410bb40",
+        "hwid": "cefd6643e823724f824fd1bad16f714543319f3e40fb891bf47c12099a0d6b90",
+        "device_name": "PC-10",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-08T20:05:41.164+00:00",
+        "is_active": true,
+        "created_at": "2026-03-06T21:30:08.375913+00:00"
+      },
+      {
+        "id": "52706873-1516-4771-9503-dcacf9b1384c",
+        "license_id": "f182bc53-62f7-4a05-9ce9-464e78dddf25",
+        "hwid": "72a1c98a0009be1126b3c462ecd576963440da5a5de98cade543749c2f63ee67",
+        "device_name": "PC-05",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-08T16:49:17.924+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T01:19:37.895441+00:00"
+      },
+      {
+        "id": "c8f2747a-e5d2-450d-84b9-1e9090452f72",
+        "license_id": "5cbf9764-4be7-4910-8bd9-1c1448b2de49",
+        "hwid": "328fb1fd89f9745155b3d2be6a1e3a54906159f436c90e3fb718892a98618693",
+        "device_name": "PC-07",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-07T13:54:43.461+00:00",
+        "is_active": true,
+        "created_at": "2026-03-01T11:53:11.288367+00:00"
+      },
+      {
+        "id": "5ce10588-848f-4769-8c51-3b5c23410e21",
+        "license_id": "ec60b533-0209-4509-8dfe-75f99410bb40",
+        "hwid": "03f37c55b97671e9117acf80b4568f0a461004b2df4ba4dc882b7c4ea0c0e1cb",
+        "device_name": "PC-08",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-08T23:03:26.851+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T19:56:36.970344+00:00"
+      },
+      {
+        "id": "2f683c99-5dab-4512-a0f9-6064b0a6a595",
+        "license_id": "0faea0b9-f6d2-4952-a583-175d5bd9c838",
+        "hwid": "e5e8181ca7ba9698ac6a1cf8b80061f29dd39358eee60dcbdee351aec4517343",
+        "device_name": "M08",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T16:50:34.95+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T16:50:34.973688+00:00"
+      },
+      {
+        "id": "34983e4a-d13d-437c-9a6e-e55ce9438825",
+        "license_id": "5cbf9764-4be7-4910-8bd9-1c1448b2de49",
+        "hwid": "364159f1ac6db1e44a21d51af1051b291e4f2973a6bef4cb85d08104f8360c43",
+        "device_name": "PC-06",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T17:49:39.11+00:00",
+        "is_active": true,
+        "created_at": "2026-03-01T11:55:28.138848+00:00"
+      },
+      {
+        "id": "bc0f51a1-1c12-45da-a020-f31f8c4cc6e6",
+        "license_id": "f182bc53-62f7-4a05-9ce9-464e78dddf25",
+        "hwid": "e0161638c36b92131a79d399f2e6a1cc38b6325d7a34ed298227c4d92e553d0b",
+        "device_name": "PC-12",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-08T17:49:49.573+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T07:05:57.623836+00:00"
+      },
+      {
+        "id": "62d70fea-500c-421c-ab41-55e879949f1a",
+        "license_id": "39e2f9b7-c18f-4a29-b0d0-763c7fbf25b5",
+        "hwid": "5b4ebe962388f6388fad539c1df0ea49cfb91d85eb4821976d609a77f8fe04af",
+        "device_name": "PC-07",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-08T11:38:03.997+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T01:39:19.958927+00:00"
+      },
+      {
+        "id": "b1996735-e0b6-45d3-ba0e-8ea8c920b38f",
+        "license_id": "f182bc53-62f7-4a05-9ce9-464e78dddf25",
+        "hwid": "223ec4458066bc318f62be78f7a7a02cba397ed55da2987bd9dcd9717425ec69",
+        "device_name": "PC-01",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T21:25:12.909+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T05:22:39.971431+00:00"
+      },
+      {
+        "id": "cc14dfda-6757-4262-ab71-68395502d002",
+        "license_id": "f182bc53-62f7-4a05-9ce9-464e78dddf25",
+        "hwid": "deca0955278f2142375615295b50216610afdf7ad4f77dd027df9caddc6bddb2",
+        "device_name": "PC-11",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T19:50:48.537+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T10:47:31.757519+00:00"
+      },
+      {
+        "id": "8fd7d2f2-a43f-468c-a729-0df549b860fd",
+        "license_id": "dffebad8-7e2d-46c6-80c3-d146aa59a83e",
+        "hwid": "dd85d87f8906525bccee64ccaec3a9dcf88cfe4d2369499c4aa9cb87aae30167",
+        "device_name": "4NO",
+        "os_info": "Microsoft Windows NT 10.0.28000.0",
+        "last_verified": "2026-03-08T10:16:57.534+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T10:16:57.554111+00:00"
+      },
+      {
+        "id": "85f12c02-9c31-4b77-84f2-75026dbb9997",
+        "license_id": "20946b34-6086-412b-a38d-0d3fe955ab88",
+        "hwid": "79f7c0733e8e48f5ef68d0674c2681457b7a549fb77fd5142f3b73f7f681ca23",
+        "device_name": "MOHAMED-ISSA-PC",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T19:07:25.103+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T19:07:25.12928+00:00"
+      },
+      {
+        "id": "06bd62c4-234d-4625-9532-a0b67addf91f",
+        "license_id": "5cbf9764-4be7-4910-8bd9-1c1448b2de49",
+        "hwid": "af74dc475ef93c59f1e2d55d8e0c5ed3f97b38285a06db10ce1b8459af76081e",
+        "device_name": "PC-01",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T20:18:09.676+00:00",
+        "is_active": true,
+        "created_at": "2026-03-01T12:48:02.515056+00:00"
+      },
+      {
+        "id": "8a060652-d858-46ef-b691-49a962f5d1c4",
+        "license_id": "87b1ca35-0f48-4cf9-845b-598a31c6e30a",
+        "hwid": "d4c4027ee52027db46ca81d85c2bb96bcf55eb4ba2e4cee300ed45833326206b",
+        "device_name": "PC-02",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T20:00:08.169+00:00",
+        "is_active": true,
+        "created_at": "2026-03-01T12:00:25.118384+00:00"
+      },
+      {
+        "id": "ada81cd2-70d7-4c7b-a301-a77c3421f76d",
+        "license_id": "87b1ca35-0f48-4cf9-845b-598a31c6e30a",
+        "hwid": "3fb971683753e00e2df38d569e594094002d60d552604b8a1c5fe3fe5276faa8",
+        "device_name": "PC-06",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T19:16:14.033+00:00",
+        "is_active": true,
+        "created_at": "2026-03-01T16:33:38.007305+00:00"
+      },
+      {
+        "id": "65a0e797-48e4-4c60-81ea-d13eb795e79d",
+        "license_id": "f182bc53-62f7-4a05-9ce9-464e78dddf25",
+        "hwid": "bfeb152d2818bcea15fc53563bac5eaf254a3f9c566cbcf70b07aa1c911b134d",
+        "device_name": "PC-03",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T20:43:16.073+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T09:51:55.436572+00:00"
+      },
+      {
+        "id": "27cf5e57-c6d0-485d-9d20-fd45d7a83373",
+        "license_id": "0faea0b9-f6d2-4952-a583-175d5bd9c838",
+        "hwid": "d6f0e03733c14a8e5e0324a0c4787e71306bc1a78130aa7317fd2dd713d8eb8d",
+        "device_name": "M04",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T20:46:26.095+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T20:46:26.13395+00:00"
+      },
+      {
+        "id": "4b395102-a50a-4bcf-a70f-e33b8a751931",
+        "license_id": "f182bc53-62f7-4a05-9ce9-464e78dddf25",
+        "hwid": "c178212353f78c37a35bb9747938e32b59e9944acd294547df55dd89aade05ed",
+        "device_name": "PC-06",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-08T18:15:31.555+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T01:19:49.74768+00:00"
+      },
+      {
+        "id": "a4718d95-501b-4a9e-b1a0-411456e2baa5",
+        "license_id": "ce005c80-55ca-414a-90cc-7c267c576e54",
+        "hwid": "a290f8dec3650166f354899cbce5e2782ff8bd785ea7c4abf16b703960049f8a",
+        "device_name": "PC-09",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T18:23:22.982+00:00",
+        "is_active": true,
+        "created_at": "2026-03-01T18:15:56.929822+00:00"
+      },
+      {
+        "id": "098905bc-9f21-43d8-9005-8ddcb1ebbc61",
+        "license_id": "dffebad8-7e2d-46c6-80c3-d146aa59a83e",
+        "hwid": "346d3dc4b3c17ee66a465986ec124c4540fd0322a6ea8c22e14a2e9e994ea631",
+        "device_name": "DELUXE11",
+        "os_info": "Microsoft Windows NT 10.0.28000.0",
+        "last_verified": "2026-03-08T21:50:28.066+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T10:50:12.097029+00:00"
+      },
+      {
+        "id": "2a194342-308b-4d85-91cf-0486a2f31323",
+        "license_id": "39e2f9b7-c18f-4a29-b0d0-763c7fbf25b5",
+        "hwid": "bb51dec6adddae03b45d8152383a37096cbf64cf64bc5fde6321027f98bc9af6",
+        "device_name": "ccboot",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-08T00:29:36.667+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T01:42:54.454103+00:00"
+      },
+      {
+        "id": "1d966659-f03b-4cb9-a200-db4cd308cf50",
+        "license_id": "ce005c80-55ca-414a-90cc-7c267c576e54",
+        "hwid": "83245c8094ee156682c77fcad46153ea7bf3005061a22414f258071c1915b6e9",
+        "device_name": "PC-01",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T06:55:30.311+00:00",
+        "is_active": true,
+        "created_at": "2026-03-01T18:37:19.908742+00:00"
+      },
+      {
+        "id": "bf5f463a-6266-4a2b-9733-3a94c1212500",
+        "license_id": "20946b34-6086-412b-a38d-0d3fe955ab88",
+        "hwid": "c799662c5210d5cb1df47fbda43d78e5b3cf539c2ab3f88df5740693a1cd7a8d",
+        "device_name": "DESKTOP-UU5N742",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T13:06:50.485+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T11:55:35.131612+00:00"
+      },
+      {
+        "id": "38a9b2d2-ed31-4bca-8b11-f879a20f8605",
+        "license_id": "31668488-56c9-4071-82ae-86ee3e06ac5b",
+        "hwid": "9cf3eade3379851a73dd0253a136a9cae1662aa54376b0c6a1cb467b1f60db1e",
+        "device_name": "PC-08",
+        "os_info": "Microsoft Windows NT 10.0.22631.0",
+        "last_verified": "2026-03-06T18:30:44.195+00:00",
+        "is_active": true,
+        "created_at": "2026-03-02T18:05:10.604101+00:00"
+      },
+      {
+        "id": "5d15f7e6-99d0-4abe-9175-6b02a26b530a",
+        "license_id": "49ca45da-92e7-48c7-889b-e9729a93a587",
+        "hwid": "ca01f5d14b96d1eeec7e862f07960d0292e30c4d6bb5a8998751c1fa335e728a",
+        "device_name": "CCBOOT",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T20:04:18.161+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T20:04:18.193562+00:00"
+      },
+      {
+        "id": "b937ea84-755d-4dd0-88a2-2b433e741e63",
+        "license_id": "dffebad8-7e2d-46c6-80c3-d146aa59a83e",
+        "hwid": "bd45d9eee5eb57f60eca2d4b86a7940d712d594ee41c1d5666b6ac4ec9dcf6bb",
+        "device_name": "VIPER1",
+        "os_info": "Microsoft Windows NT 10.0.22621.0",
+        "last_verified": "2026-03-08T16:44:21.412+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T10:03:40.612132+00:00"
+      },
+      {
+        "id": "e91f1b0a-ccc6-4eb0-82cd-fcf9fa07f12e",
+        "license_id": "ce005c80-55ca-414a-90cc-7c267c576e54",
+        "hwid": "315b7e7d4fd5e70378aa0387805791968cda9fa9bea64f200de7d9a6b8fb4675",
+        "device_name": "PC-08",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T12:37:10.963+00:00",
+        "is_active": true,
+        "created_at": "2026-03-01T18:35:29.908112+00:00"
+      },
+      {
+        "id": "53682c3f-eab1-4260-b60a-6d9f06e01eff",
+        "license_id": "ec60b533-0209-4509-8dfe-75f99410bb40",
+        "hwid": "6b8439ffe61d8dd782494d9637eed8aac30bdbb87d473acef7ead56bd5bae47f",
+        "device_name": "PC-02",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-08T22:25:58.368+00:00",
+        "is_active": true,
+        "created_at": "2026-03-06T21:42:08.719617+00:00"
+      },
+      {
+        "id": "d6e1022d-bf72-4f5f-85ed-8ad3a98affe8",
+        "license_id": "ec60b533-0209-4509-8dfe-75f99410bb40",
+        "hwid": "e35fc8f234c0bb202f0f364f093f2ed82ef83d36f8f4d24070bc263bdf8857d6",
+        "device_name": "PC-04",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T20:05:39.328+00:00",
+        "is_active": true,
+        "created_at": "2026-03-06T20:46:40.503605+00:00"
+      },
+      {
+        "id": "4b7fd2ce-7997-4be2-ac13-db09cd627c9a",
+        "license_id": "98d16078-c62b-4df2-85d6-88b498fbabe7",
+        "hwid": "acbd1c6ac37c4820c7430035b3aeb89045f0ff4b8cf285ff3b8aed3aedcb71f9",
+        "device_name": "Master3",
+        "os_info": "Windows_NT 10.0.28000 x64",
+        "last_verified": "2026-03-08T21:15:55.543+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T17:54:53.933712+00:00"
+      },
+      {
+        "id": "46d5cf2a-58ae-4eb2-a51d-6ffbda8039d9",
+        "license_id": "39e2f9b7-c18f-4a29-b0d0-763c7fbf25b5",
+        "hwid": "ef3cb01e1e7e97728adfca2b13f490b8b725a95a79437b67273b6a83074c1774",
+        "device_name": "pc-05",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-08T23:46:35.746+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T01:32:39.567853+00:00"
+      },
+      {
+        "id": "553f8f10-3103-492d-85f8-b068c55b3e6b",
+        "license_id": "ec60b533-0209-4509-8dfe-75f99410bb40",
+        "hwid": "53beb3e0318992fd5140bbb029dc624376b640cd4cf781990b92c3ec8cb0fded",
+        "device_name": "PC-12",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-08T23:51:54.263+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T12:15:28.774612+00:00"
+      },
+      {
+        "id": "eec6ad6b-c9df-43fb-aed9-46a563715ebb",
+        "license_id": "49ca45da-92e7-48c7-889b-e9729a93a587",
+        "hwid": "af20e743972b8fc6a167a7b463a428e3d9cac147247f4417057d5189f360c46b",
+        "device_name": "PC-07",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T23:53:16.542+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T21:01:26.944938+00:00"
+      },
+      {
+        "id": "23e2f63b-b846-41a6-a2d0-d5133b806dd2",
+        "license_id": "f182bc53-62f7-4a05-9ce9-464e78dddf25",
+        "hwid": "dc37ac696fd6319481c7f9ed75725ec04acd5e4b79c7703cb9fa20c365953650",
+        "device_name": "CCBOOT",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-07T23:25:31.771+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T00:06:42.85413+00:00"
+      },
+      {
+        "id": "5d3e8f5e-4e4a-4ad4-9f2e-3639defb376d",
+        "license_id": "49ca45da-92e7-48c7-889b-e9729a93a587",
+        "hwid": "9874945ce984e944a610c2d4a8b69ca133a8e0cab865c457716e9f25f168fb0c",
+        "device_name": "PC-15",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T20:19:51.394+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T20:19:51.420306+00:00"
+      },
+      {
+        "id": "e333956f-a4c7-455c-95a0-1c0e0078e083",
+        "license_id": "39e2f9b7-c18f-4a29-b0d0-763c7fbf25b5",
+        "hwid": "554f769a474730e0290378f63908ec1225f5f93eb71b60678068384e96b06265",
+        "device_name": "PC-01",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-09T02:46:42.192+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T01:34:30.669389+00:00"
+      },
+      {
+        "id": "b3f3618e-a76f-4658-a02f-240cbc486de9",
+        "license_id": "0faea0b9-f6d2-4952-a583-175d5bd9c838",
+        "hwid": "f62bccb70ff35a18ce65c25ff3f1e7a415bbc79553373d6219fa67e93bd06f27",
+        "device_name": "M03",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T20:24:25.682+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T16:51:12.136842+00:00"
+      },
+      {
+        "id": "c14768bb-073b-46fd-b3f0-40b9be40208b",
+        "license_id": "ce005c80-55ca-414a-90cc-7c267c576e54",
+        "hwid": "fadb0b88bd5c4b3c5a857a12c966b35ea17ea9dd26545f1fa948f663abdcd6f7",
+        "device_name": "PC-06",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T12:50:44.875+00:00",
+        "is_active": true,
+        "created_at": "2026-03-01T21:40:24.038465+00:00"
+      },
+      {
+        "id": "4c08b95a-bae7-407b-9643-ef4fc433d71c",
+        "license_id": "f182bc53-62f7-4a05-9ce9-464e78dddf25",
+        "hwid": "8b5b6f30e548184146329bbb7fdb18c22c7f80ee5e13cc65e04e87adc9e09e28",
+        "device_name": "ccboot",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-07T23:45:24.013+00:00",
+        "is_active": true,
+        "created_at": "2026-03-06T23:30:14.479985+00:00"
+      },
+      {
+        "id": "a446cb7a-4bf7-4e64-9ba6-8a7e643c872b",
+        "license_id": "ce005c80-55ca-414a-90cc-7c267c576e54",
+        "hwid": "1a1a5f62feba54c100ca73499617440929ff50f20d3ec608a15437a01387d5a8",
+        "device_name": "PC-02",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T08:06:13.398+00:00",
+        "is_active": true,
+        "created_at": "2026-03-01T19:08:47.667853+00:00"
+      },
+      {
+        "id": "1fe54d23-df3b-48f6-9303-4755eb39b204",
+        "license_id": "ce005c80-55ca-414a-90cc-7c267c576e54",
+        "hwid": "784ecb27e402daf5a4ee143269fb4b23ef9e43d9db42b22bab6cbe8ed1ee38b9",
+        "device_name": "PC-04",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T09:47:37.996+00:00",
+        "is_active": true,
+        "created_at": "2026-03-01T17:58:32.17066+00:00"
+      },
+      {
+        "id": "b3f0d8ad-84ee-457c-96d4-86b3ce1adcc5",
+        "license_id": "ce005c80-55ca-414a-90cc-7c267c576e54",
+        "hwid": "aae78a26da0c9b18707825ca4ae7e0bbad22788f909571c6ce03d8965954462d",
+        "device_name": "PC-03",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T09:47:44.328+00:00",
+        "is_active": true,
+        "created_at": "2026-03-01T17:59:06.318271+00:00"
+      },
+      {
+        "id": "6fd002ef-36c5-4289-b4bf-1b97e83f08f9",
+        "license_id": "31668488-56c9-4071-82ae-86ee3e06ac5b",
+        "hwid": "d3110b57f6bd1673c2603b89928d90c79ec593cdda6aa1d31db40beed5a47133",
+        "device_name": "CCBOOT",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-07T18:41:55.233+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T18:40:42.264345+00:00"
+      },
+      {
+        "id": "6ee42c7b-62e8-40c2-83b1-faf7228a3f04",
+        "license_id": "87b1ca35-0f48-4cf9-845b-598a31c6e30a",
+        "hwid": "5b3b0c06e814ed314de4ca193110cbdee2e18e5f7ef8030bb1679cc4f8f36f70",
+        "device_name": "CCBOOT",
+        "os_info": "Microsoft Windows NT 10.0.19044.0",
+        "last_verified": "2026-03-08T11:13:21.189+00:00",
+        "is_active": true,
+        "created_at": "2026-03-04T23:09:13.726495+00:00"
+      },
+      {
+        "id": "dfaeb697-8319-45b9-bec0-cedde81f62a5",
+        "license_id": "39e2f9b7-c18f-4a29-b0d0-763c7fbf25b5",
+        "hwid": "8e06f02bbd9a99309ec169acb1633bfbe5ece4229092586c2ccebcc918e16836",
+        "device_name": "PC-09",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-09T03:00:09.527+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T01:33:38.158925+00:00"
+      },
+      {
+        "id": "11840a01-1351-47d1-9970-9303f1717e8f",
+        "license_id": "ec60b533-0209-4509-8dfe-75f99410bb40",
+        "hwid": "373c18a5ff5fa7b479b9cfb45d0cdf0bff48d502f8ad014dc3e6f691ddded1ea",
+        "device_name": "pc-09",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-08T22:43:08.825+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T14:43:59.041104+00:00"
+      },
+      {
+        "id": "6168509c-b1be-428f-a5b1-e52406d672d2",
+        "license_id": "ec60b533-0209-4509-8dfe-75f99410bb40",
+        "hwid": "5fbb2a171e64c97e7eb221783b9b5e397b4f2cfb5b1c82a7d15ab8d234966ce8",
+        "device_name": "PC-07",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-08T22:45:58.73+00:00",
+        "is_active": true,
+        "created_at": "2026-03-06T21:49:22.449996+00:00"
+      },
+      {
+        "id": "c7049334-266d-4ab7-98de-e5623b9c3496",
+        "license_id": "98d16078-c62b-4df2-85d6-88b498fbabe7",
+        "hwid": "e8ad5f3dbe5c114536403cd03c4d00ea144b7b8f46da95c577fa6198f49ffa71",
+        "device_name": "MASTER6",
+        "os_info": "Microsoft Windows NT 10.0.28000.0",
+        "last_verified": "2026-03-08T23:12:04.825+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T18:36:45.829693+00:00"
+      },
+      {
+        "id": "061ec5e8-f2e8-4a40-ac41-20d850b04ece",
+        "license_id": "49ca45da-92e7-48c7-889b-e9729a93a587",
+        "hwid": "7230dcb4abad347026c4e0dcfaaaf28cfcee52990d7d39e3d4cb2087ad2fc704",
+        "device_name": "PC-12",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-08T20:07:46.459+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T20:07:46.488294+00:00"
+      },
+      {
+        "id": "55dc34cb-1d91-4a73-8615-1c5913a86d30",
+        "license_id": "49ca45da-92e7-48c7-889b-e9729a93a587",
+        "hwid": "1e1869c0bf0d77a7d380eefcac0ecb2b8c86525f12f0ede6bc759f0560cfa537",
+        "device_name": "PC-06",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-09T00:13:34.844+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T21:05:48.542987+00:00"
+      },
+      {
+        "id": "d954b111-ff49-4357-a7ed-d21a9a69eabd",
+        "license_id": "f182bc53-62f7-4a05-9ce9-464e78dddf25",
+        "hwid": "878274a6a43ea1e958f865d00a7b9f92e21a293c1e83562d185a4ce556c16f2c",
+        "device_name": "PC-09",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T16:47:39.853+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T12:19:46.622581+00:00"
+      },
+      {
+        "id": "7b3be10e-2ab8-466f-964c-3cb3a38ce62a",
+        "license_id": "0faea0b9-f6d2-4952-a583-175d5bd9c838",
+        "hwid": "b981484343e1c0806be92dfa7f7e3618bdb68de893c048ae1685bcfe900dc325",
+        "device_name": "M14",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T20:22:03.837+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T20:22:03.866821+00:00"
+      },
+      {
+        "id": "f6996c71-5615-472e-ac40-356f169e9345",
+        "license_id": "20946b34-6086-412b-a38d-0d3fe955ab88",
+        "hwid": "04645a11ddb8df7222758fc579c5691a493bc126cc9dffdc447115a298ddcba9",
+        "device_name": "DESKTOP-SBPA624",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-09T01:00:17.211+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T02:16:51.599672+00:00"
+      },
+      {
+        "id": "93ca0577-0717-494d-be3d-503d0d67dcac",
+        "license_id": "f182bc53-62f7-4a05-9ce9-464e78dddf25",
+        "hwid": "d3a96ec8e916eaf00b948b0488cef88fb91e046b97c3c3e0bacc21f64bd71f11",
+        "device_name": "PC-03",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T17:32:37.677+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T10:20:37.213413+00:00"
+      },
+      {
+        "id": "84bf1c62-2dbc-49c0-a793-c5b1452cb51a",
+        "license_id": "87b1ca35-0f48-4cf9-845b-598a31c6e30a",
+        "hwid": "044b60d9b647913ae1b1f6bbd94ec397c2ad7820382f24d3a33257b82b141b01",
+        "device_name": "PC-08",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T17:50:45.095+00:00",
+        "is_active": true,
+        "created_at": "2026-03-05T11:51:14.501904+00:00"
+      },
+      {
+        "id": "f04f4aef-2b9d-40b9-99c9-4aef0db5c07f",
+        "license_id": "f182bc53-62f7-4a05-9ce9-464e78dddf25",
+        "hwid": "d507ede5816bf3d936a4609c9d27c44689aa381211e948ebb71c9b7415f42d86",
+        "device_name": "PC-11",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-08T21:20:03.852+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T09:38:44.31236+00:00"
+      },
+      {
+        "id": "5f379817-e9cc-4968-83c6-6adde342cdc0",
+        "license_id": "dffebad8-7e2d-46c6-80c3-d146aa59a83e",
+        "hwid": "4d914ea7682a75a0120300515b59496166b554bbe538a76e1b0b9cbfc11fc815",
+        "device_name": "VIPER2",
+        "os_info": "Microsoft Windows NT 10.0.22621.0",
+        "last_verified": "2026-03-08T21:46:46.448+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T10:05:08.430516+00:00"
+      },
+      {
+        "id": "be3d6bb7-0866-4a40-b69d-9a6473050598",
+        "license_id": "5cbf9764-4be7-4910-8bd9-1c1448b2de49",
+        "hwid": "71f80903ce29819e50103c21fbd98fb595a45ebbc73a07d98f0d67c682e25d51",
+        "device_name": "CCBOOT",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-07T22:31:59.147+00:00",
+        "is_active": true,
+        "created_at": "2026-03-05T21:12:59.080088+00:00"
+      },
+      {
+        "id": "30f78094-a081-461c-9e9a-2d71b32e18ea",
+        "license_id": "0faea0b9-f6d2-4952-a583-175d5bd9c838",
+        "hwid": "f392b40098d0108b78c0aac0dfb855661872b87048f4ea2ce6db67188bb253bb",
+        "device_name": "M06",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T19:15:34.937+00:00",
+        "is_active": true,
+        "created_at": "2026-03-08T16:51:24.422485+00:00"
+      },
+      {
+        "id": "3b6512e9-985e-4e7c-9291-284986c6010c",
+        "license_id": "f182bc53-62f7-4a05-9ce9-464e78dddf25",
+        "hwid": "e5e8181ca7ba9698ac6a1cf8b80061f29dd39358eee60dcbdee351aec4517343",
+        "device_name": "PC-14",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-09T02:03:58.541+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T07:56:15.361698+00:00"
+      },
+      {
+        "id": "ec38f035-6441-4ffa-a6d3-f0db47164522",
+        "license_id": "ec60b533-0209-4509-8dfe-75f99410bb40",
+        "hwid": "582009b5b868f97ee74e9cbc6f2d8e782740bc123dd90fdc2c3b28acfc099ed3",
+        "device_name": "PC-06",
+        "os_info": "Windows_NT 10.0.19045 x64",
+        "last_verified": "2026-03-08T18:11:35.077+00:00",
+        "is_active": true,
+        "created_at": "2026-03-06T20:47:39.454833+00:00"
+      },
+      {
+        "id": "c73f198f-d346-47f6-b57c-0e08af123042",
+        "license_id": "ec60b533-0209-4509-8dfe-75f99410bb40",
+        "hwid": "1c580629d48c63f912ba6e07497bca0b4d130774f61a14a5d17ec7da4b950b17",
+        "device_name": "PC-05",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T16:26:14.554+00:00",
+        "is_active": true,
+        "created_at": "2026-03-06T23:32:29.959637+00:00"
+      },
+      {
+        "id": "931e2b37-8b5d-4d23-9dd3-63c31d60d111",
+        "license_id": "f182bc53-62f7-4a05-9ce9-464e78dddf25",
+        "hwid": "f10c1f8f2a94436f510d0dd8fad8dd5d35b9ef27001f6612e662fae63fd269ce",
+        "device_name": "PC-06",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T19:53:45.436+00:00",
+        "is_active": true,
+        "created_at": "2026-03-07T07:56:09.384356+00:00"
+      },
+      {
+        "id": "7107f845-d07c-4269-9e01-82bf5e857fab",
+        "license_id": "ce005c80-55ca-414a-90cc-7c267c576e54",
+        "hwid": "49f591ab138fa56ffda3808d33ebf425817587a59f53bb73b275dcd355ec3067",
+        "device_name": "CCBOOT",
+        "os_info": "Microsoft Windows NT 10.0.19045.0",
+        "last_verified": "2026-03-08T02:18:16.425+00:00",
+        "is_active": true,
+        "created_at": "2026-03-06T19:15:03.221085+00:00"
+      }
+    ],
+    "blocked_ips": [
+      {
+        "id": "f302ad18-e1d0-4896-8f8f-41b9d32773da",
+        "ip_address": "197.42.19.14",
+        "reason": "حجب رباعي من مراقبة الأداة القديمة",
+        "blocked_by": null,
+        "created_at": "2026-03-09T02:38:19.117967+00:00",
+        "updated_at": "2026-03-09T02:38:19.117967+00:00"
+      },
+      {
+        "id": "3d4f0d43-8bb9-4432-a5af-b9db805d0e42",
+        "ip_address": "197.63.154.100",
+        "reason": "حجب رباعي من مراقبة الأداة القديمة",
+        "blocked_by": null,
+        "created_at": "2026-03-09T02:38:50.848389+00:00",
+        "updated_at": "2026-03-09T02:38:50.848389+00:00"
+      },
+      {
+        "id": "ed999974-9f94-4898-b94b-6b7c3b8bb50e",
+        "ip_address": "197.60.62.207",
+        "reason": "حجب رباعي من مراقبة الأداة القديمة",
+        "blocked_by": null,
+        "created_at": "2026-03-09T02:41:54.272047+00:00",
+        "updated_at": "2026-03-09T02:41:54.272047+00:00"
+      },
+      {
+        "id": "19077dfc-c4b0-4adf-9ed9-6eec5a04aafc",
+        "ip_address": "156.221.254.0",
+        "reason": "حجب رباعي من مراقبة الأداة القديمة",
+        "blocked_by": null,
+        "created_at": "2026-03-09T02:41:56.549371+00:00",
+        "updated_at": "2026-03-09T02:41:56.549371+00:00"
+      }
+    ],
+    "blocked_hwids": [
+      {
+        "id": "a627110f-63ff-47a7-86e5-17fef1713163",
+        "hwid": "64e6c764e10edc7d905d449f48f9ac8dbac67cd0df2d9e7d36e804bc",
+        "reason": "بسام محمد - جهاز محظور (مستخدم بدون ترخيص صالح)",
+        "blocked_by": null,
+        "created_at": "2026-03-08T23:25:29.330041+00:00"
+      },
+      {
+        "id": "77dc2abb-94e2-4a2c-8fa8-61e488aa1435",
+        "hwid": "64e6c764e10edc7d905d449f48f9ac8dbac67cd0df2d9e7d36",
+        "reason": "حجب من مراقبة الأداة القديمة — مفتاح: 3AO0-7PZ3-U2IG-72Z9 — IP: 197.42.19.14",
+        "blocked_by": null,
+        "created_at": "2026-03-09T01:15:49.762561+00:00"
+      },
+      {
+        "id": "e9f3ef01-c73a-4564-a036-46e3b1e64250",
+        "hwid": "e3517239e490b53c4c2e674e3e48f50a41084066da41cbca7e",
+        "reason": "حجب رباعي من مراقبة الأداة القديمة",
+        "blocked_by": null,
+        "created_at": "2026-03-09T02:41:54.412956+00:00"
+      },
+      {
+        "id": "f6aa9c31-98c3-48cb-9c36-e9e89cd427f4",
+        "hwid": "e9de78f3d1057233a2b7fccfebdb148156633d719bac69410e",
+        "reason": "حجب رباعي من مراقبة الأداة القديمة",
+        "blocked_by": null,
+        "created_at": "2026-03-09T02:41:56.637203+00:00"
+      },
+      {
+        "id": "a6ffab85-8bb0-49a8-b04b-b4e095682a7e",
+        "hwid": "32111ec1b493aa861bf898ae97ab29a7b6acb45a62ec2c2df2",
+        "reason": "حجب رباعي من مراقبة الأداة القديمة",
+        "blocked_by": null,
+        "created_at": "2026-03-09T02:42:08.132406+00:00"
+      },
+      {
+        "id": "1a646b3b-f13f-4b55-bc0e-bb42d9330bcd",
+        "hwid": "ea8dcbb04f1525894e6c4f9513d4371eac509198efca8f4a66",
+        "reason": "حجب رباعي من مراقبة الأداة القديمة",
+        "blocked_by": null,
+        "created_at": "2026-03-09T02:42:10.599241+00:00"
+      }
+    ],
+    "revoked_keys": [
+      {
+        "id": "5ac7c342-7682-4151-94c5-1398d076dac8",
+        "license_key": "3AO0-7PZ3-U2IG-72Z9",
+        "reason": "مفتاح قديم تم تجديده - بسام محمد (حذف يدوي)",
+        "revoked_at": "2026-03-08T23:02:10.340007+00:00"
+      },
+      {
+        "id": "94c3157f-155e-45d8-87a5-aa822093def9",
+        "license_key": "3AO0-7PZ3-U2IG-72Z99",
+        "reason": "حجب رباعي من مراقبة الأداة القديمة",
+        "revoked_at": "2026-03-09T02:38:19.267343+00:00"
+      },
+      {
+        "id": "ac0c88af-7952-44cb-9587-0c65b763235f",
+        "license_key": "PRIB-CI68-3VBX-C5NX",
+        "reason": "حجب رباعي من مراقبة الأداة القديمة",
+        "revoked_at": "2026-03-09T02:38:50.965971+00:00"
+      }
+    ],
+    "notification_settings": [
+      {
+        "id": "235a1363-89d8-434d-a69b-13b189b3a125",
+        "notification_days": [
+          3,
+          2,
+          1
+        ],
+        "notification_time": "00:00:00",
+        "email_subject": "تنبيه: اقتراب انتهاء ترخيصك",
+        "email_enabled": true,
+        "created_at": "2025-11-14T00:49:42.355125+00:00",
+        "updated_at": "2026-03-09T01:59:01.94113+00:00",
+        "telegram_message_template": "━━━━━━━━━━━━━━━━━━━━━\n{urgencyEmoji} *تنبيه انتهاء ترخيص*\n━━━━━━━━━━━━━━━━━━━━━\n\nمرحباً *{customerName}*\n\nترخيصك لمنتج *{productName}* سينتهي قريباً!\n\n🔑 المفتاح: `{licenseKey}`\n📅 تاريخ الانتهاء: {expiryDate}\n⏰ الأيام المتبقية: *{daysRemaining} يوم*\n\n━━━━━━━━━━━━━━━━━━━━━\n🔄 لتجديد الترخيص أرسل:\n/renew {licenseKey}\n━━━━━━━━━━━━━━━━━━━━━",
+        "kill_old_endpoint": false,
+        "kill_switch_response": "{\"valid\":false}"
+      }
+    ],
+    "rustdesk_ids": [
+      {
+        "id": "50197d0e-2c80-49ed-ad45-02888ba76f9f",
+        "customer_id": "e7ff2bd0-6c38-49ce-8a4b-ab4738e1e00c",
+        "rustdesk_id": "480 668 771",
+        "device_label": "CCBOOT",
+        "created_at": "2026-03-08T07:04:32.853387+00:00",
+        "updated_at": "2026-03-08T07:04:32.824+00:00"
+      },
+      {
+        "id": "ec4489eb-1661-4b1f-8f59-b30a52b1d82a",
+        "customer_id": "042dd047-5ca4-4e4a-b47b-d3be9a6c9ab5",
+        "rustdesk_id": "1838088174",
+        "device_label": "سسى بوت",
+        "created_at": "2026-03-08T07:29:08.755711+00:00",
+        "updated_at": "2026-03-08T07:29:08.755711+00:00"
+      },
+      {
+        "id": "440e869c-608a-4277-9e68-30e2ffcd37e4",
+        "customer_id": "977e18ec-b89a-41fc-8f4b-5335906e0013",
+        "rustdesk_id": "1360647064",
+        "device_label": "سسى بوت",
+        "created_at": "2026-03-08T11:14:02.240721+00:00",
+        "updated_at": "2026-03-08T11:14:02.240721+00:00"
+      },
+      {
+        "id": "fbdb5f57-68d0-4421-941c-600315acd3a3",
+        "customer_id": "5938965e-a30d-40e9-b20f-9a3819a70fb4",
+        "rustdesk_id": "40033310",
+        "device_label": "ccboot",
+        "created_at": "2026-03-08T19:59:58.410134+00:00",
+        "updated_at": "2026-03-08T19:59:58.410134+00:00"
+      }
+    ],
+    "telegram_links": [
+      {
+        "id": "799d0f66-3664-4ea8-ab88-8f5344472af0",
+        "customer_id": "f8f0f7d5-342c-4623-bc0c-75845e5e83c7",
+        "telegram_chat_id": 1481976887,
+        "created_at": "2026-03-03T20:51:45.610605+00:00",
+        "latitude": null,
+        "longitude": null,
+        "location_updated_at": null
+      },
+      {
+        "id": "2fc525b7-5c60-4d53-91b1-9d7c6e05f9dc",
+        "customer_id": "093d7564-5483-4ebf-af30-65ad5c0babdf",
+        "telegram_chat_id": 2119425156,
+        "created_at": "2026-03-03T22:12:43.984967+00:00",
+        "latitude": null,
+        "longitude": null,
+        "location_updated_at": null
+      },
+      {
+        "id": "07a0384c-c43c-421d-b313-7a9f499bbb86",
+        "customer_id": "5938965e-a30d-40e9-b20f-9a3819a70fb4",
+        "telegram_chat_id": 8701889259,
+        "created_at": "2026-03-04T00:21:38.329646+00:00",
+        "latitude": null,
+        "longitude": null,
+        "location_updated_at": null
+      },
+      {
+        "id": "d57d32fc-355b-4c19-ad57-06f1be60f302",
+        "customer_id": "042dd047-5ca4-4e4a-b47b-d3be9a6c9ab5",
+        "telegram_chat_id": 8000424814,
+        "created_at": "2026-03-04T04:18:47.266605+00:00",
+        "latitude": null,
+        "longitude": null,
+        "location_updated_at": null
+      },
+      {
+        "id": "1e139b85-f17b-4b9f-b17d-135de5413c4a",
+        "customer_id": "977e18ec-b89a-41fc-8f4b-5335906e0013",
+        "telegram_chat_id": 8218522920,
+        "created_at": "2026-03-05T00:11:08.830982+00:00",
+        "latitude": null,
+        "longitude": null,
+        "location_updated_at": null
+      },
+      {
+        "id": "978cdd04-637d-41ee-8f34-f146046a43cf",
+        "customer_id": "00b074bc-e361-454f-9f5c-6616531bf98f",
+        "telegram_chat_id": 1439429219,
+        "created_at": "2026-03-05T04:36:27.60469+00:00",
+        "latitude": null,
+        "longitude": null,
+        "location_updated_at": null
+      },
+      {
+        "id": "542e9b53-f2a3-4e3e-9041-4cf4b919e1d9",
+        "customer_id": "e83ae9b7-6f7f-4e0d-aca6-2a6188858c00",
+        "telegram_chat_id": 1293177761,
+        "created_at": "2026-03-05T15:01:57.962525+00:00",
+        "latitude": null,
+        "longitude": null,
+        "location_updated_at": null
+      },
+      {
+        "id": "430c243f-6dfe-4e47-845e-1b34be40b762",
+        "customer_id": "e7ff2bd0-6c38-49ce-8a4b-ab4738e1e00c",
+        "telegram_chat_id": 1075376868,
+        "created_at": "2026-03-06T00:06:57.883926+00:00",
+        "latitude": null,
+        "longitude": null,
+        "location_updated_at": null
+      },
+      {
+        "id": "0f9e8efc-1725-4183-a477-77ea0982131c",
+        "customer_id": "08a955b7-27df-4a27-a249-d4e0baa2699c",
+        "telegram_chat_id": 2093028388,
+        "created_at": "2026-03-06T19:45:56.004292+00:00",
+        "latitude": null,
+        "longitude": null,
+        "location_updated_at": null
+      },
+      {
+        "id": "86b6639a-5aee-4215-af2e-1966b48c2e83",
+        "customer_id": "9ff2b13c-11a0-4164-b367-8a809a5e9407",
+        "telegram_chat_id": 6663013874,
+        "created_at": "2026-03-07T20:46:54.987184+00:00",
+        "latitude": null,
+        "longitude": null,
+        "location_updated_at": null
+      },
+      {
+        "id": "be0c175b-75c2-4ae8-8ea3-7962054feffa",
+        "customer_id": "63b6344e-4fad-4010-b06a-4b0ebffb0af3",
+        "telegram_chat_id": 865014163,
+        "created_at": "2026-03-07T20:57:10.597715+00:00",
+        "latitude": null,
+        "longitude": null,
+        "location_updated_at": null
+      },
+      {
+        "id": "88735ba3-014b-44ba-bf36-e5106ace4daa",
+        "customer_id": "2a014d96-0c3d-4819-a044-d25321238d44",
+        "telegram_chat_id": 7294439935,
+        "created_at": "2026-03-07T21:08:43.443878+00:00",
+        "latitude": null,
+        "longitude": null,
+        "location_updated_at": null
+      },
+      {
+        "id": "cb50aa22-3860-4960-9a35-afa2d3c0672b",
+        "customer_id": "33fea5da-9797-420b-938f-182d1f907b13",
+        "telegram_chat_id": 7240776255,
+        "created_at": "2026-03-07T23:02:20.785229+00:00",
+        "latitude": null,
+        "longitude": null,
+        "location_updated_at": null
+      },
+      {
+        "id": "4a4b8706-77c0-4893-8cf2-a203ff731c48",
+        "customer_id": "b73f9a68-87c8-4d78-acec-2bdc32020e43",
+        "telegram_chat_id": 1280930068,
+        "created_at": "2026-03-08T00:30:55.421998+00:00",
+        "latitude": null,
+        "longitude": null,
+        "location_updated_at": null
+      }
+    ]
+  }
+}
