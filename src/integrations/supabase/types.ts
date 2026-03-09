@@ -733,6 +733,7 @@ export type Database = {
         Returns: {
           expires_at: string
           is_active: boolean
+          key_prefix: string
           user_id: string
         }[]
       }
