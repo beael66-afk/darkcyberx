@@ -205,6 +205,8 @@ export default function ApiCredentials() {
   const [deleteKeyId, setDeleteKeyId] = useState<string | null>(null);
   const [killOldEndpoint, setKillOldEndpoint] = useState(false);
   const [killSwitchLoading, setKillSwitchLoading] = useState(false);
+  const [killSwitchResponse, setKillSwitchResponse] = useState('{"valid":false,"error":"License not found","force_shutdown":true}');
+  const [killSwitchResponseSaving, setKillSwitchResponseSaving] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -352,10 +354,13 @@ export default function ApiCredentials() {
   const fetchKillSwitch = async () => {
     const { data } = await supabase
       .from('notification_settings')
-      .select('kill_old_endpoint')
+      .select('kill_old_endpoint, kill_switch_response')
       .limit(1)
       .single();
-    if (data) setKillOldEndpoint(data.kill_old_endpoint ?? false);
+    if (data) {
+      setKillOldEndpoint(data.kill_old_endpoint ?? false);
+      if (data.kill_switch_response) setKillSwitchResponse(data.kill_switch_response);
+    }
   };
 
   const toggleKillSwitch = async (value: boolean) => {
@@ -370,13 +375,34 @@ export default function ApiCredentials() {
       toast({
         title: value ? "🔴 تم إيقاف الـ Endpoint القديم" : "🟢 تم تشغيل الـ Endpoint القديم",
         description: value
-          ? "أي طلب للأداة القديمة سيحصل على force_shutdown فوراً"
+          ? "أي طلب للأداة القديمة سيحصل على الرد المخصص"
           : "الـ Endpoint القديم يعمل مجدداً",
       });
     } catch (error) {
       toast({ title: "خطأ", description: "فشل تغيير الإعداد", variant: "destructive" });
     } finally {
       setKillSwitchLoading(false);
+    }
+  };
+
+  const saveKillSwitchResponse = async () => {
+    // Validate JSON first
+    try { JSON.parse(killSwitchResponse); } catch {
+      toast({ title: "خطأ", description: "الرد المخصص ليس JSON صالح", variant: "destructive" });
+      return;
+    }
+    setKillSwitchResponseSaving(true);
+    try {
+      const { error } = await supabase
+        .from('notification_settings')
+        .update({ kill_switch_response: killSwitchResponse })
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+      if (error) throw error;
+      toast({ title: "✅ تم الحفظ", description: "تم حفظ الرد المخصص بنجاح" });
+    } catch {
+      toast({ title: "خطأ", description: "فشل حفظ الرد المخصص", variant: "destructive" });
+    } finally {
+      setKillSwitchResponseSaving(false);
     }
   };
 
@@ -464,7 +490,7 @@ export default function ApiCredentials() {
                 <CardTitle className="text-base">مفتاح إيقاف الـ Endpoint القديم</CardTitle>
                 <CardDescription className="mt-1">
                   {killOldEndpoint
-                    ? "🔴 الـ Endpoint القديم موقوف — أي أداة قديمة تحصل على force_shutdown فوراً"
+                    ? "🔴 الـ Endpoint القديم موقوف — أي أداة قديمة تحصل على الرد المخصص فوراً"
                     : "🟢 الـ Endpoint القديم يعمل — يمكن للأدوات القديمة الاتصال به حالياً"
                   }
                 </CardDescription>
@@ -482,7 +508,7 @@ export default function ApiCredentials() {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div className="p-3 bg-muted rounded-lg">
               <p className="font-medium mb-1">🔴 Endpoint قديم (للأداة القديمة)</p>
@@ -491,6 +517,41 @@ export default function ApiCredentials() {
             <div className="p-3 bg-muted rounded-lg">
               <p className="font-medium mb-1">🟢 Endpoint جديد (للأداة الجديدة)</p>
               <code className="text-xs text-muted-foreground break-all">.../functions/v1/validate-v2</code>
+            </div>
+          </div>
+          {/* Custom kill switch response */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">الرد المخصص عند الإيقاف (JSON)</Label>
+            <p className="text-xs text-muted-foreground">
+              هذا الرد هو اللي بيرجع للأداة القديمة لما تحاول تتصل — اكتب أي رد يخليها توقف (مثل: License not found أو Invalid key).
+            </p>
+            <div className="flex gap-2">
+              <textarea
+                className="flex-1 min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm font-mono resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                value={killSwitchResponse}
+                onChange={(e) => setKillSwitchResponse(e.target.value)}
+                placeholder='{"valid":false,"error":"License not found"}'
+                dir="ltr"
+              />
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <Button size="sm" variant="outline" onClick={() => setKillSwitchResponse('{"valid":false,"error":"License not found"}')}>
+                License not found
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setKillSwitchResponse('{"valid":false,"error":"Invalid license key","force_shutdown":true}')}>
+                Invalid + Shutdown
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setKillSwitchResponse('{"valid":false}')}>
+                فقط valid: false
+              </Button>
+              <Button
+                size="sm"
+                onClick={saveKillSwitchResponse}
+                disabled={killSwitchResponseSaving}
+                className="mr-auto"
+              >
+                {killSwitchResponseSaving ? "جاري الحفظ..." : "حفظ الرد"}
+              </Button>
             </div>
           </div>
         </CardContent>

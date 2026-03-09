@@ -349,6 +349,7 @@ export type Database = {
           email_subject: string
           id: string
           kill_old_endpoint: boolean
+          kill_switch_response: string | null
           notification_days: number[]
           notification_time: string
           telegram_message_template: string | null
@@ -360,6 +361,7 @@ export type Database = {
           email_subject?: string
           id?: string
           kill_old_endpoint?: boolean
+          kill_switch_response?: string | null
           notification_days?: number[]
           notification_time?: string
           telegram_message_template?: string | null
@@ -371,6 +373,7 @@ export type Database = {
           email_subject?: string
           id?: string
           kill_old_endpoint?: boolean
+          kill_switch_response?: string | null
           notification_days?: number[]
           notification_time?: string
           telegram_message_template?: string | null
