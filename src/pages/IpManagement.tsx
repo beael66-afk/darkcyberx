@@ -526,6 +526,45 @@ const IpManagement = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const queryClient = useQueryClient();
 
+  // Live updates: try realtime first, and polling (refetchInterval) is already enabled as a fallback
+  useEffect(() => {
+    const channel = supabase
+      .channel("ip-management-live")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "logs" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["ip-activity"] });
+          if (selectedIp?.ip_address) {
+            queryClient.invalidateQueries({ queryKey: ["ip-logs", selectedIp.ip_address] });
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "blocked_ips" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["blocked-ips"] });
+          queryClient.invalidateQueries({ queryKey: ["ip-activity"] });
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "devices" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["ip-activity"] });
+          if (selectedIp?.ip_address) {
+            queryClient.invalidateQueries({ queryKey: ["ip-logs", selectedIp.ip_address] });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient, selectedIp?.ip_address]);
+
   // Fetch blocked IPs
   const { data: blockedIps, isLoading: blockedLoading } = useQuery({
     queryKey: ["blocked-ips"],
