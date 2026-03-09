@@ -27,6 +27,7 @@ const IpManagement = lazy(() => import("./pages/IpManagement"));
 const BlockedHwids = lazy(() => import("./pages/BlockedHwids"));
 const Alerts = lazy(() => import("./pages/Alerts"));
 const LegacyMonitor = lazy(() => import("./pages/LegacyMonitor"));
+const ApiIntegration = lazy(() => import("./pages/ApiIntegration"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 
@@ -81,6 +82,7 @@ const App = () => (
               <Route path="/alerts" element={<Alerts />} />
               <Route path="/legacy-monitor" element={<LegacyMonitor />} />
               <Route path="/rustdesk-ids" element={<RustDeskIds />} />
+              <Route path="/api-integration" element={<ApiIntegration />} />
               <Route path="/settings" element={<Settings />} />
             </Route>
             
