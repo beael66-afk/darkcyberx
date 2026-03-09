@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +41,7 @@ import {
   Users,
   ShieldX,
   Cpu,
+  PauseCircle,
 } from "lucide-react";
 import { format, subDays, startOfDay } from "date-fns";
 import { arSA } from "date-fns/locale";
@@ -73,6 +74,7 @@ export default function LegacyMonitor() {
   const [blockDialog, setBlockDialog] = useState<{ ip: string; reason: string } | null>(null);
   const [blockAllDialog, setBlockAllDialog] = useState(false);
   const [blockHwidDialog, setBlockHwidDialog] = useState<{ hwid: string; reason: string } | null>(null);
+  const [suspendDialog, setSuspendDialog] = useState<{ licenseKey: string; licenseId: string } | null>(null);
 
   // Fetch legacy tool logs
   const { data: logs = [], isLoading, refetch } = useQuery({
@@ -104,6 +106,51 @@ export default function LegacyMonitor() {
     queryFn: async () => {
       const { data } = await supabase.from("blocked_hwids").select("hwid");
       return (data ?? []).map((r) => r.hwid);
+    },
+  });
+
+  // Fetch license statuses for keys seen in logs
+  const { data: licenseStatuses = {} } = useQuery({
+    queryKey: ["legacy-license-statuses"],
+    queryFn: async () => {
+      const { data: logsData } = await supabase
+        .from("logs")
+        .select("description")
+        .eq("entity_type", "legacy_tool")
+        .limit(500);
+      const keys = [
+        ...new Set(
+          (logsData ?? [])
+            .map((l) => parseDescription(l.description).licenseKey)
+            .filter(Boolean) as string[]
+        ),
+      ];
+      if (keys.length === 0) return {};
+      const { data } = await supabase
+        .from("licenses")
+        .select("id, license_key, status")
+        .in("license_key", keys);
+      const map: Record<string, { id: string; status: string }> = {};
+      (data ?? []).forEach((l) => { map[l.license_key] = { id: l.id, status: l.status ?? "active" }; });
+      return map;
+    },
+  });
+
+  const suspendLicenseMutation = useMutation({
+    mutationFn: async ({ licenseId }: { licenseId: string; licenseKey: string }) => {
+      const { error } = await supabase
+        .from("licenses")
+        .update({ status: "suspended" })
+        .eq("id", licenseId);
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => {
+      toast({ title: "⛔ تم إيقاف الترخيص", description: `المفتاح: ${vars.licenseKey}` });
+      queryClient.invalidateQueries({ queryKey: ["legacy-license-statuses"] });
+      setSuspendDialog(null);
+    },
+    onError: (e: Error) => {
+      toast({ title: "خطأ", description: e.message, variant: "destructive" });
     },
   });
 
@@ -364,9 +411,34 @@ export default function LegacyMonitor() {
                       </TableCell>
                       <TableCell>
                         {parsed.licenseKey && parsed.licenseKey !== "unknown" ? (
-                          <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
-                            {parsed.licenseKey}
-                          </code>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
+                              {parsed.licenseKey}
+                            </code>
+                            {(() => {
+                              const licInfo = licenseStatuses[parsed.licenseKey];
+                              if (!licInfo) return null;
+                              if (licInfo.status === "suspended") {
+                                return (
+                                  <Badge variant="destructive" className="text-xs gap-1 shrink-0">
+                                    <PauseCircle className="h-3 w-3" />
+                                    موقوف
+                                  </Badge>
+                                );
+                              }
+                              return (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-6 text-xs px-2 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground shrink-0"
+                                  onClick={() => setSuspendDialog({ licenseKey: parsed.licenseKey!, licenseId: licInfo.id })}
+                                >
+                                  <PauseCircle className="h-3 w-3 ml-1" />
+                                  إيقاف
+                                </Button>
+                              );
+                            })()}
+                          </div>
                         ) : (
                           <span className="text-muted-foreground text-xs">غير محدد</span>
                         )}
@@ -511,6 +583,38 @@ export default function LegacyMonitor() {
             </Button>
             <Button variant="destructive" onClick={handleBlockAll}>
               حجب الكل
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Suspend License Dialog */}
+      <Dialog open={!!suspendDialog} onOpenChange={() => setSuspendDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <PauseCircle className="h-5 w-5" />
+              تأكيد إيقاف الترخيص
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">
+              سيتم تغيير حالة الترخيص إلى <strong>موقوف</strong> — لن يتمكن العميل من التفعيل بالأداة الجديدة أو تجديد الترخيص.
+            </p>
+            <code className="block bg-muted px-4 py-2 rounded text-sm font-mono text-center">
+              {suspendDialog?.licenseKey}
+            </code>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSuspendDialog(null)}>
+              إلغاء
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => suspendDialog && suspendLicenseMutation.mutate(suspendDialog)}
+              disabled={suspendLicenseMutation.isPending}
+            >
+              {suspendLicenseMutation.isPending ? "جاري الإيقاف..." : "تأكيد الإيقاف"}
             </Button>
           </DialogFooter>
         </DialogContent>
