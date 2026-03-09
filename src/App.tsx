@@ -26,6 +26,7 @@ const RustDeskIds = lazy(() => import("./pages/RustDeskIds"));
 const IpManagement = lazy(() => import("./pages/IpManagement"));
 const BlockedHwids = lazy(() => import("./pages/BlockedHwids"));
 const Alerts = lazy(() => import("./pages/Alerts"));
+const LegacyMonitor = lazy(() => import("./pages/LegacyMonitor"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 
@@ -78,6 +79,7 @@ const App = () => (
               <Route path="/ip-management" element={<IpManagement />} />
               <Route path="/blocked-hwids" element={<BlockedHwids />} />
               <Route path="/alerts" element={<Alerts />} />
+              <Route path="/legacy-monitor" element={<LegacyMonitor />} />
               <Route path="/rustdesk-ids" element={<RustDeskIds />} />
               <Route path="/settings" element={<Settings />} />
             </Route>
