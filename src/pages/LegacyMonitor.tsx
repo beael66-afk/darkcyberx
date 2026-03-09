@@ -688,7 +688,7 @@ export default function LegacyMonitor() {
       <Dialog open={!!quadUnblockDialog} onOpenChange={() => setQuadUnblockDialog(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-emerald-600">
+            <DialogTitle className="flex items-center gap-2 text-primary">
               <Unlock className="h-5 w-5" />
               تأكيد فك الحجب الرباعي
             </DialogTitle>
@@ -696,16 +696,16 @@ export default function LegacyMonitor() {
           <div className="space-y-3 py-2">
             <p className="text-sm text-muted-foreground">سيتم <strong>رفع جميع القيود</strong> عن هذا العميل:</p>
             <div className="grid grid-cols-2 gap-2">
-              <div className="flex items-center gap-2 p-2 bg-emerald-500/10 rounded-lg text-xs text-emerald-600">
+              <div className="flex items-center gap-2 p-2 bg-primary/10 rounded-lg text-xs text-primary">
                 <Ban className="h-4 w-4 shrink-0" /> رفع حجب IP
               </div>
-              <div className="flex items-center gap-2 p-2 bg-emerald-500/10 rounded-lg text-xs text-emerald-600">
+              <div className="flex items-center gap-2 p-2 bg-primary/10 rounded-lg text-xs text-primary">
                 <Cpu className="h-4 w-4 shrink-0" /> رفع حجب HWID
               </div>
-              <div className="flex items-center gap-2 p-2 bg-emerald-500/10 rounded-lg text-xs text-emerald-600">
+              <div className="flex items-center gap-2 p-2 bg-primary/10 rounded-lg text-xs text-primary">
                 <PauseCircle className="h-4 w-4 shrink-0" /> تفعيل الترخيص
               </div>
-              <div className="flex items-center gap-2 p-2 bg-emerald-500/10 rounded-lg text-xs text-emerald-600">
+              <div className="flex items-center gap-2 p-2 bg-primary/10 rounded-lg text-xs text-primary">
                 <ShieldX className="h-4 w-4 shrink-0" /> استعادة المفتاح
               </div>
             </div>
@@ -718,9 +718,10 @@ export default function LegacyMonitor() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setQuadUnblockDialog(null)}>إلغاء</Button>
             <Button
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+              variant="default"
               onClick={() => quadUnblockDialog && quadUnblockMutation.mutate(quadUnblockDialog)}
               disabled={quadUnblockMutation.isPending}
+              className="font-bold"
             >
               <Unlock className="h-4 w-4 ml-1" />
               {quadUnblockMutation.isPending ? "جاري الرفع..." : "تأكيد فك الحجب"}
