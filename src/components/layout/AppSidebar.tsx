@@ -52,6 +52,7 @@ const menuItems = [
   { title: "إدارة الـ IP", url: "/ip-management", icon: Shield },
   { title: "حجب الأجهزة (HWID)", url: "/blocked-hwids", icon: Cpu },
   { title: "التنبيهات الأمنية", url: "/alerts", icon: ShieldAlert },
+  { title: "مراقبة الأداة القديمة", url: "/legacy-monitor", icon: RadioTower },
   { title: "الإعدادات", url: "/settings", icon: Settings },
 ];
 

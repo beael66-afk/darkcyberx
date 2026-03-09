@@ -79,6 +79,7 @@ const App = () => (
               <Route path="/ip-management" element={<IpManagement />} />
               <Route path="/blocked-hwids" element={<BlockedHwids />} />
               <Route path="/alerts" element={<Alerts />} />
+              <Route path="/legacy-monitor" element={<LegacyMonitor />} />
               <Route path="/rustdesk-ids" element={<RustDeskIds />} />
               <Route path="/settings" element={<Settings />} />
             </Route>
