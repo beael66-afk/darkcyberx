@@ -53,6 +53,36 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify(whInfo), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // Handle admin action: set webhook URL
+    if (body?.action === "set_webhook") {
+      const authHeader = req.headers.get("authorization");
+      if (!authHeader) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const adminClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+        { global: { headers: { Authorization: authHeader } } }
+      );
+      const { data: { user } } = await adminClient.auth.getUser();
+      if (!user) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
+      if (!isAdmin) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const webhookUrl = `${supabaseUrl}/functions/v1/telegram-bot`;
+      const setRes = await fetch(`${TELEGRAM_API}${TELEGRAM_BOT_TOKEN}/setWebhook`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: webhookUrl }),
+      });
+      const setData = await setRes.json();
+      return new Response(JSON.stringify(setData), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     // Handle admin action: notify customer of approval with optional license key
     if (body?.action === "notify_approval") {
       const { chat_id, name, license_key, max_devices } = body;
