@@ -349,6 +349,37 @@ export default function ApiCredentials() {
 
   // Keys are now always masked from the database for security
 
+  const fetchKillSwitch = async () => {
+    const { data } = await supabase
+      .from('notification_settings')
+      .select('kill_old_endpoint')
+      .limit(1)
+      .single();
+    if (data) setKillOldEndpoint(data.kill_old_endpoint ?? false);
+  };
+
+  const toggleKillSwitch = async (value: boolean) => {
+    setKillSwitchLoading(true);
+    try {
+      const { error } = await supabase
+        .from('notification_settings')
+        .update({ kill_old_endpoint: value })
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+      if (error) throw error;
+      setKillOldEndpoint(value);
+      toast({
+        title: value ? "🔴 تم إيقاف الـ Endpoint القديم" : "🟢 تم تشغيل الـ Endpoint القديم",
+        description: value
+          ? "أي طلب للأداة القديمة سيحصل على force_shutdown فوراً"
+          : "الـ Endpoint القديم يعمل مجدداً",
+      });
+    } catch (error) {
+      toast({ title: "خطأ", description: "فشل تغيير الإعداد", variant: "destructive" });
+    } finally {
+      setKillSwitchLoading(false);
+    }
+  };
+
   const copyToClipboard = (text: string, type: string) => {
     navigator.clipboard.writeText(text);
     setCopiedLang(type);
