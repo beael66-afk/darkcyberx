@@ -370,14 +370,18 @@ serve(async (req) => {
       }
     }
 
-    await supabase.from('logs').insert({
+    const { error: logError } = await supabase.from('logs').insert({
       entity_type: 'license',
       entity_id: license.id,
       action: 'verified',
-      description: `License validated via API v2`,
+      description: `License validated via API v2 - ${license.license_key}`,
       user_id: apiKeyData.user_id,
-      ip_address: clientIp,
+      ip_address: clientIp || 'unknown',
     });
+    
+    if (logError) {
+      console.error('Failed to insert validation log:', logError.message);
+    }
 
     return new Response(
       JSON.stringify({
