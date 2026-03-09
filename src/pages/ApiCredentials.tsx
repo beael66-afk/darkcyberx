@@ -205,6 +205,8 @@ export default function ApiCredentials() {
   const [deleteKeyId, setDeleteKeyId] = useState<string | null>(null);
   const [killOldEndpoint, setKillOldEndpoint] = useState(false);
   const [killSwitchLoading, setKillSwitchLoading] = useState(false);
+  const [killSwitchResponse, setKillSwitchResponse] = useState('{"valid":false,"error":"License not found","force_shutdown":true}');
+  const [killSwitchResponseSaving, setKillSwitchResponseSaving] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
