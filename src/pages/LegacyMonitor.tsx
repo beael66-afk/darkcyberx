@@ -40,6 +40,7 @@ import {
   AlertTriangle,
   Users,
   ShieldX,
+  Cpu,
 } from "lucide-react";
 import { format, subDays, startOfDay } from "date-fns";
 import { arSA } from "date-fns/locale";
@@ -71,6 +72,7 @@ export default function LegacyMonitor() {
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
   const [blockDialog, setBlockDialog] = useState<{ ip: string; reason: string } | null>(null);
   const [blockAllDialog, setBlockAllDialog] = useState(false);
+  const [blockHwidDialog, setBlockHwidDialog] = useState<{ hwid: string; reason: string } | null>(null);
 
   // Fetch legacy tool logs
   const { data: logs = [], isLoading, refetch } = useQuery({
@@ -96,6 +98,15 @@ export default function LegacyMonitor() {
     },
   });
 
+  // Fetch already blocked HWIDs
+  const { data: blockedHwids = [] } = useQuery({
+    queryKey: ["blocked-hwids-set"],
+    queryFn: async () => {
+      const { data } = await supabase.from("blocked_hwids").select("hwid");
+      return (data ?? []).map((r) => r.hwid);
+    },
+  });
+
   const blockIpMutation = useMutation({
     mutationFn: async ({ ip, reason }: { ip: string; reason: string }) => {
       const { error } = await supabase.from("blocked_ips").insert({
@@ -108,6 +119,24 @@ export default function LegacyMonitor() {
       toast({ title: "✅ تم الحجب", description: `تم حجب IP: ${vars.ip}` });
       queryClient.invalidateQueries({ queryKey: ["blocked-ips-set"] });
       setBlockDialog(null);
+    },
+    onError: (e: Error) => {
+      toast({ title: "خطأ", description: e.message, variant: "destructive" });
+    },
+  });
+
+  const blockHwidMutation = useMutation({
+    mutationFn: async ({ hwid, reason }: { hwid: string; reason: string }) => {
+      const { error } = await supabase.from("blocked_hwids").insert({
+        hwid,
+        reason: reason || "حجب من صفحة مراقبة الأداة القديمة",
+      });
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => {
+      toast({ title: "✅ تم حجب الجهاز", description: `HWID: ${vars.hwid.substring(0, 20)}...` });
+      queryClient.invalidateQueries({ queryKey: ["blocked-hwids-set"] });
+      setBlockHwidDialog(null);
     },
     onError: (e: Error) => {
       toast({ title: "خطأ", description: e.message, variant: "destructive" });
@@ -344,9 +373,32 @@ export default function LegacyMonitor() {
                       </TableCell>
                       <TableCell>
                         {parsed.hwid ? (
-                          <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
-                            {parsed.hwid.substring(0, 20)}...
-                          </code>
+                          <div className="flex items-center gap-2">
+                            <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
+                              {parsed.hwid.substring(0, 20)}...
+                            </code>
+                            {blockedHwids.includes(parsed.hwid) ? (
+                              <Badge variant="destructive" className="text-xs gap-1 shrink-0">
+                                <Cpu className="h-3 w-3" />
+                                محجوب
+                              </Badge>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-6 text-xs px-2 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground shrink-0"
+                                onClick={() =>
+                                  setBlockHwidDialog({
+                                    hwid: parsed.hwid!,
+                                    reason: `حجب من مراقبة الأداة القديمة — مفتاح: ${parsed.licenseKey ?? "غير محدد"} — IP: ${ip}`,
+                                  })
+                                }
+                              >
+                                <Cpu className="h-3 w-3 ml-1" />
+                                حجب HWID
+                              </Button>
+                            )}
+                          </div>
                         ) : (
                           <span className="text-muted-foreground text-xs">—</span>
                         )}
@@ -355,7 +407,7 @@ export default function LegacyMonitor() {
                         {isBlocked ? (
                           <Badge variant="destructive" className="text-xs gap-1">
                             <Shield className="h-3 w-3" />
-                            محجوب
+                            IP محجوب
                           </Badge>
                         ) : (
                           <Badge variant="secondary" className="text-xs gap-1">
@@ -381,7 +433,7 @@ export default function LegacyMonitor() {
                           </Button>
                         )}
                         {isBlocked && (
-                          <span className="text-xs text-muted-foreground">تم الحجب</span>
+                          <span className="text-xs text-muted-foreground">تم حجب الـ IP</span>
                         )}
                       </TableCell>
                     </TableRow>
@@ -459,6 +511,47 @@ export default function LegacyMonitor() {
             </Button>
             <Button variant="destructive" onClick={handleBlockAll}>
               حجب الكل
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Block HWID Dialog */}
+      <Dialog open={!!blockHwidDialog} onOpenChange={() => setBlockHwidDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Cpu className="h-5 w-5" />
+              تأكيد حجب الجهاز (HWID)
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">
+              سيتم حجب هذا الجهاز من جميع عمليات التفعيل (الأداة القديمة والجديدة):
+            </p>
+            <code className="block bg-muted px-4 py-2 rounded text-xs font-mono break-all text-center">
+              {blockHwidDialog?.hwid}
+            </code>
+            <Input
+              value={blockHwidDialog?.reason ?? ""}
+              onChange={(e) =>
+                setBlockHwidDialog((prev) => prev ? { ...prev, reason: e.target.value } : null)
+              }
+              placeholder="سبب الحجب..."
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBlockHwidDialog(null)}>
+              إلغاء
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() =>
+                blockHwidDialog && blockHwidMutation.mutate({ hwid: blockHwidDialog.hwid, reason: blockHwidDialog.reason })
+              }
+              disabled={blockHwidMutation.isPending}
+            >
+              {blockHwidMutation.isPending ? "جاري الحجب..." : "تأكيد حجب الجهاز"}
             </Button>
           </DialogFooter>
         </DialogContent>
