@@ -19,6 +19,7 @@ import {
   ShieldAlert,
   Cpu,
   RadioTower,
+  BookOpen,
 } from "lucide-react";
 import {
   Sidebar,
