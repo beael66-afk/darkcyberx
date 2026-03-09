@@ -354,10 +354,13 @@ export default function ApiCredentials() {
   const fetchKillSwitch = async () => {
     const { data } = await supabase
       .from('notification_settings')
-      .select('kill_old_endpoint')
+      .select('kill_old_endpoint, kill_switch_response')
       .limit(1)
       .single();
-    if (data) setKillOldEndpoint(data.kill_old_endpoint ?? false);
+    if (data) {
+      setKillOldEndpoint(data.kill_old_endpoint ?? false);
+      if (data.kill_switch_response) setKillSwitchResponse(data.kill_switch_response);
+    }
   };
 
   const toggleKillSwitch = async (value: boolean) => {
