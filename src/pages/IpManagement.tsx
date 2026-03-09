@@ -591,10 +591,25 @@ const IpManagement = () => {
       return Array.from(ipMap.entries())
         .map(([ip, { count, lastSeen, entityIds, attemptedKeys }]) => {
           let customerName: string | null = null;
+
           for (const id of entityIds) {
             const name = licenseToCustomer.get(id);
-            if (name) { customerName = name; break; }
+            if (name) {
+              customerName = name;
+              break;
+            }
           }
+
+          if (!customerName) {
+            for (const key of attemptedKeys) {
+              const name = licenseToCustomer.get(key);
+              if (name) {
+                customerName = name;
+                break;
+              }
+            }
+          }
+
           return {
             ip_address: ip,
             request_count: count,
