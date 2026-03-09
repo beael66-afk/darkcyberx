@@ -411,9 +411,34 @@ export default function LegacyMonitor() {
                       </TableCell>
                       <TableCell>
                         {parsed.licenseKey && parsed.licenseKey !== "unknown" ? (
-                          <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
-                            {parsed.licenseKey}
-                          </code>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
+                              {parsed.licenseKey}
+                            </code>
+                            {(() => {
+                              const licInfo = licenseStatuses[parsed.licenseKey];
+                              if (!licInfo) return null;
+                              if (licInfo.status === "suspended") {
+                                return (
+                                  <Badge variant="destructive" className="text-xs gap-1 shrink-0">
+                                    <PauseCircle className="h-3 w-3" />
+                                    موقوف
+                                  </Badge>
+                                );
+                              }
+                              return (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-6 text-xs px-2 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground shrink-0"
+                                  onClick={() => setSuspendDialog({ licenseKey: parsed.licenseKey!, licenseId: licInfo.id })}
+                                >
+                                  <PauseCircle className="h-3 w-3 ml-1" />
+                                  إيقاف
+                                </Button>
+                              );
+                            })()}
+                          </div>
                         ) : (
                           <span className="text-muted-foreground text-xs">غير محدد</span>
                         )}
