@@ -7,8 +7,8 @@ const corsHeaders = {
 };
 
 // ── Auto-block config ────────────────────────────────────────────────────────
-const AUTO_BLOCK_THRESHOLD = 30;    // block IP after N failed attempts
-const FORCE_SHUTDOWN_THRESHOLD = 15; // send force_shutdown:true after N failed attempts
+const AUTO_BLOCK_THRESHOLD = 30;
+const FORCE_SHUTDOWN_THRESHOLD = 15;
 
 // ── Rate limiting ────────────────────────────────────────────────────────────
 const rateLimitWindow = 60000;
@@ -44,7 +44,6 @@ function getClientIp(req: Request): string {
   return 'unknown';
 }
 
-// ── Check failed attempts count for this IP ───────────────────────────────────
 async function getFailedCount(
   supabase: ReturnType<typeof createClient>,
   clientIp: string
@@ -58,7 +57,6 @@ async function getFailedCount(
   return count ?? 0;
 }
 
-// ── Auto-block + force_shutdown helper ──────────────────────────────────────
 async function checkAndAutoBlock(
   supabase: ReturnType<typeof createClient>,
   clientIp: string
@@ -117,28 +115,12 @@ serve(async (req) => {
 
     const clientIp = getClientIp(req);
 
-    // ── Kill Switch: if old endpoint is disabled, reject all requests ─────────
-    const { data: settings } = await supabase
-      .from('notification_settings')
-      .select('kill_old_endpoint')
-      .limit(1)
-      .single();
-
-    if (settings?.kill_old_endpoint === true) {
-      console.warn(`[KILL SWITCH] Old endpoint blocked request from ${clientIp}`);
-      return new Response(
-        JSON.stringify({ error: 'Service discontinued. Please update your tool.', valid: false, force_shutdown: true }),
-        { status: 410, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // ── HWID Block Check (FIRST — before everything) ──────────────────────────
-    // Read body early to extract hwid for immediate hardware-level blocking
+    // ── HWID Block Check ──────────────────────────────────────────────────────
     let rawBody: Record<string, unknown> = {};
     try {
       const cloned = req.clone();
       rawBody = await cloned.json();
-    } catch { /* ignore parse errors here, handled later */ }
+    } catch { /* ignore */ }
 
     const earlyHwid = rawBody?.hwid && typeof rawBody.hwid === 'string'
       ? (rawBody.hwid as string).slice(0, 255)
@@ -156,7 +138,7 @@ serve(async (req) => {
         supabase.from('logs').insert({
           entity_type: 'security',
           action: 'verified',
-          description: `جهاز محظور حاول التفعيل (HWID Block)`,
+          description: `جهاز محظور حاول التفعيل (HWID Block) - v2`,
           ip_address: clientIp,
         }).then(() => {}).catch(() => {});
         return new Response(
@@ -178,7 +160,7 @@ serve(async (req) => {
       supabase.from('logs').insert({
         entity_type: 'security',
         action: 'verified',
-        description: `Blocked IP attempted license validation`,
+        description: `Blocked IP attempted license validation (v2)`,
         ip_address: clientIp,
       }).then(() => {}).catch(() => {});
       return new Response(
@@ -189,11 +171,10 @@ serve(async (req) => {
 
     const apiKey = req.headers.get('x-api-key');
     if (!apiKey) {
-      // Fire log in background — respond immediately
       supabase.from('logs').insert({
         entity_type: 'security',
         action: 'verified',
-        description: 'محاولة تفعيل بدون مفتاح API',
+        description: 'محاولة تفعيل بدون مفتاح API (v2)',
         ip_address: clientIp,
       }).then(() => checkAndAutoBlock(supabase, clientIp)).catch(() => {});
       return new Response(
@@ -288,9 +269,6 @@ serve(async (req) => {
       );
     }
 
-    // ── Revoked Key Check ─────────────────────────────────────────────────────
-    // Keys that were deleted or regenerated are blacklisted here.
-    // Treat them as security threats (403) to trigger Auto-Block.
     const { data: revokedKey } = await supabase
       .from('revoked_keys')
       .select('id, reason')
@@ -305,9 +283,7 @@ serve(async (req) => {
         description: `محاولة تفعيل بمفتاح ملغى: ${license_key}`,
         ip_address: clientIp,
       });
-      // Trigger auto-block check in background (don't await)
       checkAndAutoBlock(supabase, clientIp).catch(() => {});
-      // Always return force_shutdown: true immediately for revoked keys
       return new Response(
         JSON.stringify({ error: 'Access denied', valid: false, force_shutdown: true }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -325,15 +301,12 @@ serve(async (req) => {
       .single();
 
     if (licenseError || !license) {
-      console.log('License validation failed: key not found');
-      // Fire log + auto-block in background — don't await to respond immediately
       supabase.from('logs').insert({
         entity_type: 'security',
         action: 'verified',
         description: `محاولة تفعيل بمفتاح غير موجود: ${license_key}`,
         ip_address: clientIp,
       }).then(() => checkAndAutoBlock(supabase, clientIp)).catch(() => {});
-      // Immediate force_shutdown for any unknown key — no delay
       return new Response(
         JSON.stringify({ error: 'License not found', valid: false, force_shutdown: true }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -341,7 +314,6 @@ serve(async (req) => {
     }
 
     if (license.status !== 'active') {
-      // Suspended/expired licenses → force shutdown immediately
       return new Response(
         JSON.stringify({
           error: `License is ${license.status}`,
@@ -374,11 +346,10 @@ serve(async (req) => {
         .maybeSingle();
 
       if (blockedDevice) {
-        console.warn(`Blocked device attempted validation: ${safeHwid.substring(0, 16)}...`);
         await supabase.from('logs').insert({
           entity_type: 'security',
           action: 'verified',
-          description: `Blocked device attempted license validation`,
+          description: `Blocked device attempted license validation (v2)`,
           ip_address: clientIp,
         });
         return new Response(
@@ -433,7 +404,7 @@ serve(async (req) => {
       entity_type: 'license',
       entity_id: license.id,
       action: 'verified',
-      description: `License validated via API`,
+      description: `License validated via API v2`,
       user_id: apiKeyData.user_id,
       ip_address: clientIp,
     });
@@ -454,7 +425,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error in validate-license function:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('Error in validate-v2 function:', error instanceof Error ? error.message : 'Unknown error');
     return new Response(
       JSON.stringify({ error: 'Internal server error', valid: false }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

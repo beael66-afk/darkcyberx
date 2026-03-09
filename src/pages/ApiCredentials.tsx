@@ -4,8 +4,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Copy, Check, Plus, Trash2, Power, PowerOff } from "lucide-react";
+import { Copy, Check, Plus, Trash2, Power, PowerOff, ShieldOff, Shield } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -202,15 +203,14 @@ export default function ApiCredentials() {
   const [newKeyName, setNewKeyName] = useState("");
   const [createdKey, setCreatedKey] = useState<string | null>(null);
   const [deleteKeyId, setDeleteKeyId] = useState<string | null>(null);
+  const [killOldEndpoint, setKillOldEndpoint] = useState(false);
+  const [killSwitchLoading, setKillSwitchLoading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchApiKeys();
-    
-    // Refresh data every 30 seconds to show updated last_used_at
+    fetchKillSwitch();
     const interval = setInterval(fetchApiKeys, 30000);
-    
-    // Refresh when user returns to the tab
     const handleVisibilityChange = () => {
       if (!document.hidden) {
         fetchApiKeys();
@@ -349,6 +349,37 @@ export default function ApiCredentials() {
 
   // Keys are now always masked from the database for security
 
+  const fetchKillSwitch = async () => {
+    const { data } = await supabase
+      .from('notification_settings')
+      .select('kill_old_endpoint')
+      .limit(1)
+      .single();
+    if (data) setKillOldEndpoint(data.kill_old_endpoint ?? false);
+  };
+
+  const toggleKillSwitch = async (value: boolean) => {
+    setKillSwitchLoading(true);
+    try {
+      const { error } = await supabase
+        .from('notification_settings')
+        .update({ kill_old_endpoint: value })
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+      if (error) throw error;
+      setKillOldEndpoint(value);
+      toast({
+        title: value ? "🔴 تم إيقاف الـ Endpoint القديم" : "🟢 تم تشغيل الـ Endpoint القديم",
+        description: value
+          ? "أي طلب للأداة القديمة سيحصل على force_shutdown فوراً"
+          : "الـ Endpoint القديم يعمل مجدداً",
+      });
+    } catch (error) {
+      toast({ title: "خطأ", description: "فشل تغيير الإعداد", variant: "destructive" });
+    } finally {
+      setKillSwitchLoading(false);
+    }
+  };
+
   const copyToClipboard = (text: string, type: string) => {
     navigator.clipboard.writeText(text);
     setCopiedLang(type);
@@ -419,6 +450,51 @@ export default function ApiCredentials() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Kill Switch Card */}
+      <Card className={killOldEndpoint ? "border-destructive" : "border-border"}>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {killOldEndpoint
+                ? <ShieldOff className="h-5 w-5 text-destructive" />
+                : <Shield className="h-5 w-5 text-primary" />
+              }
+              <div>
+                <CardTitle className="text-base">مفتاح إيقاف الـ Endpoint القديم</CardTitle>
+                <CardDescription className="mt-1">
+                  {killOldEndpoint
+                    ? "🔴 الـ Endpoint القديم موقوف — أي أداة قديمة تحصل على force_shutdown فوراً"
+                    : "🟢 الـ Endpoint القديم يعمل — يمكن للأدوات القديمة الاتصال به حالياً"
+                  }
+                </CardDescription>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground">
+                {killOldEndpoint ? "موقوف" : "يعمل"}
+              </span>
+              <Switch
+                checked={killOldEndpoint}
+                onCheckedChange={toggleKillSwitch}
+                disabled={killSwitchLoading}
+              />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="p-3 bg-muted rounded-lg">
+              <p className="font-medium mb-1">🔴 Endpoint قديم (للأداة القديمة)</p>
+              <code className="text-xs text-muted-foreground break-all">.../functions/v1/validate-license</code>
+            </div>
+            <div className="p-3 bg-muted rounded-lg">
+              <p className="font-medium mb-1">🟢 Endpoint جديد (للأداة الجديدة)</p>
+              <code className="text-xs text-muted-foreground break-all">.../functions/v1/validate-v2</code>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
