@@ -65,37 +65,7 @@ async function checkAndAutoBlock(
   const failedCount = await getFailedCount(supabase, clientIp);
   const forceShutdown = failedCount >= FORCE_SHUTDOWN_THRESHOLD;
 
-  if (failedCount >= AUTO_BLOCK_THRESHOLD) {
-    const { error } = await supabase
-      .from('blocked_ips')
-      .insert({
-        ip_address: clientIp,
-        reason: `تم الحجب تلقائياً — ${failedCount} محاولة فاشلة (Auto-Block)`,
-      });
-
-    if (!error) {
-      console.warn(`[AUTO-BLOCK] IP ${clientIp} blocked after ${failedCount} failed attempts`);
-      const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
-      const adminChatId = Deno.env.get('ADMIN_TELEGRAM_CHAT_ID');
-      if (botToken && adminChatId) {
-        const msg =
-          `🚫 *تم حجب IP تلقائياً*\n\n` +
-          `🌐 العنوان: \`${clientIp}\`\n` +
-          `🔢 المحاولات: *${failedCount}* محاولة فاشلة\n` +
-          `⏰ الوقت: ${new Date().toLocaleString('ar-EG')}\n\n` +
-          `يمكنك مراجعة وإلغاء الحجب من صفحة *إدارة الـ IP*.`;
-        await fetch(
-          `https://api.telegram.org/bot${botToken}/sendMessage`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: adminChatId, text: msg, parse_mode: 'Markdown' }),
-          }
-        ).catch(() => {});
-      }
-    }
-  }
-
+  // Auto-inserting into blocked_ips has been disabled to avoid blocking legitimate customers
   return { forceShutdown };
 }
 
