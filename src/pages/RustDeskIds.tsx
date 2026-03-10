@@ -8,8 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import {
-  Monitor, Search, Copy, Trash2, ExternalLink, RefreshCw, Users, Key, ChevronDown, ChevronRight,
+  Monitor, Search, Copy, Trash2, ExternalLink, RefreshCw, Users, Key, ChevronDown, ChevronRight, Plus, Pencil,
 } from "lucide-react";
+import RustDeskDeviceDialog from "@/components/rustdesk/RustDeskDeviceDialog";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -48,6 +49,8 @@ const getInitials = (name: string) =>
 const RustDeskIds = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [openCustomers, setOpenCustomers] = useState<Set<string>>(new Set());
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingDevice, setEditingDevice] = useState<RustDeskEntry | null>(null);
   const queryClient = useQueryClient();
 
   const toggleCustomer = (customerId: string) => {
@@ -85,6 +88,33 @@ const RustDeskIds = () => {
       toast.success("تم حذف الـ ID");
     },
     onError: () => toast.error("فشل الحذف"),
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: async (data: { id?: string; customer_id: string; rustdesk_id: string; device_label: string }) => {
+      if (data.id) {
+        const { error } = await supabase.from("rustdesk_ids").update({
+          customer_id: data.customer_id,
+          rustdesk_id: data.rustdesk_id,
+          device_label: data.device_label || null,
+        }).eq("id", data.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("rustdesk_ids").insert({
+          customer_id: data.customer_id,
+          rustdesk_id: data.rustdesk_id,
+          device_label: data.device_label || null,
+        });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["rustdesk-ids"] });
+      setDialogOpen(false);
+      setEditingDevice(null);
+      toast.success(editingDevice ? "تم تعديل الجهاز" : "تم إضافة الجهاز");
+    },
+    onError: () => toast.error("فشلت العملية"),
   });
 
   const copyText = (text: string, label: string) => {
@@ -145,10 +175,16 @@ const RustDeskIds = () => {
           </h1>
           <p className="text-muted-foreground mt-1">معرّفات الأجهزة للدعم عن بعد — مرتبة حسب العميل</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => refetch()}>
-          <RefreshCw className="h-4 w-4 ml-1" />
-          تحديث
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" onClick={() => { setEditingDevice(null); setDialogOpen(true); }}>
+            <Plus className="h-4 w-4 ml-1" />
+            إضافة جهاز
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
+            <RefreshCw className="h-4 w-4 ml-1" />
+            تحديث
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -307,6 +343,15 @@ const RustDeskIds = () => {
                               <ExternalLink className="h-3.5 w-3.5" />
                               ويب
                             </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 w-8 p-0"
+                              onClick={() => { setEditingDevice(entry); setDialogOpen(true); }}
+                              title="تعديل"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button
@@ -348,6 +393,14 @@ const RustDeskIds = () => {
           })}
         </div>
       )}
+
+      <RustDeskDeviceDialog
+        open={dialogOpen}
+        onOpenChange={(open) => { setDialogOpen(open); if (!open) setEditingDevice(null); }}
+        device={editingDevice}
+        onSave={(data) => saveMutation.mutate({ ...data, id: editingDevice?.id })}
+        isSaving={saveMutation.isPending}
+      />
     </div>
   );
 };
