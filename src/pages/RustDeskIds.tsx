@@ -49,6 +49,8 @@ const getInitials = (name: string) =>
 const RustDeskIds = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [openCustomers, setOpenCustomers] = useState<Set<string>>(new Set());
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingDevice, setEditingDevice] = useState<RustDeskEntry | null>(null);
   const queryClient = useQueryClient();
 
   const toggleCustomer = (customerId: string) => {
