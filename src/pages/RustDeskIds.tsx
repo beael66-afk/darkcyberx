@@ -8,8 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import {
-  Monitor, Search, Copy, Trash2, ExternalLink, RefreshCw, Users, Key, ChevronDown, ChevronRight,
+  Monitor, Search, Copy, Trash2, ExternalLink, RefreshCw, Users, Key, ChevronDown, ChevronRight, Plus, Pencil,
 } from "lucide-react";
+import RustDeskDeviceDialog from "@/components/rustdesk/RustDeskDeviceDialog";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
