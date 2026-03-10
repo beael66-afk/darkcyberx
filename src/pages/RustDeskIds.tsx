@@ -393,8 +393,15 @@ const RustDeskIds = () => {
           })}
         </div>
       )}
+
+      <RustDeskDeviceDialog
+        open={dialogOpen}
+        onOpenChange={(open) => { setDialogOpen(open); if (!open) setEditingDevice(null); }}
+        device={editingDevice}
+        onSave={(data) => saveMutation.mutate({ ...data, id: editingDevice?.id })}
+        isSaving={saveMutation.isPending}
+      />
     </div>
-  );
 };
 
 export default RustDeskIds;
