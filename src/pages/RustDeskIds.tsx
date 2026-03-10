@@ -343,6 +343,15 @@ const RustDeskIds = () => {
                               <ExternalLink className="h-3.5 w-3.5" />
                               ويب
                             </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 w-8 p-0"
+                              onClick={() => { setEditingDevice(entry); setDialogOpen(true); }}
+                              title="تعديل"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button
