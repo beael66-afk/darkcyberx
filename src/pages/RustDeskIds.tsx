@@ -90,6 +90,33 @@ const RustDeskIds = () => {
     onError: () => toast.error("فشل الحذف"),
   });
 
+  const saveMutation = useMutation({
+    mutationFn: async (data: { id?: string; customer_id: string; rustdesk_id: string; device_label: string }) => {
+      if (data.id) {
+        const { error } = await supabase.from("rustdesk_ids").update({
+          customer_id: data.customer_id,
+          rustdesk_id: data.rustdesk_id,
+          device_label: data.device_label || null,
+        }).eq("id", data.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("rustdesk_ids").insert({
+          customer_id: data.customer_id,
+          rustdesk_id: data.rustdesk_id,
+          device_label: data.device_label || null,
+        });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["rustdesk-ids"] });
+      setDialogOpen(false);
+      setEditingDevice(null);
+      toast.success(editingDevice ? "تم تعديل الجهاز" : "تم إضافة الجهاز");
+    },
+    onError: () => toast.error("فشلت العملية"),
+  });
+
   const copyText = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast.success(`تم نسخ ${label}`);
