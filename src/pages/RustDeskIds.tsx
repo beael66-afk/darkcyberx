@@ -175,10 +175,16 @@ const RustDeskIds = () => {
           </h1>
           <p className="text-muted-foreground mt-1">معرّفات الأجهزة للدعم عن بعد — مرتبة حسب العميل</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => refetch()}>
-          <RefreshCw className="h-4 w-4 ml-1" />
-          تحديث
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" onClick={() => { setEditingDevice(null); setDialogOpen(true); }}>
+            <Plus className="h-4 w-4 ml-1" />
+            إضافة جهاز
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
+            <RefreshCw className="h-4 w-4 ml-1" />
+            تحديث
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
