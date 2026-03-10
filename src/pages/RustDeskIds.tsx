@@ -402,6 +402,7 @@ const RustDeskIds = () => {
         isSaving={saveMutation.isPending}
       />
     </div>
+  );
 };
 
 export default RustDeskIds;
