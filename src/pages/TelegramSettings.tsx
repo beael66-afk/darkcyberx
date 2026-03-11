@@ -18,6 +18,7 @@ import {
   Copy,
   ExternalLink,
   MapPin,
+  UserPlus,
 } from "lucide-react";
 import {
   AlertDialog,
