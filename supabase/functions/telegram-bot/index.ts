@@ -9,6 +9,7 @@ const corsHeaders = {
 const TELEGRAM_API = "https://api.telegram.org/bot";
 const PRICE_PER_DAY = 10;
 const PAYMENT_NUMBER = "01009046911";
+const MAX_DELEGATES = 3;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -119,7 +120,6 @@ Deno.serve(async (req) => {
 
     // Handle admin action: proxy file download from Telegram (never expose token URL to client)
     if (body?.action === "get_file" && body?.file_id) {
-      // Require auth for this action to prevent unauthenticated access
       const authHeader = req.headers.get("authorization");
       if (!authHeader) {
         return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -143,7 +143,6 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ error: "File not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       const filePath = fileData.result.file_path;
-      // Proxy the file server-side — never return the token URL to the client
       const fileUrl = `https://api.telegram.org/file/bot${TELEGRAM_BOT_TOKEN}/${filePath}`;
       const downloadRes = await fetch(fileUrl);
       if (!downloadRes.ok) {
@@ -174,8 +173,8 @@ Deno.serve(async (req) => {
 
     const chatId = message.chat.id;
     const text = message.text?.trim() || "";
-    const photo = message.photo; // array of photo sizes or undefined
-    const location = message.location; // { latitude, longitude }
+    const photo = message.photo;
+    const location = message.location;
 
     // ── Handle location message (optional) ──────────────────────────
     if (location) {
@@ -183,7 +182,6 @@ Deno.serve(async (req) => {
       return new Response("OK", { status: 200 });
     }
 
-    // Handle message_type = new_chat_members (user just joined / opened chat)
     if (message?.new_chat_members || message?.chat?.type === "private" && !text && !photo) {
       await sendMainMenu(chatId, TELEGRAM_BOT_TOKEN, supabase);
       return new Response("OK", { status: 200 });
@@ -223,7 +221,6 @@ Deno.serve(async (req) => {
         await sendMessage(chatId, TELEGRAM_BOT_TOKEN, "❌ بريد إلكتروني غير صحيح. حاول مرة أخرى:");
         return new Response("OK", { status: 200 });
       }
-      // Check email validity first, then ask for days
       await handleRegistrationEmailStep(supabase, chatId, state.data?.name, text.toLowerCase(), TELEGRAM_BOT_TOKEN);
       return new Response("OK", { status: 200 });
     }
@@ -316,7 +313,6 @@ Deno.serve(async (req) => {
     if (state?.step === "awaiting_days") {
       if (/^\d+$/.test(text)) {
         await handleDaysInput(supabase, chatId, parseInt(text), state.data?.licenseKey, TELEGRAM_BOT_TOKEN);
-        // Don't clear state yet - next step is awaiting_receipt (set inside handleDaysInput)
         return new Response("OK", { status: 200 });
       }
       await sendMessage(chatId, TELEGRAM_BOT_TOKEN, "⚠️ أدخل رقم صحيح (عدد الأيام):");
@@ -329,7 +325,27 @@ Deno.serve(async (req) => {
       return new Response("OK", { status: 200 });
     }
 
-    // No state - greet automatically as if they pressed /start
+    // ── Delegate flow states ──
+    if (state?.step === "awaiting_delegate_name") {
+      if (!text) {
+        await sendMessage(chatId, TELEGRAM_BOT_TOKEN, "⚠️ أدخل اسم الشريك:");
+        return new Response("OK", { status: 200 });
+      }
+      await handleDelegateNameInput(supabase, chatId, text, TELEGRAM_BOT_TOKEN);
+      return new Response("OK", { status: 200 });
+    }
+
+    if (state?.step === "awaiting_delegate_chatid") {
+      if (!text || !/^-?\d+$/.test(text.trim())) {
+        await sendMessage(chatId, TELEGRAM_BOT_TOKEN, "⚠️ أرسل معرف التليجرام (رقم). يمكن للشريك معرفة معرفه بإرسال /start لبوت @userinfobot");
+        return new Response("OK", { status: 200 });
+      }
+      await handleDelegateChatIdInput(supabase, chatId, parseInt(text.trim()), state.data, TELEGRAM_BOT_TOKEN);
+      await clearState(supabase, chatId);
+      return new Response("OK", { status: 200 });
+    }
+
+    // No state - greet automatically
     await sendMainMenu(chatId, TELEGRAM_BOT_TOKEN, supabase);
   } catch (error) {
     console.error("Telegram bot error:", error);
@@ -385,7 +401,6 @@ async function sendLocationRequestKeyboard(chatId: number, token: string) {
 }
 
 async function handleLocationReceived(supabase: any, chatId: number, latitude: number, longitude: number, token: string) {
-  // Save location to telegram_links if link exists, otherwise just store in state for later
   const { data: existingLink } = await supabase
     .from("telegram_links")
     .select("id")
@@ -402,7 +417,6 @@ async function handleLocationReceived(supabase: any, chatId: number, latitude: n
       })
       .eq("telegram_chat_id", chatId);
   } else {
-    // Store in state until they link/register
     await supabase
       .from("telegram_user_states")
       .upsert({
@@ -413,7 +427,6 @@ async function handleLocationReceived(supabase: any, chatId: number, latitude: n
       });
   }
 
-  // Remove the location keyboard and proceed to main menu
   await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -428,46 +441,141 @@ async function handleLocationReceived(supabase: any, chatId: number, latitude: n
   await sendMainMenu(chatId, token, supabase);
 }
 
+// ─── Customer Resolution (owner or delegate) ──────────
+// Returns { customer_id, is_delegate, owner_name? } or null
+async function resolveCustomerByChatId(supabase: any, chatId: number): Promise<{ customer_id: string; is_delegate: boolean; owner_name?: string } | null> {
+  // First check direct link (owner)
+  const { data: directLink } = await supabase
+    .from("telegram_links")
+    .select("customer_id")
+    .eq("telegram_chat_id", chatId)
+    .maybeSingle();
+
+  if (directLink) {
+    return { customer_id: directLink.customer_id, is_delegate: false };
+  }
+
+  // Check if this chat is a delegate
+  const { data: delegateLinks } = await supabase
+    .from("telegram_delegates")
+    .select("owner_customer_id, customers!telegram_delegates_owner_customer_id_fkey(name)")
+    .eq("delegate_chat_id", chatId);
+
+  if (delegateLinks && delegateLinks.length > 0) {
+    // If delegate to only one customer, use that
+    if (delegateLinks.length === 1) {
+      return {
+        customer_id: delegateLinks[0].owner_customer_id,
+        is_delegate: true,
+        owner_name: delegateLinks[0].customers?.name,
+      };
+    }
+    // Multiple - will be handled by caller with account selection
+    return null; // special case handled separately
+  }
+
+  return null;
+}
+
+// Get all customer_ids this chat has access to (as owner or delegate)
+async function getAllCustomerAccess(supabase: any, chatId: number): Promise<Array<{ customer_id: string; customer_name: string; is_delegate: boolean }>> {
+  const results: Array<{ customer_id: string; customer_name: string; is_delegate: boolean }> = [];
+
+  // Direct link
+  const { data: directLink } = await supabase
+    .from("telegram_links")
+    .select("customer_id, customers(name)")
+    .eq("telegram_chat_id", chatId)
+    .maybeSingle();
+
+  if (directLink) {
+    results.push({
+      customer_id: directLink.customer_id,
+      customer_name: directLink.customers?.name || "غير معروف",
+      is_delegate: false,
+    });
+  }
+
+  // Delegate links
+  const { data: delegateLinks } = await supabase
+    .from("telegram_delegates")
+    .select("owner_customer_id, customers!telegram_delegates_owner_customer_id_fkey(name)")
+    .eq("delegate_chat_id", chatId);
+
+  if (delegateLinks) {
+    for (const dl of delegateLinks) {
+      results.push({
+        customer_id: dl.owner_customer_id,
+        customer_name: dl.customers?.name || "غير معروف",
+        is_delegate: true,
+      });
+    }
+  }
+
+  return results;
+}
+
 // ─── Main Menu ─────────────────────────────────────────
 async function sendMainMenu(chatId: number, token: string, supabase?: any) {
-  // Check if this chat is already linked to a customer
   let isLinked = false;
   let customerName = "";
+  let hasMultipleAccounts = false;
+  let isDelegate = false;
+
   if (supabase) {
-    const { data: link } = await supabase
-      .from("telegram_links")
-      .select("customer_id, customers(name)")
-      .eq("telegram_chat_id", chatId)
-      .maybeSingle();
-    if (link) {
+    const allAccess = await getAllCustomerAccess(supabase, chatId);
+    if (allAccess.length > 0) {
       isLinked = true;
-      customerName = link.customers?.name || "";
+      hasMultipleAccounts = allAccess.length > 1;
+      // Use first owned account, or first delegate account
+      const ownAccount = allAccess.find(a => !a.is_delegate);
+      if (ownAccount) {
+        customerName = ownAccount.customer_name;
+      } else {
+        customerName = allAccess[0].customer_name;
+        isDelegate = true;
+      }
     }
   }
 
   if (isLinked) {
-    // Registered user menu - no register/link buttons
-    const keyboard = {
-      inline_keyboard: [
-        [{ text: "📋 عرض تراخيصي", callback_data: "my_licenses" }],
-        [{ text: "🔄 تجديد ترخيص", callback_data: "renew" }],
-        [{ text: "🔑 ريسيت المفتاح (مسح الأجهزة)", callback_data: "reset_key" }],
-        [{ text: "🖥️ تسجيل / تعديل ID جهاز", callback_data: "rustdesk_register" }],
-        [{ text: "⬇️ تحميل RustDesk", callback_data: "download_rustdesk" }],
-        [{ text: "📍 مشاركة موقعي (اختياري)", callback_data: "share_location" }],
-        [{ text: "❓ المساعدة", callback_data: "help" }],
-      ],
-    };
+    const keyboard: any[][] = [];
+    
+    if (hasMultipleAccounts) {
+      keyboard.push([{ text: "🔀 اختيار حساب للتحكم", callback_data: "switch_account" }]);
+    }
+    
+    keyboard.push(
+      [{ text: "📋 عرض تراخيصي", callback_data: "my_licenses" }],
+      [{ text: "🔄 تجديد ترخيص", callback_data: "renew" }],
+      [{ text: "🔑 ريسيت المفتاح (مسح الأجهزة)", callback_data: "reset_key" }],
+      [{ text: "🖥️ تسجيل / تعديل ID جهاز", callback_data: "rustdesk_register" }],
+      [{ text: "⬇️ تحميل RustDesk", callback_data: "download_rustdesk" }],
+    );
+
+    // Only show delegate management for owners (not delegates)
+    if (!isDelegate) {
+      keyboard.push([{ text: "👥 إدارة الشركاء", callback_data: "manage_delegates" }]);
+    }
+
+    keyboard.push(
+      [{ text: "📍 مشاركة موقعي (اختياري)", callback_data: "share_location" }],
+      [{ text: "❓ المساعدة", callback_data: "help" }],
+    );
+
+    const delegateNote = isDelegate ? `\n📌 _أنت شريك في حساب ${customerName}_` : "";
+    const multiNote = hasMultipleAccounts ? "\n🔀 _لديك وصول لعدة حسابات_" : "";
+
     await sendMessageWithKeyboard(chatId, token,
       "━━━━━━━━━━━━━━━━━━━━━\n" +
       `🤖 *أهلاً ${customerName}!*\n` +
-      "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+      "━━━━━━━━━━━━━━━━━━━━━\n" +
+      delegateNote + multiNote + "\n\n" +
       "اختر من القائمة أدناه:\n",
-      keyboard,
+      { inline_keyboard: keyboard },
       "Markdown"
     );
   } else {
-    // Unregistered user menu
     const keyboard = {
       inline_keyboard: [
         [{ text: "📝 تسجيل مستخدم جديد", callback_data: "register" }],
@@ -491,7 +599,6 @@ async function handleCallbackQuery(supabase: any, query: any, token: string) {
   const chatId = query.message.chat.id;
   const data = query.data;
 
-  // Answer callback to remove loading state
   await fetch(`${TELEGRAM_API}${token}/answerCallbackQuery`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -506,13 +613,13 @@ async function handleCallbackQuery(supabase: any, query: any, token: string) {
       await handleLinkStart(supabase, chatId, token);
       break;
     case "my_licenses":
-      await handleLicenses(supabase, chatId, token);
+      await handleLicensesWithAccountSelection(supabase, chatId, token);
       break;
     case "renew":
-      await handleRenewStart(supabase, chatId, token);
+      await handleRenewWithAccountSelection(supabase, chatId, token);
       break;
     case "reset_key":
-      await handleResetKeyStart(supabase, chatId, token);
+      await handleResetKeyWithAccountSelection(supabase, chatId, token);
       break;
     case "help":
       await handleHelp(chatId, token);
@@ -522,7 +629,7 @@ async function handleCallbackQuery(supabase: any, query: any, token: string) {
       await sendMainMenu(chatId, token, supabase);
       break;
     case "rustdesk_register":
-      await handleRustDeskRegister(supabase, chatId, token);
+      await handleRustDeskWithAccountSelection(supabase, chatId, token);
       break;
     case "rustdesk_add_new":
       await handleRustDeskAddNew(supabase, chatId, token);
@@ -532,6 +639,15 @@ async function handleCallbackQuery(supabase: any, query: any, token: string) {
       break;
     case "share_location":
       await sendLocationRequestKeyboard(chatId, token);
+      break;
+    case "manage_delegates":
+      await handleManageDelegates(supabase, chatId, token);
+      break;
+    case "add_delegate":
+      await handleAddDelegateStart(supabase, chatId, token);
+      break;
+    case "switch_account":
+      await handleSwitchAccount(supabase, chatId, token);
       break;
     default:
       if (data.startsWith("renew_")) {
@@ -546,9 +662,522 @@ async function handleCallbackQuery(supabase: any, query: any, token: string) {
       } else if (data.startsWith("rustdesk_edit_")) {
         const deviceId = data.replace("rustdesk_edit_", "");
         await handleRustDeskEditStart(supabase, chatId, deviceId, token);
+      } else if (data.startsWith("del_remove_")) {
+        const delegateId = data.replace("del_remove_", "");
+        await handleRemoveDelegate(supabase, chatId, delegateId, token);
+      } else if (data.startsWith("use_account_")) {
+        const customerId = data.replace("use_account_", "");
+        await handleUseAccount(supabase, chatId, customerId, token);
+      } else if (data.startsWith("act_licenses_")) {
+        const customerId = data.replace("act_licenses_", "");
+        await handleLicensesForCustomer(supabase, chatId, customerId, token);
+      } else if (data.startsWith("act_renew_")) {
+        const customerId = data.replace("act_renew_", "");
+        await handleRenewStartForCustomer(supabase, chatId, customerId, token);
+      } else if (data.startsWith("act_reset_")) {
+        const customerId = data.replace("act_reset_", "");
+        await handleResetKeyStartForCustomer(supabase, chatId, customerId, token);
+      } else if (data.startsWith("act_rustdesk_")) {
+        const customerId = data.replace("act_rustdesk_", "");
+        await handleRustDeskRegisterForCustomer(supabase, chatId, customerId, token);
       }
       break;
   }
+}
+
+// ─── Account Selection for multi-access users ──────────
+async function handleSwitchAccount(supabase: any, chatId: number, token: string) {
+  const allAccess = await getAllCustomerAccess(supabase, chatId);
+  if (allAccess.length <= 1) {
+    await sendMessage(chatId, token, "ℹ️ لديك حساب واحد فقط.");
+    return;
+  }
+
+  const buttons = allAccess.map(a => {
+    const label = a.is_delegate ? `👥 ${a.customer_name} (شريك)` : `👤 ${a.customer_name} (مالك)`;
+    return [{ text: label, callback_data: `use_account_${a.customer_id}` }];
+  });
+  buttons.push([{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]);
+
+  await sendMessageWithKeyboard(chatId, token,
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "🔀 *اختر الحساب للتحكم:*\n" +
+    "━━━━━━━━━━━━━━━━━━━━━\n",
+    { inline_keyboard: buttons },
+    "Markdown"
+  );
+}
+
+async function handleUseAccount(supabase: any, chatId: number, customerId: string, token: string) {
+  // Save selected account in state
+  await setState(supabase, chatId, "selected_account", { selectedCustomerId: customerId });
+  
+  const { data: customer } = await supabase.from("customers").select("name").eq("id", customerId).maybeSingle();
+
+  const buttons = [
+    [{ text: "📋 عرض التراخيص", callback_data: `act_licenses_${customerId}` }],
+    [{ text: "🔄 تجديد ترخيص", callback_data: `act_renew_${customerId}` }],
+    [{ text: "🔑 ريسيت المفتاح", callback_data: `act_reset_${customerId}` }],
+    [{ text: "🖥️ إدارة RustDesk", callback_data: `act_rustdesk_${customerId}` }],
+    [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }],
+  ];
+
+  await sendMessageWithKeyboard(chatId, token,
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    `✅ *تم اختيار حساب: ${customer?.name || "غير معروف"}*\n` +
+    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+    "اختر الإجراء:",
+    { inline_keyboard: buttons },
+    "Markdown"
+  );
+}
+
+// Wrapper functions that handle account selection for multi-access users
+async function handleLicensesWithAccountSelection(supabase: any, chatId: number, token: string) {
+  const allAccess = await getAllCustomerAccess(supabase, chatId);
+  if (allAccess.length === 0) {
+    await sendNotLinkedMessage(chatId, token);
+    return;
+  }
+  if (allAccess.length === 1) {
+    await handleLicensesForCustomer(supabase, chatId, allAccess[0].customer_id, token);
+    return;
+  }
+  // Multiple accounts - ask which one
+  const buttons = allAccess.map(a => {
+    const label = a.is_delegate ? `👥 ${a.customer_name}` : `👤 ${a.customer_name}`;
+    return [{ text: label, callback_data: `act_licenses_${a.customer_id}` }];
+  });
+  buttons.push([{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]);
+  await sendMessageWithKeyboard(chatId, token, "📋 *اختر الحساب لعرض تراخيصه:*", { inline_keyboard: buttons }, "Markdown");
+}
+
+async function handleRenewWithAccountSelection(supabase: any, chatId: number, token: string) {
+  const allAccess = await getAllCustomerAccess(supabase, chatId);
+  if (allAccess.length === 0) {
+    await sendNotLinkedMessage(chatId, token);
+    return;
+  }
+  if (allAccess.length === 1) {
+    await handleRenewStartForCustomer(supabase, chatId, allAccess[0].customer_id, token);
+    return;
+  }
+  const buttons = allAccess.map(a => {
+    const label = a.is_delegate ? `👥 ${a.customer_name}` : `👤 ${a.customer_name}`;
+    return [{ text: label, callback_data: `act_renew_${a.customer_id}` }];
+  });
+  buttons.push([{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]);
+  await sendMessageWithKeyboard(chatId, token, "🔄 *اختر الحساب لتجديد ترخيصه:*", { inline_keyboard: buttons }, "Markdown");
+}
+
+async function handleResetKeyWithAccountSelection(supabase: any, chatId: number, token: string) {
+  const allAccess = await getAllCustomerAccess(supabase, chatId);
+  if (allAccess.length === 0) {
+    await sendNotLinkedMessage(chatId, token);
+    return;
+  }
+  if (allAccess.length === 1) {
+    await handleResetKeyStartForCustomer(supabase, chatId, allAccess[0].customer_id, token);
+    return;
+  }
+  const buttons = allAccess.map(a => {
+    const label = a.is_delegate ? `👥 ${a.customer_name}` : `👤 ${a.customer_name}`;
+    return [{ text: label, callback_data: `act_reset_${a.customer_id}` }];
+  });
+  buttons.push([{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]);
+  await sendMessageWithKeyboard(chatId, token, "🔑 *اختر الحساب لريسيت مفتاحه:*", { inline_keyboard: buttons }, "Markdown");
+}
+
+async function handleRustDeskWithAccountSelection(supabase: any, chatId: number, token: string) {
+  const allAccess = await getAllCustomerAccess(supabase, chatId);
+  if (allAccess.length === 0) {
+    await sendNotLinkedMessage(chatId, token);
+    return;
+  }
+  if (allAccess.length === 1) {
+    await handleRustDeskRegisterForCustomer(supabase, chatId, allAccess[0].customer_id, token);
+    return;
+  }
+  const buttons = allAccess.map(a => {
+    const label = a.is_delegate ? `👥 ${a.customer_name}` : `👤 ${a.customer_name}`;
+    return [{ text: label, callback_data: `act_rustdesk_${a.customer_id}` }];
+  });
+  buttons.push([{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]);
+  await sendMessageWithKeyboard(chatId, token, "🖥️ *اختر الحساب لإدارة أجهزته:*", { inline_keyboard: buttons }, "Markdown");
+}
+
+async function sendNotLinkedMessage(chatId: number, token: string) {
+  await sendMessageWithKeyboard(chatId, token,
+    "⚠️ حسابك غير مربوط بعد.",
+    { inline_keyboard: [[{ text: "🔗 ربط حساب", callback_data: "link_account" }], [{ text: "📝 تسجيل جديد", callback_data: "register" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
+  );
+}
+
+// ─── Delegate Management ───────────────────────────────
+async function handleManageDelegates(supabase: any, chatId: number, token: string) {
+  const customer = await getCustomerByChatId(supabase, chatId);
+  if (!customer) {
+    await sendNotLinkedMessage(chatId, token);
+    return;
+  }
+
+  const { data: delegates } = await supabase
+    .from("telegram_delegates")
+    .select("id, delegate_chat_id, delegate_name, created_at")
+    .eq("owner_customer_id", customer.customer_id)
+    .order("created_at", { ascending: true });
+
+  let msg = "━━━━━━━━━━━━━━━━━━━━━\n👥 *إدارة الشركاء*\n━━━━━━━━━━━━━━━━━━━━━\n\n";
+  msg += `📊 الشركاء: *${delegates?.length || 0} / ${MAX_DELEGATES}*\n\n`;
+
+  const buttons: any[][] = [];
+
+  if (delegates && delegates.length > 0) {
+    delegates.forEach((d: any, i: number) => {
+      msg += `${i + 1}. *${d.delegate_name || "بدون اسم"}*\n   🆔 معرف: \`${d.delegate_chat_id}\`\n\n`;
+      buttons.push([{ text: `🗑️ إزالة ${d.delegate_name || d.delegate_chat_id}`, callback_data: `del_remove_${d.id}` }]);
+    });
+  } else {
+    msg += "_لا يوجد شركاء مضافون بعد._\n\n";
+  }
+
+  msg += "ℹ️ الشريك يمكنه عرض التراخيص، التجديد، إدارة الأجهزة و RustDesk نيابة عنك.";
+
+  if (!delegates || delegates.length < MAX_DELEGATES) {
+    buttons.push([{ text: "➕ إضافة شريك جديد", callback_data: "add_delegate" }]);
+  }
+  buttons.push([{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]);
+
+  await sendMessageWithKeyboard(chatId, token, msg, { inline_keyboard: buttons }, "Markdown");
+}
+
+async function handleAddDelegateStart(supabase: any, chatId: number, token: string) {
+  const customer = await getCustomerByChatId(supabase, chatId);
+  if (!customer) return;
+
+  // Check limit
+  const { count } = await supabase
+    .from("telegram_delegates")
+    .select("*", { count: "exact", head: true })
+    .eq("owner_customer_id", customer.customer_id);
+
+  if ((count || 0) >= MAX_DELEGATES) {
+    await sendMessageWithKeyboard(chatId, token,
+      `⚠️ وصلت للحد الأقصى (${MAX_DELEGATES} شركاء). احذف شريكاً لإضافة آخر.`,
+      { inline_keyboard: [[{ text: "👥 إدارة الشركاء", callback_data: "manage_delegates" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
+    );
+    return;
+  }
+
+  await setState(supabase, chatId, "awaiting_delegate_name");
+  await sendMessage(chatId, token,
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "➕ *إضافة شريك جديد*\n" +
+    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+    "👤 *أدخل اسم الشريك:*\n" +
+    "مثال: `أحمد`",
+    "Markdown"
+  );
+}
+
+async function handleDelegateNameInput(supabase: any, chatId: number, name: string, token: string) {
+  await setState(supabase, chatId, "awaiting_delegate_chatid", { delegateName: name });
+  await sendMessage(chatId, token,
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "🆔 *أرسل معرف تليجرام الشريك*\n" +
+    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+    `👤 اسم الشريك: *${name}*\n\n` +
+    "📌 يمكن للشريك معرفة معرفه بإرسال /start لبوت:\n" +
+    "@userinfobot\n\n" +
+    "أرسل الرقم (مثال: `123456789`)",
+    "Markdown"
+  );
+}
+
+async function handleDelegateChatIdInput(supabase: any, chatId: number, delegateChatId: number, stateData: any, token: string) {
+  const customer = await getCustomerByChatId(supabase, chatId);
+  if (!customer) return;
+
+  // Can't add yourself
+  if (delegateChatId === chatId) {
+    await sendMessageWithKeyboard(chatId, token,
+      "⚠️ لا يمكنك إضافة نفسك كشريك!",
+      { inline_keyboard: [[{ text: "👥 إدارة الشركاء", callback_data: "manage_delegates" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
+    );
+    return;
+  }
+
+  // Check if already exists
+  const { data: existing } = await supabase
+    .from("telegram_delegates")
+    .select("id")
+    .eq("owner_customer_id", customer.customer_id)
+    .eq("delegate_chat_id", delegateChatId)
+    .maybeSingle();
+
+  if (existing) {
+    await sendMessageWithKeyboard(chatId, token,
+      "⚠️ هذا الشخص مضاف كشريك بالفعل!",
+      { inline_keyboard: [[{ text: "👥 إدارة الشركاء", callback_data: "manage_delegates" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
+    );
+    return;
+  }
+
+  // Check limit
+  const { count } = await supabase
+    .from("telegram_delegates")
+    .select("*", { count: "exact", head: true })
+    .eq("owner_customer_id", customer.customer_id);
+
+  if ((count || 0) >= MAX_DELEGATES) {
+    await sendMessageWithKeyboard(chatId, token,
+      `⚠️ وصلت للحد الأقصى (${MAX_DELEGATES} شركاء).`,
+      { inline_keyboard: [[{ text: "👥 إدارة الشركاء", callback_data: "manage_delegates" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
+    );
+    return;
+  }
+
+  const delegateName = stateData?.delegateName || null;
+
+  const { error } = await supabase
+    .from("telegram_delegates")
+    .insert({
+      owner_customer_id: customer.customer_id,
+      delegate_chat_id: delegateChatId,
+      delegate_name: delegateName,
+    });
+
+  if (error) {
+    console.error("Add delegate error:", error);
+    await sendMessage(chatId, token, "❌ حدث خطأ. حاول مرة أخرى.");
+    return;
+  }
+
+  // Get owner's name for notification
+  const { data: ownerCustomer } = await supabase.from("customers").select("name").eq("id", customer.customer_id).maybeSingle();
+
+  // Notify the delegate
+  await sendMessageWithKeyboard(delegateChatId, token,
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "🎉 *تمت إضافتك كشريك!*\n" +
+    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+    `👤 تمت إضافتك كشريك في حساب *${ownerCustomer?.name || "غير معروف"}*\n\n` +
+    "يمكنك الآن:\n" +
+    "📋 عرض التراخيص\n" +
+    "🔄 تجديد التراخيص\n" +
+    "🖥️ إدارة أجهزة RustDesk\n" +
+    "🔑 ريسيت المفاتيح\n\n" +
+    "اضغط /start للبدء 🚀",
+    { inline_keyboard: [[{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
+    "Markdown"
+  );
+
+  await sendMessageWithKeyboard(chatId, token,
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "✅ *تمت إضافة الشريك بنجاح!*\n" +
+    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+    `👤 الاسم: *${delegateName || "—"}*\n` +
+    `🆔 المعرف: \`${delegateChatId}\`\n\n` +
+    "تم إرسال إشعار للشريك ✅",
+    { inline_keyboard: [[{ text: "👥 إدارة الشركاء", callback_data: "manage_delegates" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
+    "Markdown"
+  );
+}
+
+async function handleRemoveDelegate(supabase: any, chatId: number, delegateId: string, token: string) {
+  const customer = await getCustomerByChatId(supabase, chatId);
+  if (!customer) return;
+
+  // Get delegate info before deleting
+  const { data: delegate } = await supabase
+    .from("telegram_delegates")
+    .select("delegate_chat_id, delegate_name")
+    .eq("id", delegateId)
+    .eq("owner_customer_id", customer.customer_id)
+    .maybeSingle();
+
+  const { error } = await supabase
+    .from("telegram_delegates")
+    .delete()
+    .eq("id", delegateId)
+    .eq("owner_customer_id", customer.customer_id);
+
+  if (error) {
+    await sendMessage(chatId, token, "❌ حدث خطأ أثناء الإزالة.");
+    return;
+  }
+
+  // Notify the removed delegate
+  if (delegate?.delegate_chat_id) {
+    const { data: ownerCustomer } = await supabase.from("customers").select("name").eq("id", customer.customer_id).maybeSingle();
+    await sendMessage(delegate.delegate_chat_id, token,
+      `ℹ️ تم إزالتك من قائمة شركاء حساب *${ownerCustomer?.name || "غير معروف"}*.`,
+      "Markdown"
+    );
+  }
+
+  await sendMessageWithKeyboard(chatId, token,
+    `✅ تم إزالة الشريك *${delegate?.delegate_name || ""}* بنجاح.`,
+    { inline_keyboard: [[{ text: "👥 إدارة الشركاء", callback_data: "manage_delegates" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
+    "Markdown"
+  );
+}
+
+// ─── Action handlers that work with specific customer_id ──
+
+async function handleLicensesForCustomer(supabase: any, chatId: number, customerId: string, token: string) {
+  const { data: licenses } = await supabase
+    .from("licenses")
+    .select("id, license_key, status, expire_at, max_devices, products(name)")
+    .eq("customer_id", customerId);
+
+  if (!licenses || licenses.length === 0) {
+    await sendMessageWithKeyboard(chatId, token,
+      "📋 لا توجد تراخيص مسجلة على هذا الحساب.",
+      { inline_keyboard: [[{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
+    );
+    return;
+  }
+
+  const statusEmoji: Record<string, string> = { active: "🟢", expired: "🔴", suspended: "🟡", pending: "⚪" };
+  const statusAr: Record<string, string> = { active: "نشط", expired: "منتهي", suspended: "معلق", pending: "قيد الانتظار" };
+
+  let msg = "━━━━━━━━━━━━━━━━━━━━━\n📋 *التراخيص:*\n━━━━━━━━━━━━━━━━━━━━━\n\n";
+  licenses.forEach((l: any, i: number) => {
+    const emoji = statusEmoji[l.status] || "⚪";
+    const status = statusAr[l.status] || l.status;
+    const expiry = l.expire_at ? new Date(l.expire_at).toLocaleDateString("ar-EG") : "غير محدد";
+    const daysLeft = l.expire_at ? Math.ceil((new Date(l.expire_at).getTime() - Date.now()) / 86400000) : null;
+
+    msg += `${i + 1}. ${emoji} *${l.products?.name || "منتج"}*\n`;
+    msg += `   📊 الحالة: ${status}\n`;
+    msg += `   📅 ينتهي: ${expiry}`;
+    if (daysLeft !== null && daysLeft > 0 && daysLeft <= 30) {
+      msg += ` ⚠️ (${daysLeft} يوم)`;
+    }
+    msg += "\n\n";
+    msg += `   🔑 انسخ المفتاح:\n   \`${l.license_key}\`\n\n`;
+  });
+
+  const buttons = licenses
+    .filter((l: any) => l.status === "active" || l.status === "expired")
+    .map((l: any) => [{ text: `🔄 تجديد ${l.products?.name || "ترخيص"}`, callback_data: `renew_${l.license_key}` }]);
+
+  buttons.push([{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]);
+
+  await sendMessageWithKeyboard(chatId, token, msg, { inline_keyboard: buttons }, "Markdown");
+}
+
+async function handleRenewStartForCustomer(supabase: any, chatId: number, customerId: string, token: string) {
+  const { data: licenses } = await supabase
+    .from("licenses")
+    .select("id, license_key, status, expire_at, products(name)")
+    .eq("customer_id", customerId);
+
+  if (!licenses || licenses.length === 0) {
+    await sendMessageWithKeyboard(chatId, token,
+      "📋 لا توجد تراخيص لتجديدها.",
+      { inline_keyboard: [[{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
+    );
+    return;
+  }
+
+  const buttons = licenses.map((l: any) => {
+    const statusEmoji = l.status === "active" ? "🟢" : l.status === "expired" ? "🔴" : "⚪";
+    return [{ text: `${statusEmoji} ${l.products?.name || "ترخيص"} - ${l.license_key}`, callback_data: `renew_${l.license_key}` }];
+  });
+  buttons.push([{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]);
+
+  await sendMessageWithKeyboard(chatId, token,
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "🔄 *اختر الترخيص للتجديد:*\n" +
+    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+    "💰 السعر: *10 جنيه / يوم*\n" +
+    "📦 الشهر (30 يوم): *300 جنيه*",
+    { inline_keyboard: buttons },
+    "Markdown"
+  );
+}
+
+async function handleResetKeyStartForCustomer(supabase: any, chatId: number, customerId: string, token: string) {
+  const { data: licenses } = await supabase
+    .from("licenses")
+    .select("id, license_key, status, products(name)")
+    .eq("customer_id", customerId);
+
+  if (!licenses || licenses.length === 0) {
+    await sendMessageWithKeyboard(chatId, token,
+      "📋 لا توجد تراخيص على هذا الحساب.",
+      { inline_keyboard: [[{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
+    );
+    return;
+  }
+
+  const licensesWithDevices = await Promise.all(
+    licenses.map(async (l: any) => {
+      const { count } = await supabase
+        .from("devices")
+        .select("*", { count: "exact", head: true })
+        .eq("license_id", l.id);
+      return { ...l, deviceCount: count || 0 };
+    })
+  );
+
+  const statusEmoji: Record<string, string> = { active: "🟢", expired: "🔴", suspended: "🟡", pending: "⚪" };
+
+  const buttons = licensesWithDevices.map((l: any) => {
+    const emoji = statusEmoji[l.status] || "⚪";
+    const devTxt = l.deviceCount > 0 ? ` (${l.deviceCount} جهاز)` : " (لا أجهزة)";
+    return [{ text: `${emoji} ${l.products?.name || "ترخيص"}${devTxt} — اضغط للريسيت`, callback_data: `reset_confirm_${l.id}` }];
+  });
+  buttons.push([{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]);
+
+  await sendMessageWithKeyboard(chatId, token,
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "🔑 *ريسيت المفتاح*\n" +
+    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+    "⚠️ سيتم *مسح جميع الأجهزة* المرتبطة بالمفتاح المختار.\n" +
+    "بعد الريسيت يمكنك تفعيل المفتاح على أجهزة جديدة.\n\n" +
+    "اختر الترخيص:",
+    { inline_keyboard: buttons },
+    "Markdown"
+  );
+}
+
+async function handleRustDeskRegisterForCustomer(supabase: any, chatId: number, customerId: string, token: string) {
+  const { data: devices } = await supabase
+    .from("rustdesk_ids")
+    .select("id, rustdesk_id, device_label")
+    .eq("customer_id", customerId)
+    .order("created_at", { ascending: true });
+
+  let existingMsg = "";
+  const buttons: any[] = [];
+
+  if (devices && devices.length > 0) {
+    existingMsg = "📋 *الأجهزة المسجّلة:*\n";
+    devices.forEach((d: any, i: number) => {
+      existingMsg += `${i + 1}. \`${d.rustdesk_id}\`${d.device_label ? ` — ${d.device_label}` : ""}\n`;
+      buttons.push([
+        { text: `✏️ تعديل: ${d.device_label || d.rustdesk_id}`, callback_data: `rustdesk_edit_${d.id}` },
+        { text: `🗑️ حذف`, callback_data: `rustdesk_delete_${d.id}` },
+      ]);
+    });
+    existingMsg += "\n";
+  }
+
+  buttons.push([{ text: "➕ إضافة جهاز جديد", callback_data: "rustdesk_add_new" }]);
+  buttons.push([{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]);
+
+  await sendMessageWithKeyboard(chatId, token,
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "🖥️ *إدارة أجهزة RustDesk*\n" +
+    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+    existingMsg +
+    "اختر إجراءً:",
+    { inline_keyboard: buttons },
+    "Markdown"
+  );
 }
 
 // ─── Registration Flow ─────────────────────────────────
@@ -563,7 +1192,6 @@ async function handleRegisterStart(supabase: any, chatId: number, token: string)
   );
 }
 
-// Step 2: validate email, check duplicates, then ask for days
 async function handleRegistrationEmailStep(supabase: any, chatId: number, name: string, email: string, token: string) {
   const { data: existingCustomer } = await supabase
     .from("customers")
@@ -597,7 +1225,6 @@ async function handleRegistrationEmailStep(supabase: any, chatId: number, name: 
     return;
   }
 
-  // Email is valid — move to asking for days
   await setState(supabase, chatId, "awaiting_reg_days", { name, email });
   await sendMessage(chatId, token,
     "━━━━━━━━━━━━━━━━━━━━━\n" +
@@ -612,7 +1239,6 @@ async function handleRegistrationEmailStep(supabase: any, chatId: number, name: 
   );
 }
 
-// Step 3: receive days, show payment instructions, ask for receipt
 async function handleRegDaysInput(supabase: any, chatId: number, days: number, stateData: any, token: string) {
   const amount = days * PRICE_PER_DAY;
   await setState(supabase, chatId, "awaiting_reg_receipt", { ...stateData, days, amount });
@@ -633,7 +1259,6 @@ async function handleRegDaysInput(supabase: any, chatId: number, days: number, s
   );
 }
 
-// Step 4: receive receipt, save registration request
 async function handleRegReceiptSubmit(supabase: any, chatId: number, text: string, photo: any[] | undefined, stateData: any, token: string) {
   const { name, email, days, amount } = stateData || {};
 
@@ -651,7 +1276,6 @@ async function handleRegReceiptSubmit(supabase: any, chatId: number, text: strin
     receiptNote = text;
   } else {
     await sendMessage(chatId, token, "⚠️ أرسل صورة الإيصال أو رقم العملية:");
-    // re-enter state so they can send again
     await setState(supabase, chatId, "awaiting_reg_receipt", stateData);
     return;
   }
@@ -676,7 +1300,6 @@ async function handleRegReceiptSubmit(supabase: any, chatId: number, text: strin
 
   const isPhoto = photo && photo.length > 0;
 
-  // Notify admin
   await notifyAdmin(token,
     "━━━━━━━━━━━━━━━━━━━━━\n" +
     "🆕 *طلب تسجيل جديد!*\n" +
@@ -733,7 +1356,6 @@ async function handleLinkAccount(supabase: any, chatId: number, email: string, t
     return;
   }
 
-  // Search in customers table first (case-insensitive)
   const { data: customer } = await supabase
     .from("customers")
     .select("id, name")
@@ -741,7 +1363,6 @@ async function handleLinkAccount(supabase: any, chatId: number, email: string, t
     .maybeSingle();
 
   if (customer) {
-    // Check if already linked to another chat
     const { data: existingCustLink } = await supabase
       .from("telegram_links")
       .select("id")
@@ -756,7 +1377,6 @@ async function handleLinkAccount(supabase: any, chatId: number, email: string, t
       return;
     }
 
-    // Retrieve location from state if saved earlier
     const { data: locState } = await supabase
       .from("telegram_user_states")
       .select("data")
@@ -792,7 +1412,6 @@ async function handleLinkAccount(supabase: any, chatId: number, email: string, t
     return;
   }
 
-  // Not found in customers - check if there's a pending/approved registration request
   const { data: regReq } = await supabase
     .from("registration_requests")
     .select("id, name, status")
@@ -815,7 +1434,6 @@ async function handleLinkAccount(supabase: any, chatId: number, email: string, t
         "Markdown"
       );
     } else {
-      // Approved but customer not yet created - shouldn't happen, inform admin
       await sendMessageWithKeyboard(chatId, token,
         "✅ تمت الموافقة على طلبك لكن الحساب لم يُنشأ بعد.\nتواصل مع الدعم.",
         { inline_keyboard: [[{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
@@ -824,7 +1442,6 @@ async function handleLinkAccount(supabase: any, chatId: number, email: string, t
     return;
   }
 
-  // No record found at all
   await sendMessageWithKeyboard(chatId, token,
     "❌ *لم يتم العثور على حساب بهذا البريد*\n\n" +
     "تأكد من البريد الإلكتروني أو سجّل كمستخدم جديد:",
@@ -833,109 +1450,38 @@ async function handleLinkAccount(supabase: any, chatId: number, email: string, t
   );
 }
 
-// ─── View Licenses ─────────────────────────────────────
+// ─── View Licenses (backward compat - uses resolveCustomer) ──
 async function handleLicenses(supabase: any, chatId: number, token: string) {
-  const customer = await getCustomerByChatId(supabase, chatId);
-  if (!customer) {
-    await sendMessageWithKeyboard(chatId, token,
-      "⚠️ حسابك غير مربوط بعد.",
-      { inline_keyboard: [[{ text: "🔗 ربط حساب", callback_data: "link_account" }], [{ text: "📝 تسجيل جديد", callback_data: "register" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
-    );
+  const resolved = await resolveCustomerByChatId(supabase, chatId);
+  if (!resolved) {
+    await sendNotLinkedMessage(chatId, token);
     return;
   }
-
-  const { data: licenses } = await supabase
-    .from("licenses")
-    .select("id, license_key, status, expire_at, max_devices, products(name)")
-    .eq("customer_id", customer.customer_id);
-
-  if (!licenses || licenses.length === 0) {
-    await sendMessageWithKeyboard(chatId, token,
-      "📋 لا توجد تراخيص مسجلة على حسابك.",
-      { inline_keyboard: [[{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
-    );
-    return;
-  }
-
-  const statusEmoji: Record<string, string> = { active: "🟢", expired: "🔴", suspended: "🟡", pending: "⚪" };
-  const statusAr: Record<string, string> = { active: "نشط", expired: "منتهي", suspended: "معلق", pending: "قيد الانتظار" };
-
-  let msg = "━━━━━━━━━━━━━━━━━━━━━\n📋 *تراخيصك:*\n━━━━━━━━━━━━━━━━━━━━━\n\n";
-  licenses.forEach((l: any, i: number) => {
-    const emoji = statusEmoji[l.status] || "⚪";
-    const status = statusAr[l.status] || l.status;
-    const expiry = l.expire_at ? new Date(l.expire_at).toLocaleDateString("ar-EG") : "غير محدد";
-    const daysLeft = l.expire_at ? Math.ceil((new Date(l.expire_at).getTime() - Date.now()) / 86400000) : null;
-
-    msg += `${i + 1}. ${emoji} *${l.products?.name || "منتج"}*\n`;
-    msg += `   📊 الحالة: ${status}\n`;
-    msg += `   📅 ينتهي: ${expiry}`;
-    if (daysLeft !== null && daysLeft > 0 && daysLeft <= 30) {
-      msg += ` ⚠️ (${daysLeft} يوم)`;
-    }
-    msg += "\n\n";
-    msg += `   🔑 انسخ المفتاح:\n   \`${l.license_key}\`\n\n`;
-  });
-
-  const buttons = licenses
-    .filter((l: any) => l.status === "active" || l.status === "expired")
-    .map((l: any) => [{ text: `🔄 تجديد ${l.products?.name || "ترخيص"}`, callback_data: `renew_${l.license_key}` }]);
-
-  buttons.push([{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]);
-
-  await sendMessageWithKeyboard(chatId, token, msg, { inline_keyboard: buttons }, "Markdown");
+  await handleLicensesForCustomer(supabase, chatId, resolved.customer_id, token);
 }
 
 // ─── Renew Flow ────────────────────────────────────────
 async function handleRenewStart(supabase: any, chatId: number, token: string) {
-  const customer = await getCustomerByChatId(supabase, chatId);
-  if (!customer) {
-    await sendMessageWithKeyboard(chatId, token,
-      "⚠️ حسابك غير مربوط بعد.",
-      { inline_keyboard: [[{ text: "🔗 ربط حساب", callback_data: "link_account" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
-    );
+  const resolved = await resolveCustomerByChatId(supabase, chatId);
+  if (!resolved) {
+    await sendNotLinkedMessage(chatId, token);
     return;
   }
-
-  const { data: licenses } = await supabase
-    .from("licenses")
-    .select("id, license_key, status, expire_at, products(name)")
-    .eq("customer_id", customer.customer_id);
-
-  if (!licenses || licenses.length === 0) {
-    await sendMessageWithKeyboard(chatId, token,
-      "📋 لا توجد تراخيص لتجديدها.",
-      { inline_keyboard: [[{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
-    );
-    return;
-  }
-
-  const buttons = licenses.map((l: any) => {
-    const statusEmoji = l.status === "active" ? "🟢" : l.status === "expired" ? "🔴" : "⚪";
-    return [{ text: `${statusEmoji} ${l.products?.name || "ترخيص"} - ${l.license_key}`, callback_data: `renew_${l.license_key}` }];
-  });
-  buttons.push([{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]);
-
-  await sendMessageWithKeyboard(chatId, token,
-    "━━━━━━━━━━━━━━━━━━━━━\n" +
-    "🔄 *اختر الترخيص للتجديد:*\n" +
-    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
-    "💰 السعر: *10 جنيه / يوم*\n" +
-    "📦 الشهر (30 يوم): *300 جنيه*",
-    { inline_keyboard: buttons },
-    "Markdown"
-  );
+  await handleRenewStartForCustomer(supabase, chatId, resolved.customer_id, token);
 }
 
 async function handleRenewLicense(supabase: any, chatId: number, licenseKey: string, token: string) {
-  const customer = await getCustomerByChatId(supabase, chatId);
-  if (!customer) return;
+  // Find the license by key - check all accessible accounts
+  const allAccess = await getAllCustomerAccess(supabase, chatId);
+  if (allAccess.length === 0) return;
+
+  const customerIds = allAccess.map(a => a.customer_id);
 
   const { data: license } = await supabase
     .from("licenses")
-    .select("id, license_key, status, expire_at, products(name)")
-    .eq("customer_id", customer.customer_id)
+    .select("id, license_key, status, expire_at, customer_id, products(name)")
     .eq("license_key", licenseKey.toUpperCase())
+    .in("customer_id", customerIds)
     .maybeSingle();
 
   if (!license) {
@@ -943,7 +1489,7 @@ async function handleRenewLicense(supabase: any, chatId: number, licenseKey: str
     return;
   }
 
-  await setState(supabase, chatId, "awaiting_days", { licenseKey: license.license_key });
+  await setState(supabase, chatId, "awaiting_days", { licenseKey: license.license_key, customerId: license.customer_id });
 
   await sendMessage(chatId, token,
     "━━━━━━━━━━━━━━━━━━━━━\n" +
@@ -968,16 +1514,21 @@ async function handleDaysInput(supabase: any, chatId: number, days: number, lice
     return;
   }
 
-  const customer = await getCustomerByChatId(supabase, chatId);
-  if (!customer) return;
+  // Get customerId from state or resolve
+  const state = await getState(supabase, chatId);
+  const customerId = state?.data?.customerId;
+
+  // Find license across accessible accounts
+  const allAccess = await getAllCustomerAccess(supabase, chatId);
+  const customerIds = customerId ? [customerId] : allAccess.map(a => a.customer_id);
 
   const amount = days * PRICE_PER_DAY;
 
   const { data: license } = await supabase
     .from("licenses")
-    .select("id, products(name)")
-    .eq("customer_id", customer.customer_id)
+    .select("id, customer_id, products(name)")
     .eq("license_key", licenseKey.toUpperCase())
+    .in("customer_id", customerIds)
     .maybeSingle();
 
   if (!license) {
@@ -988,7 +1539,7 @@ async function handleDaysInput(supabase: any, chatId: number, days: number, lice
   const { data: renewalData, error } = await supabase
     .from("renewal_requests")
     .insert({
-      customer_id: customer.customer_id,
+      customer_id: license.customer_id,
       license_id: license.id,
       days,
       amount,
@@ -1004,11 +1555,9 @@ async function handleDaysInput(supabase: any, chatId: number, days: number, lice
     return;
   }
 
-  // Set state to awaiting receipt
   await setState(supabase, chatId, "awaiting_receipt", { renewalRequestId: renewalData.id });
 
-  // Notify admin
-  const { data: customerInfo } = await supabase.from("customers").select("name").eq("id", customer.customer_id).maybeSingle();
+  const { data: customerInfo } = await supabase.from("customers").select("name").eq("id", license.customer_id).maybeSingle();
   await notifyAdmin(token,
     "━━━━━━━━━━━━━━━━━━━━━\n" +
     "🔔 *طلب تجديد جديد!*\n" +
@@ -1057,7 +1606,6 @@ async function handleReceiptSubmit(
   let receiptNote = "";
 
   if (photo && photo.length > 0) {
-    // Get the largest photo file_id
     const bestPhoto = photo[photo.length - 1];
     receiptNote = `[صورة إيصال] file_id: ${bestPhoto.file_id}`;
     if (text) receiptNote += `\nملاحظة: ${text}`;
@@ -1079,7 +1627,6 @@ async function handleReceiptSubmit(
     return;
   }
 
-  // Fetch renewal request details for admin notification
   const { data: renewalReq } = await supabase
     .from("renewal_requests")
     .select("days, amount, licenses(products(name)), customers(name)")
@@ -1113,49 +1660,12 @@ async function handleReceiptSubmit(
 
 // ─── RustDesk ID Flow ──────────────────────────────────
 async function handleRustDeskRegister(supabase: any, chatId: number, token: string) {
-  const customer = await getCustomerByChatId(supabase, chatId);
-  if (!customer) {
-    await sendMessageWithKeyboard(chatId, token,
-      "⚠️ حسابك غير مربوط بعد.",
-      { inline_keyboard: [[{ text: "🔗 ربط حساب", callback_data: "link_account" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
-    );
+  const resolved = await resolveCustomerByChatId(supabase, chatId);
+  if (!resolved) {
+    await sendNotLinkedMessage(chatId, token);
     return;
   }
-
-  // Fetch all existing devices for this customer
-  const { data: devices } = await supabase
-    .from("rustdesk_ids")
-    .select("id, rustdesk_id, device_label")
-    .eq("customer_id", customer.customer_id)
-    .order("created_at", { ascending: true });
-
-  let existingMsg = "";
-  const buttons: any[] = [];
-
-  if (devices && devices.length > 0) {
-    existingMsg = "📋 *أجهزتك المسجّلة:*\n";
-    devices.forEach((d: any, i: number) => {
-      existingMsg += `${i + 1}. \`${d.rustdesk_id}\`${d.device_label ? ` — ${d.device_label}` : ""}\n`;
-      buttons.push([
-        { text: `✏️ تعديل: ${d.device_label || d.rustdesk_id}`, callback_data: `rustdesk_edit_${d.id}` },
-        { text: `🗑️ حذف`, callback_data: `rustdesk_delete_${d.id}` },
-      ]);
-    });
-    existingMsg += "\n";
-  }
-
-  buttons.push([{ text: "➕ إضافة جهاز جديد", callback_data: "rustdesk_add_new" }]);
-  buttons.push([{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]);
-
-  await sendMessageWithKeyboard(chatId, token,
-    "━━━━━━━━━━━━━━━━━━━━━\n" +
-    "🖥️ *إدارة أجهزة RustDesk*\n" +
-    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
-    existingMsg +
-    "اختر إجراءً:",
-    { inline_keyboard: buttons },
-    "Markdown"
-  );
+  await handleRustDeskRegisterForCustomer(supabase, chatId, resolved.customer_id, token);
 }
 
 async function handleRustDeskAddNew(supabase: any, chatId: number, token: string) {
@@ -1172,14 +1682,15 @@ async function handleRustDeskAddNew(supabase: any, chatId: number, token: string
 }
 
 async function handleRustDeskDeleteDevice(supabase: any, chatId: number, deviceId: string, token: string) {
-  const customer = await getCustomerByChatId(supabase, chatId);
-  if (!customer) return;
+  // Use resolveCustomer which checks both owner and delegate
+  const resolved = await resolveCustomerByChatId(supabase, chatId);
+  if (!resolved) return;
 
   const { error } = await supabase
     .from("rustdesk_ids")
     .delete()
     .eq("id", deviceId)
-    .eq("customer_id", customer.customer_id);
+    .eq("customer_id", resolved.customer_id);
 
   if (error) {
     await sendMessage(chatId, token, "❌ حدث خطأ أثناء الحذف. حاول مرة أخرى.");
@@ -1194,14 +1705,14 @@ async function handleRustDeskDeleteDevice(supabase: any, chatId: number, deviceI
 }
 
 async function handleRustDeskEditStart(supabase: any, chatId: number, deviceId: string, token: string) {
-  const customer = await getCustomerByChatId(supabase, chatId);
-  if (!customer) return;
+  const resolved = await resolveCustomerByChatId(supabase, chatId);
+  if (!resolved) return;
 
   const { data: device } = await supabase
     .from("rustdesk_ids")
     .select("rustdesk_id, device_label")
     .eq("id", deviceId)
-    .eq("customer_id", customer.customer_id)
+    .eq("customer_id", resolved.customer_id)
     .maybeSingle();
 
   if (!device) {
@@ -1228,10 +1739,9 @@ async function handleRustDeskEditStart(supabase: any, chatId: number, deviceId: 
 }
 
 async function handleRustDeskEditDevice(supabase: any, chatId: number, deviceId: string, newId: string, newLabel: string | null, token: string) {
-  const customer = await getCustomerByChatId(supabase, chatId);
-  if (!customer) return;
+  const resolved = await resolveCustomerByChatId(supabase, chatId);
+  if (!resolved) return;
 
-  // Check if new ID conflicts with another device (not the same device)
   if (newId) {
     const { data: conflict } = await supabase
       .from("rustdesk_ids")
@@ -1250,7 +1760,7 @@ async function handleRustDeskEditDevice(supabase: any, chatId: number, deviceId:
     .from("rustdesk_ids")
     .update({ rustdesk_id: newId, device_label: newLabel, updated_at: new Date().toISOString() })
     .eq("id", deviceId)
-    .eq("customer_id", customer.customer_id);
+    .eq("customer_id", resolved.customer_id);
 
   if (error) {
     await sendMessage(chatId, token, "❌ حدث خطأ أثناء التعديل. حاول مرة أخرى.");
@@ -1270,12 +1780,11 @@ async function handleRustDeskEditDevice(supabase: any, chatId: number, deviceId:
 }
 
 async function handleRustDeskIdInput(supabase: any, chatId: number, rustdeskId: string, deviceLabel: string | null, token: string) {
-  const customer = await getCustomerByChatId(supabase, chatId);
-  if (!customer) return;
+  const resolved = await resolveCustomerByChatId(supabase, chatId);
+  if (!resolved) return;
 
   const label = deviceLabel === "." ? null : deviceLabel;
 
-  // Check if this rustdesk_id already exists globally
   const { data: existingGlobal } = await supabase
     .from("rustdesk_ids")
     .select("id, customer_id")
@@ -1283,7 +1792,7 @@ async function handleRustDeskIdInput(supabase: any, chatId: number, rustdeskId: 
     .maybeSingle();
 
   if (existingGlobal) {
-    if (existingGlobal.customer_id === customer.customer_id) {
+    if (existingGlobal.customer_id === resolved.customer_id) {
       await sendMessage(chatId, token, `⚠️ هذا الـ ID \`${rustdeskId}\` مسجّل مسبقاً في أجهزتك.`, "Markdown");
     } else {
       await sendMessage(chatId, token, `⚠️ هذا الـ ID \`${rustdeskId}\` مسجّل لدى عميل آخر. تحقق من الرقم وأعد المحاولة.`, "Markdown");
@@ -1293,7 +1802,7 @@ async function handleRustDeskIdInput(supabase: any, chatId: number, rustdeskId: 
 
   const { error } = await supabase
     .from("rustdesk_ids")
-    .insert({ customer_id: customer.customer_id, rustdesk_id: rustdeskId, device_label: label });
+    .insert({ customer_id: resolved.customer_id, rustdesk_id: rustdeskId, device_label: label });
 
   if (error) {
     console.error("RustDesk insert error:", error);
@@ -1316,70 +1825,25 @@ async function handleRustDeskIdInput(supabase: any, chatId: number, rustdeskId: 
 
 // ─── Reset Key Flow ────────────────────────────────────
 async function handleResetKeyStart(supabase: any, chatId: number, token: string) {
-  const customer = await getCustomerByChatId(supabase, chatId);
-  if (!customer) {
-    await sendMessageWithKeyboard(chatId, token,
-      "⚠️ حسابك غير مربوط بعد.",
-      { inline_keyboard: [[{ text: "🔗 ربط حساب", callback_data: "link_account" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
-    );
+  const resolved = await resolveCustomerByChatId(supabase, chatId);
+  if (!resolved) {
+    await sendNotLinkedMessage(chatId, token);
     return;
   }
-
-  const { data: licenses } = await supabase
-    .from("licenses")
-    .select("id, license_key, status, products(name)")
-    .eq("customer_id", customer.customer_id);
-
-  if (!licenses || licenses.length === 0) {
-    await sendMessageWithKeyboard(chatId, token,
-      "📋 لا توجد تراخيص على حسابك.",
-      { inline_keyboard: [[{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
-    );
-    return;
-  }
-
-  // For each license, count linked devices
-  const licensesWithDevices = await Promise.all(
-    licenses.map(async (l: any) => {
-      const { count } = await supabase
-        .from("devices")
-        .select("*", { count: "exact", head: true })
-        .eq("license_id", l.id);
-      return { ...l, deviceCount: count || 0 };
-    })
-  );
-
-  const statusEmoji: Record<string, string> = { active: "🟢", expired: "🔴", suspended: "🟡", pending: "⚪" };
-
-  const buttons = licensesWithDevices.map((l: any) => {
-    const emoji = statusEmoji[l.status] || "⚪";
-    const devTxt = l.deviceCount > 0 ? ` (${l.deviceCount} جهاز)` : " (لا أجهزة)";
-    return [{ text: `${emoji} ${l.products?.name || "ترخيص"}${devTxt} — اضغط للريسيت`, callback_data: `reset_confirm_${l.id}` }];
-  });
-  buttons.push([{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]);
-
-  await sendMessageWithKeyboard(chatId, token,
-    "━━━━━━━━━━━━━━━━━━━━━\n" +
-    "🔑 *ريسيت المفتاح*\n" +
-    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
-    "⚠️ سيتم *مسح جميع الأجهزة* المرتبطة بالمفتاح المختار.\n" +
-    "بعد الريسيت يمكنك تفعيل المفتاح على أجهزة جديدة.\n\n" +
-    "اختر الترخيص:",
-    { inline_keyboard: buttons },
-    "Markdown"
-  );
+  await handleResetKeyStartForCustomer(supabase, chatId, resolved.customer_id, token);
 }
 
 async function handleResetKeyConfirm(supabase: any, chatId: number, licenseId: string, token: string) {
-  const customer = await getCustomerByChatId(supabase, chatId);
-  if (!customer) return;
+  // Check all accessible accounts
+  const allAccess = await getAllCustomerAccess(supabase, chatId);
+  if (allAccess.length === 0) return;
+  const customerIds = allAccess.map(a => a.customer_id);
 
-  // Verify this license belongs to this customer
   const { data: license } = await supabase
     .from("licenses")
     .select("id, license_key, products(name)")
     .eq("id", licenseId)
-    .eq("customer_id", customer.customer_id)
+    .in("customer_id", customerIds)
     .maybeSingle();
 
   if (!license) {
@@ -1390,13 +1854,11 @@ async function handleResetKeyConfirm(supabase: any, chatId: number, licenseId: s
     return;
   }
 
-  // Count devices before deleting
   const { count: deviceCount } = await supabase
     .from("devices")
     .select("*", { count: "exact", head: true })
     .eq("license_id", licenseId);
 
-  // Delete all devices linked to this license
   const { error } = await supabase
     .from("devices")
     .delete()
@@ -1433,7 +1895,8 @@ async function handleHelp(chatId: number, token: string) {
     "📝 *تسجيل جديد* - إنشاء حساب جديد\n" +
     "🔗 *ربط حساب* - ربط حساب موجود\n" +
     "📋 *تراخيصي* - عرض تراخيصك ونسخ المفتاح\n" +
-    "🔄 *تجديد* - تجديد ترخيص\n\n" +
+    "🔄 *تجديد* - تجديد ترخيص\n" +
+    "👥 *الشركاء* - إضافة شريك يتحكم بحسابك\n\n" +
     "💰 *الأسعار:*\n" +
     "• 10 جنيه / يوم\n" +
     "• 300 جنيه / 30 يوم\n\n" +
@@ -1497,7 +1960,6 @@ async function sendMessageWithKeyboard(chatId: number, token: string, text: stri
 // ─── Download RustDesk ─────────────────────────────────
 async function handleDownloadRustDesk(chatId: number, token: string) {
   try {
-    // Fetch latest release from GitHub API
     const res = await fetch("https://api.github.com/repos/rustdesk/rustdesk/releases/latest", {
       headers: { "User-Agent": "TelegramBot" },
     });
@@ -1506,7 +1968,6 @@ async function handleDownloadRustDesk(chatId: number, token: string) {
     const version = release.tag_name || "غير معروف";
     const assets: any[] = release.assets || [];
 
-    // Windows only: prefer x86_64 exe, fallback to any exe
     const windowsExe = assets.find((a: any) =>
       a.name.toLowerCase().endsWith(".exe") && a.name.toLowerCase().includes("x86_64")
     ) || assets.find((a: any) => a.name.toLowerCase().endsWith(".exe"));
