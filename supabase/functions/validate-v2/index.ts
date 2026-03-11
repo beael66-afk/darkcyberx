@@ -214,7 +214,7 @@ serve(async (req) => {
 
     let body: Record<string, unknown>;
     try {
-      body = await req.json();
+      body = rawBody && Object.keys(rawBody).length > 0 ? rawBody : await req.json();
     } catch {
       return new Response(
         JSON.stringify({ error: 'Invalid request body', valid: false }),
