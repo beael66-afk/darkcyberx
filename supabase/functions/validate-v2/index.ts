@@ -373,12 +373,12 @@ serve(async (req) => {
       }
     }
 
+    // Don't include user_id to avoid foreign key constraint with profiles table
     const { error: logError } = await supabase.from('logs').insert({
       entity_type: 'license',
       entity_id: license.id,
       action: 'verified',
       description: `License validated via API v2 - ${license.license_key}`,
-      user_id: apiKeyData.user_id,
       ip_address: clientIp || 'unknown',
     });
     
