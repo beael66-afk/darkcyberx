@@ -54,6 +54,16 @@ interface TelegramLink {
   } | null;
 }
 
+interface TelegramDelegate {
+  id: string;
+  owner_customer_id: string;
+  delegate_chat_id: number;
+  delegate_name: string | null;
+  permissions: string[];
+  created_at: string;
+  owner_customer_name?: string;
+}
+
 const TelegramSettings = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const queryClient = useQueryClient();
