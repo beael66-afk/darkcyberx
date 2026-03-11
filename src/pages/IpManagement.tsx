@@ -790,6 +790,20 @@ const IpManagement = () => {
         </div>
       </div>
 
+      {/* Security Status Banner */}
+      <div className="rounded-xl border border-green-200 dark:border-green-900 bg-green-50 dark:bg-green-950/30 p-4 flex items-center gap-3">
+        <div className="rounded-full bg-green-100 dark:bg-green-900/50 p-2 shrink-0">
+          <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+        </div>
+        <div className="flex-1">
+          <p className="text-sm font-semibold text-green-800 dark:text-green-300">الحظر التلقائي معطّل</p>
+          <p className="text-xs text-green-600 dark:text-green-400 mt-0.5">
+            لا يتم حظر أي IP تلقائياً — جميع عمليات الحظر يدوية فقط لحماية العملاء الفعليين.
+            يتم إرسال <code className="bg-green-100 dark:bg-green-900/50 px-1 rounded">force_shutdown</code> بعد {FORCE_SHUTDOWN_DISPLAY} محاولة فاشلة دون حظر الـ IP.
+          </p>
+        </div>
+      </div>
+
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Card className="border-none shadow-sm bg-gradient-to-br from-primary/10 to-primary/5">
