@@ -517,6 +517,8 @@ function IpDetailDrawer({ ip, isOpen, onClose }: { ip: IpActivity | null; isOpen
   );
 }
 
+const FORCE_SHUTDOWN_DISPLAY = 15;
+
 const IpManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [addIpOpen, setAddIpOpen] = useState(false);
