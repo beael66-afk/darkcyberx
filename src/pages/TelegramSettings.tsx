@@ -107,6 +107,34 @@ const TelegramSettings = () => {
     onError: () => toast.error("فشل فك ربط الحساب"),
   });
 
+  const unlinkDelegateMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("telegram_delegates").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["telegram-delegates"] });
+      toast.success("تم إزالة الشريك بنجاح");
+    },
+    onError: () => toast.error("فشل إزالة الشريك"),
+  });
+
+  const { data: delegates } = useQuery({
+    queryKey: ["telegram-delegates"],
+    queryFn: async () => {
+      const [{ data: delegatesData, error }, { data: customersData }] = await Promise.all([
+        supabase.from("telegram_delegates").select("id, owner_customer_id, delegate_chat_id, delegate_name, permissions, created_at").order("created_at", { ascending: false }),
+        supabase.from("customers").select("id, name"),
+      ]);
+      if (error) throw error;
+      const customersMap = new Map((customersData || []).map((c) => [c.id, c.name]));
+      return (delegatesData || []).map((d) => ({
+        ...d,
+        owner_customer_name: customersMap.get(d.owner_customer_id) || "غير معروف",
+      })) as TelegramDelegate[];
+    },
+  });
+
   const linkedCount = links?.length || 0;
   const linkPercentage = totalCustomers ? Math.round((linkedCount / totalCustomers) * 100) : 0;
 
