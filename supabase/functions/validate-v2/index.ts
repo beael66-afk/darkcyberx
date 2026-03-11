@@ -214,7 +214,7 @@ serve(async (req) => {
 
     let body: Record<string, unknown>;
     try {
-      body = await req.json();
+      body = rawBody && Object.keys(rawBody).length > 0 ? rawBody : await req.json();
     } catch {
       return new Response(
         JSON.stringify({ error: 'Invalid request body', valid: false }),
@@ -373,12 +373,12 @@ serve(async (req) => {
       }
     }
 
+    // Don't include user_id to avoid foreign key constraint with profiles table
     const { error: logError } = await supabase.from('logs').insert({
       entity_type: 'license',
       entity_id: license.id,
       action: 'verified',
       description: `License validated via API v2 - ${license.license_key}`,
-      user_id: apiKeyData.user_id,
       ip_address: clientIp || 'unknown',
     });
     

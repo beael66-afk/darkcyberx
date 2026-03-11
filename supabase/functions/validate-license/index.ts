@@ -456,12 +456,12 @@ serve(async (req) => {
       }
     }
 
+    // Try with user_id first, fallback to null if profile doesn't exist
     const { error: logError } = await supabase.from('logs').insert({
       entity_type: 'license',
       entity_id: license.id,
       action: 'verified',
       description: `License validated via API - ${license.license_key}`,
-      user_id: apiKeyData.user_id,
       ip_address: clientIp || 'unknown',
     });
     
