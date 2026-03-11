@@ -358,6 +358,119 @@ const TelegramSettings = () => {
           </TableBody>
         </Table>
       </Card>
+
+      {/* Delegates Section */}
+      <div className="mt-8">
+        <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
+          <UserPlus className="h-5 w-5 text-primary" />
+          الشركاء (Co-owners)
+        </h2>
+        <p className="text-muted-foreground text-sm mb-4">
+          العملاء المربوطين يمكنهم إضافة حتى 3 شركاء يتحكمون في حساباتهم (عرض التراخيص، التجديد، إدارة الأجهزة، RustDesk)
+        </p>
+        <Card className="border shadow-sm overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50 hover:bg-muted/50">
+                <TableHead className="font-semibold">العميل (المالك)</TableHead>
+                <TableHead className="font-semibold">اسم الشريك</TableHead>
+                <TableHead className="font-semibold">معرف تليجرام الشريك</TableHead>
+                <TableHead className="font-semibold">الصلاحيات</TableHead>
+                <TableHead className="font-semibold">تاريخ الإضافة</TableHead>
+                <TableHead className="font-semibold text-left">الإجراءات</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {!delegates || delegates.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-12">
+                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                      <UserPlus className="h-10 w-10 opacity-30" />
+                      <p>لا يوجد شركاء مضافون</p>
+                      <p className="text-xs">العملاء يضيفون شركاء عبر بوت التليجرام</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                delegates.map((del) => (
+                  <TableRow key={del.id} className="group">
+                    <TableCell className="font-medium">{del.owner_customer_name}</TableCell>
+                    <TableCell>{del.delegate_name || "—"}</TableCell>
+                    <TableCell>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            className="flex items-center gap-1.5 font-mono text-sm bg-muted px-2 py-1 rounded-md hover:bg-muted/80 transition-colors"
+                            onClick={() => copyToClipboard(String(del.delegate_chat_id))}
+                          >
+                            <MessageCircle className="h-3.5 w-3.5 text-blue-500" />
+                            {del.delegate_chat_id}
+                            <Copy className="h-3 w-3 opacity-50" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>انسخ معرف التليجرام</TooltipContent>
+                      </Tooltip>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {del.permissions?.includes("view_licenses") && <Badge variant="secondary" className="text-xs">عرض</Badge>}
+                        {del.permissions?.includes("renew_licenses") && <Badge variant="secondary" className="text-xs">تجديد</Badge>}
+                        {del.permissions?.includes("manage_devices") && <Badge variant="secondary" className="text-xs">أجهزة</Badge>}
+                        {del.permissions?.includes("manage_rustdesk") && <Badge variant="secondary" className="text-xs">RustDesk</Badge>}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      <div className="flex items-center gap-1.5">
+                        <Calendar className="h-3.5 w-3.5" />
+                        {del.created_at
+                          ? (() => {
+                              const d = new Date(del.created_at);
+                              return isNaN(d.getTime())
+                                ? "—"
+                                : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+                            })()
+                          : "—"}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Unlink className="h-4 w-4" />
+                            <span className="hidden sm:inline">إزالة</span>
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>إزالة الشريك</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              هل أنت متأكد من إزالة الشريك{" "}
+                              <strong>{del.delegate_name || del.delegate_chat_id}</strong>؟
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => unlinkDelegateMutation.mutate(del.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              إزالة
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </Card>
+      </div>
     </div>
   );
 };
