@@ -20,6 +20,7 @@ import {
   Cpu,
   RadioTower,
   BookOpen,
+  Megaphone,
 } from "lucide-react";
 import {
   Sidebar,
