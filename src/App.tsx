@@ -28,6 +28,7 @@ const BlockedHwids = lazy(() => import("./pages/BlockedHwids"));
 const Alerts = lazy(() => import("./pages/Alerts"));
 const LegacyMonitor = lazy(() => import("./pages/LegacyMonitor"));
 const ApiIntegration = lazy(() => import("./pages/ApiIntegration"));
+const BroadcastMessages = lazy(() => import("./pages/BroadcastMessages"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 
