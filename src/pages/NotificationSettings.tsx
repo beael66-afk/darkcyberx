@@ -72,9 +72,28 @@ export default function NotificationSettings() {
       const { data, error } = await supabase
         .from("notification_settings")
         .select("*")
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      if (!data) {
+        // Create default settings if none exist
+        const { data: newData, error: insertError } = await supabase
+          .from("notification_settings")
+          .insert({
+            notification_days: [7, 3, 1],
+            notification_time: "09:00:00",
+            email_subject: "تنبيه: اقتراب انتهاء ترخيصك",
+            email_enabled: true,
+          })
+          .select()
+          .single();
+        if (insertError) throw insertError;
+        setSettings({
+          ...newData,
+          telegram_message_template: (newData as any).telegram_message_template || DEFAULT_TEMPLATE,
+        });
+        return;
+      }
       setSettings({
         ...data,
         telegram_message_template: (data as any).telegram_message_template || DEFAULT_TEMPLATE,

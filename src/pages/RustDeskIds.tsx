@@ -114,7 +114,12 @@ const RustDeskIds = () => {
       setEditingDevice(null);
       toast.success(editingDevice ? "تم تعديل الجهاز" : "تم إضافة الجهاز");
     },
-    onError: () => toast.error("فشلت العملية"),
+    onError: (error: any) => {
+      const msg = error?.message?.includes("rustdesk_ids_rustdesk_id_key")
+        ? "هذا الـ RustDesk ID مسجّل بالفعل لعميل آخر"
+        : "فشلت العملية";
+      toast.error(msg);
+    },
   });
 
   const copyText = (text: string, label: string) => {
