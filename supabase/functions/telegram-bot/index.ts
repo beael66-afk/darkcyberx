@@ -1487,7 +1487,11 @@ async function handleRenewLicense(supabase: any, chatId: number, licenseKey: str
     return;
   }
 
-  await setState(supabase, chatId, "awaiting_days", { licenseKey: license.license_key, customerId: license.customer_id });
+  // Fetch customer's daily rate
+  const { data: customerData } = await supabase.from("customers").select("daily_rate").eq("id", license.customer_id).maybeSingle();
+  const dailyRate = customerData?.daily_rate || DEFAULT_PRICE_PER_DAY;
+
+  await setState(supabase, chatId, "awaiting_days", { licenseKey: license.license_key, customerId: license.customer_id, dailyRate });
 
   await sendMessage(chatId, token,
     "━━━━━━━━━━━━━━━━━━━━━\n" +
@@ -1495,9 +1499,8 @@ async function handleRenewLicense(supabase: any, chatId: number, licenseKey: str
     "━━━━━━━━━━━━━━━━━━━━━\n\n" +
     `🔑 المنتج: *${license.products?.name || "منتج"}*\n` +
     `📅 ينتهي: ${license.expire_at ? new Date(license.expire_at).toLocaleDateString("ar-EG") : "منتهي"}\n\n` +
-    "💰 *الأسعار:*\n" +
-    "• اليوم = 10 جنيه\n" +
-    "• 30 يوم = 300 جنيه\n\n" +
+    `💰 *السعر:* ${dailyRate} جنيه/يوم\n` +
+    `• 30 يوم = ${dailyRate * 30} جنيه\n\n` +
     "━━━━━━━━━━━━━━━━━━━━━\n" +
     "📝 *كم يوم تريد تجديد؟*\n" +
     "أرسل عدد الأيام (مثال: `30`)\n" +
