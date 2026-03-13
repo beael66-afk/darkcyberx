@@ -4,6 +4,7 @@ import { KeyRound, Users, Package, Monitor, TrendingUp, AlertCircle } from "luci
 import { StatCard } from "@/components/DashboardStats";
 import { LicenseChart } from "@/components/LicenseChart";
 import { RecentActivity } from "@/components/RecentActivity";
+import { RevenueStats } from "@/components/RevenueStats";
 
 interface Stats {
   totalLicenses: number;
