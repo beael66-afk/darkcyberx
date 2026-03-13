@@ -340,6 +340,11 @@ const Customers = () => {
                   </TableCell>
                   <TableCell className="text-muted-foreground">{customer.email}</TableCell>
                   <TableCell>
+                    <Badge variant="outline" className="font-mono">
+                      {(customer as any).daily_rate ?? 10} ج
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
                     {linkedCustomerIds.has(customer.id) ? (
                       <Badge variant="default" className="bg-green-500/15 text-green-700 dark:text-green-400 hover:bg-green-500/20 border-none text-xs gap-1">
                         <MessageCircle className="h-3 w-3" />
