@@ -4,6 +4,7 @@ import { KeyRound, Users, Package, Monitor, TrendingUp, AlertCircle } from "luci
 import { StatCard } from "@/components/DashboardStats";
 import { LicenseChart } from "@/components/LicenseChart";
 import { RecentActivity } from "@/components/RecentActivity";
+import { RevenueStats } from "@/components/RevenueStats";
 
 interface Stats {
   totalLicenses: number;
@@ -136,6 +137,8 @@ const Dashboard = () => {
         <h1 className="text-3xl font-bold mb-2">لوحة التحكم</h1>
         <p className="text-muted-foreground">نظرة عامة على نظام إدارة التراخيص</p>
       </div>
+
+      <RevenueStats />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {statCards.map((card, index) => (
