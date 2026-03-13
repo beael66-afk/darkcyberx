@@ -60,7 +60,8 @@ const Customers = () => {
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      const { data: result, error } = await supabase.from("customers").insert([data]).select().single();
+      const { daily_rate, ...rest } = data;
+      const { data: result, error } = await supabase.from("customers").insert([{ ...rest, daily_rate: parseFloat(daily_rate) || 10 }]).select().single();
       if (error) throw error;
       return result;
     },
