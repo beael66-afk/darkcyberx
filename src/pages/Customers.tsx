@@ -233,6 +233,21 @@ const Customers = () => {
                     rows={3}
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="daily_rate" className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-primary" />
+                    سعر اليوم (جنيه)
+                  </Label>
+                  <Input
+                    id="daily_rate"
+                    type="number"
+                    min="1"
+                    step="0.5"
+                    value={formData.daily_rate}
+                    onChange={(e) => setFormData({ ...formData, daily_rate: e.target.value })}
+                    placeholder="10"
+                  />
+                </div>
                 <div className="flex gap-2 pt-2">
                   <Button type="submit" className="flex-1" disabled={createMutation.isPending || updateMutation.isPending}>
                     {editingCustomer ? "تحديث" : "إضافة"}
