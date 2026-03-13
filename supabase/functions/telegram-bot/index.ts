@@ -1230,9 +1230,7 @@ async function handleRegistrationEmailStep(supabase: any, chatId: number, name: 
     "━━━━━━━━━━━━━━━━━━━━━\n" +
     "📅 *كم يوم تريد الاشتراك؟*\n" +
     "━━━━━━━━━━━━━━━━━━━━━\n\n" +
-    "💰 *الأسعار:*\n" +
-    "• اليوم = 10 جنيه\n" +
-    "• 30 يوم = 300 جنيه\n\n" +
+    `💰 *السعر:* ${DEFAULT_PRICE_PER_DAY} جنيه/يوم\n\n` +
     "أرسل عدد الأيام (مثال: `30`)\n" +
     "━━━━━━━━━━━━━━━━━━━━━",
     "Markdown"
