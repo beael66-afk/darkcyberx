@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, Edit, Trash2, FileSpreadsheet, FileText, Users, Building2, Mail, StickyNote, MessageCircle } from "lucide-react";
+import { Plus, Search, Edit, Trash2, FileSpreadsheet, FileText, Users, Building2, Mail, StickyNote, MessageCircle, DollarSign } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { exportToExcel, exportToCSV } from "@/lib/exportUtils";
@@ -29,7 +29,8 @@ const Customers = () => {
     email: "",
     phone: "",
     company: "",
-    notes: ""
+    notes: "",
+    daily_rate: "10"
   });
 
   const queryClient = useQueryClient();
@@ -59,7 +60,8 @@ const Customers = () => {
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      const { data: result, error } = await supabase.from("customers").insert([data]).select().single();
+      const { daily_rate, ...rest } = data;
+      const { data: result, error } = await supabase.from("customers").insert([{ ...rest, daily_rate: parseFloat(daily_rate) || 10 }]).select().single();
       if (error) throw error;
       return result;
     },
@@ -79,7 +81,8 @@ const Customers = () => {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data, name }: { id: string; data: typeof formData; name: string }) => {
-      const { error } = await supabase.from("customers").update(data).eq("id", id);
+      const { daily_rate, ...rest } = data;
+      const { error } = await supabase.from("customers").update({ ...rest, daily_rate: parseFloat(daily_rate) || 10 }).eq("id", id);
       if (error) throw error;
       return name;
     },
@@ -137,7 +140,8 @@ const Customers = () => {
       email: customer.email,
       phone: customer.phone || "",
       company: customer.company || "",
-      notes: customer.notes || ""
+      notes: customer.notes || "",
+      daily_rate: String((customer as any).daily_rate ?? 10)
     });
     setIsDialogOpen(true);
   };
@@ -145,7 +149,7 @@ const Customers = () => {
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setEditingCustomer(null);
-    setFormData({ name: "", email: "", phone: "", company: "", notes: "" });
+    setFormData({ name: "", email: "", phone: "", company: "", notes: "", daily_rate: "10" });
   };
 
   const filteredCustomers = customers?.filter(customer =>
@@ -229,6 +233,21 @@ const Customers = () => {
                     rows={3}
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="daily_rate" className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-primary" />
+                    سعر اليوم (جنيه)
+                  </Label>
+                  <Input
+                    id="daily_rate"
+                    type="number"
+                    min="1"
+                    step="0.5"
+                    value={formData.daily_rate}
+                    onChange={(e) => setFormData({ ...formData, daily_rate: e.target.value })}
+                    placeholder="10"
+                  />
+                </div>
                 <div className="flex gap-2 pt-2">
                   <Button type="submit" className="flex-1" disabled={createMutation.isPending || updateMutation.isPending}>
                     {editingCustomer ? "تحديث" : "إضافة"}
@@ -287,6 +306,7 @@ const Customers = () => {
             <TableRow className="bg-muted/50 hover:bg-muted/50">
               <TableHead className="font-semibold">العميل</TableHead>
               <TableHead className="font-semibold">البريد الإلكتروني</TableHead>
+              <TableHead className="font-semibold">سعر اليوم</TableHead>
               <TableHead className="font-semibold">البوت</TableHead>
               <TableHead className="font-semibold text-left">الإجراءات</TableHead>
             </TableRow>
@@ -294,13 +314,13 @@ const Customers = () => {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-12 text-muted-foreground">
+                <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">
                   جاري التحميل...
                 </TableCell>
               </TableRow>
             ) : filteredCustomers?.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-12">
+                <TableCell colSpan={5} className="text-center py-12">
                   <div className="flex flex-col items-center gap-2 text-muted-foreground">
                     <Users className="h-10 w-10 opacity-30" />
                     <p>لا توجد عملاء</p>
@@ -319,6 +339,11 @@ const Customers = () => {
                     </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground">{customer.email}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="font-mono">
+                      {(customer as any).daily_rate ?? 10} ج
+                    </Badge>
+                  </TableCell>
                   <TableCell>
                     {linkedCustomerIds.has(customer.id) ? (
                       <Badge variant="default" className="bg-green-500/15 text-green-700 dark:text-green-400 hover:bg-green-500/20 border-none text-xs gap-1">

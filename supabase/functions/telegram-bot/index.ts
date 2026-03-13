@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 const TELEGRAM_API = "https://api.telegram.org/bot";
-const PRICE_PER_DAY = 10;
+const DEFAULT_PRICE_PER_DAY = 10;
 const PAYMENT_NUMBER = "01009046911";
 const MAX_DELEGATES = 3;
 
@@ -1230,9 +1230,7 @@ async function handleRegistrationEmailStep(supabase: any, chatId: number, name: 
     "━━━━━━━━━━━━━━━━━━━━━\n" +
     "📅 *كم يوم تريد الاشتراك؟*\n" +
     "━━━━━━━━━━━━━━━━━━━━━\n\n" +
-    "💰 *الأسعار:*\n" +
-    "• اليوم = 10 جنيه\n" +
-    "• 30 يوم = 300 جنيه\n\n" +
+    `💰 *السعر:* ${DEFAULT_PRICE_PER_DAY} جنيه/يوم\n\n` +
     "أرسل عدد الأيام (مثال: `30`)\n" +
     "━━━━━━━━━━━━━━━━━━━━━",
     "Markdown"
@@ -1240,7 +1238,7 @@ async function handleRegistrationEmailStep(supabase: any, chatId: number, name: 
 }
 
 async function handleRegDaysInput(supabase: any, chatId: number, days: number, stateData: any, token: string) {
-  const amount = days * PRICE_PER_DAY;
+  const amount = days * DEFAULT_PRICE_PER_DAY;
   await setState(supabase, chatId, "awaiting_reg_receipt", { ...stateData, days, amount });
   await sendMessage(chatId, token,
     "━━━━━━━━━━━━━━━━━━━━━\n" +
@@ -1489,7 +1487,11 @@ async function handleRenewLicense(supabase: any, chatId: number, licenseKey: str
     return;
   }
 
-  await setState(supabase, chatId, "awaiting_days", { licenseKey: license.license_key, customerId: license.customer_id });
+  // Fetch customer's daily rate
+  const { data: customerData } = await supabase.from("customers").select("daily_rate").eq("id", license.customer_id).maybeSingle();
+  const dailyRate = customerData?.daily_rate || DEFAULT_PRICE_PER_DAY;
+
+  await setState(supabase, chatId, "awaiting_days", { licenseKey: license.license_key, customerId: license.customer_id, dailyRate });
 
   await sendMessage(chatId, token,
     "━━━━━━━━━━━━━━━━━━━━━\n" +
@@ -1497,9 +1499,8 @@ async function handleRenewLicense(supabase: any, chatId: number, licenseKey: str
     "━━━━━━━━━━━━━━━━━━━━━\n\n" +
     `🔑 المنتج: *${license.products?.name || "منتج"}*\n` +
     `📅 ينتهي: ${license.expire_at ? new Date(license.expire_at).toLocaleDateString("ar-EG") : "منتهي"}\n\n` +
-    "💰 *الأسعار:*\n" +
-    "• اليوم = 10 جنيه\n" +
-    "• 30 يوم = 300 جنيه\n\n" +
+    `💰 *السعر:* ${dailyRate} جنيه/يوم\n` +
+    `• 30 يوم = ${dailyRate * 30} جنيه\n\n` +
     "━━━━━━━━━━━━━━━━━━━━━\n" +
     "📝 *كم يوم تريد تجديد؟*\n" +
     "أرسل عدد الأيام (مثال: `30`)\n" +
@@ -1514,15 +1515,16 @@ async function handleDaysInput(supabase: any, chatId: number, days: number, lice
     return;
   }
 
-  // Get customerId from state or resolve
+  // Get customerId and dailyRate from state or resolve
   const state = await getState(supabase, chatId);
   const customerId = state?.data?.customerId;
+  const dailyRate = state?.data?.dailyRate || DEFAULT_PRICE_PER_DAY;
 
   // Find license across accessible accounts
   const allAccess = await getAllCustomerAccess(supabase, chatId);
   const customerIds = customerId ? [customerId] : allAccess.map(a => a.customer_id);
 
-  const amount = days * PRICE_PER_DAY;
+  const amount = days * dailyRate;
 
   const { data: license } = await supabase
     .from("licenses")
