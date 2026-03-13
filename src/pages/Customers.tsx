@@ -149,7 +149,7 @@ const Customers = () => {
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setEditingCustomer(null);
-    setFormData({ name: "", email: "", phone: "", company: "", notes: "" });
+    setFormData({ name: "", email: "", phone: "", company: "", notes: "", daily_rate: "10" });
   };
 
   const filteredCustomers = customers?.filter(customer =>
