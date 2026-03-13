@@ -1515,15 +1515,16 @@ async function handleDaysInput(supabase: any, chatId: number, days: number, lice
     return;
   }
 
-  // Get customerId from state or resolve
+  // Get customerId and dailyRate from state or resolve
   const state = await getState(supabase, chatId);
   const customerId = state?.data?.customerId;
+  const dailyRate = state?.data?.dailyRate || DEFAULT_PRICE_PER_DAY;
 
   // Find license across accessible accounts
   const allAccess = await getAllCustomerAccess(supabase, chatId);
   const customerIds = customerId ? [customerId] : allAccess.map(a => a.customer_id);
 
-  const amount = days * PRICE_PER_DAY;
+  const amount = days * dailyRate;
 
   const { data: license } = await supabase
     .from("licenses")
