@@ -314,7 +314,7 @@ const Customers = () => {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-12 text-muted-foreground">
+                <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">
                   جاري التحميل...
                 </TableCell>
               </TableRow>
