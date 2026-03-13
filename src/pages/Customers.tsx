@@ -140,7 +140,8 @@ const Customers = () => {
       email: customer.email,
       phone: customer.phone || "",
       company: customer.company || "",
-      notes: customer.notes || ""
+      notes: customer.notes || "",
+      daily_rate: String((customer as any).daily_rate ?? 10)
     });
     setIsDialogOpen(true);
   };
