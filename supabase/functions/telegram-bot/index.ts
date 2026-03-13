@@ -1238,7 +1238,7 @@ async function handleRegistrationEmailStep(supabase: any, chatId: number, name: 
 }
 
 async function handleRegDaysInput(supabase: any, chatId: number, days: number, stateData: any, token: string) {
-  const amount = days * PRICE_PER_DAY;
+  const amount = days * DEFAULT_PRICE_PER_DAY;
   await setState(supabase, chatId, "awaiting_reg_receipt", { ...stateData, days, amount });
   await sendMessage(chatId, token,
     "━━━━━━━━━━━━━━━━━━━━━\n" +
