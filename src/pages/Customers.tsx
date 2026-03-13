@@ -29,7 +29,8 @@ const Customers = () => {
     email: "",
     phone: "",
     company: "",
-    notes: ""
+    notes: "",
+    daily_rate: "10"
   });
 
   const queryClient = useQueryClient();
