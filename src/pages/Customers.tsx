@@ -81,7 +81,8 @@ const Customers = () => {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data, name }: { id: string; data: typeof formData; name: string }) => {
-      const { error } = await supabase.from("customers").update(data).eq("id", id);
+      const { daily_rate, ...rest } = data;
+      const { error } = await supabase.from("customers").update({ ...rest, daily_rate: parseFloat(daily_rate) || 10 }).eq("id", id);
       if (error) throw error;
       return name;
     },
