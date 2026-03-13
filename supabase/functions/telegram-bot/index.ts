@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 const TELEGRAM_API = "https://api.telegram.org/bot";
-const PRICE_PER_DAY = 10;
+const DEFAULT_PRICE_PER_DAY = 10;
 const PAYMENT_NUMBER = "01009046911";
 const MAX_DELEGATES = 3;
 
