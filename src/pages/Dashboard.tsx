@@ -138,6 +138,8 @@ const Dashboard = () => {
         <p className="text-muted-foreground">نظرة عامة على نظام إدارة التراخيص</p>
       </div>
 
+      <RevenueStats />
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {statCards.map((card, index) => (
           <StatCard
