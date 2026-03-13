@@ -33,6 +33,7 @@ export const customerSchema = z.object({
     .or(z.literal("")),
   company: z.string().max(200, "Company name too long").optional().or(z.literal("")),
   notes: z.string().max(1000, "Notes too long").optional().or(z.literal("")),
+  daily_rate: z.string().refine((val) => !isNaN(Number(val)) && Number(val) > 0, "Daily rate must be a positive number").optional().or(z.literal("")),
 });
 
 // Product validation schema

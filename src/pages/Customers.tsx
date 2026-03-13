@@ -238,11 +238,11 @@ const Customers = () => {
                     <DollarSign className="h-4 w-4 text-primary" />
                     سعر اليوم (جنيه)
                   </Label>
-                  <Input
+    <Input
                     id="daily_rate"
                     type="number"
-                    min="1"
-                    step="0.5"
+                    min="0.01"
+                    step="any"
                     value={formData.daily_rate}
                     onChange={(e) => setFormData({ ...formData, daily_rate: e.target.value })}
                     placeholder="10"
