@@ -109,6 +109,7 @@ export type Database = {
           account_created: boolean | null
           company: string | null
           created_at: string | null
+          daily_rate: number
           email: string
           id: string
           name: string
@@ -121,6 +122,7 @@ export type Database = {
           account_created?: boolean | null
           company?: string | null
           created_at?: string | null
+          daily_rate?: number
           email: string
           id?: string
           name: string
@@ -133,6 +135,7 @@ export type Database = {
           account_created?: boolean | null
           company?: string | null
           created_at?: string | null
+          daily_rate?: number
           email?: string
           id?: string
           name?: string

@@ -1,0 +1,1 @@
+ALTER TABLE public.customers ADD COLUMN daily_rate numeric NOT NULL DEFAULT 10;
