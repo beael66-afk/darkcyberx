@@ -320,7 +320,7 @@ const Customers = () => {
               </TableRow>
             ) : filteredCustomers?.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-12">
+                <TableCell colSpan={5} className="text-center py-12">
                   <div className="flex flex-col items-center gap-2 text-muted-foreground">
                     <Users className="h-10 w-10 opacity-30" />
                     <p>لا توجد عملاء</p>
