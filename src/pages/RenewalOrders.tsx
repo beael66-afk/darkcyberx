@@ -138,12 +138,13 @@ const ApproveRegDialog = ({
 }: {
   request: RegistrationRequest;
   onClose: () => void;
-  onApprove: (data: { requestId: string; maxDevices: number; productId: string | null; renewalDays: number | null }) => void;
+  onApprove: (data: { requestId: string; maxDevices: number; productId: string | null; renewalDays: number | null; dailyRate: number }) => void;
 }) => {
   const [maxDevices, setMaxDevices] = useState(1);
   const [selectedProduct, setSelectedProduct] = useState<string>("");
   const [renewalDays, setRenewalDays] = useState<string>(request.requested_days ? String(request.requested_days) : "");
   const [createLicense, setCreateLicense] = useState(true);
+  const [dailyRate, setDailyRate] = useState<string>("10");
 
   const { data: products } = useQuery({
     queryKey: ["products-active"],
