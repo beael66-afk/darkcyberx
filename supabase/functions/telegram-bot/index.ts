@@ -192,6 +192,9 @@ Deno.serve(async (req) => {
       await clearState(supabase, chatId);
       if (text === "/start") {
         await sendMainMenu(chatId, TELEGRAM_BOT_TOKEN, supabase);
+      } else if (text.startsWith("/start invite_")) {
+        const inviteCode = text.replace("/start ", "").trim();
+        await handleInviteLink(supabase, chatId, inviteCode, TELEGRAM_BOT_TOKEN);
       } else {
         await sendMessage(chatId, TELEGRAM_BOT_TOKEN,
           "❓ أمر غير معروف.\nاضغط /start لعرض القائمة الرئيسية."
