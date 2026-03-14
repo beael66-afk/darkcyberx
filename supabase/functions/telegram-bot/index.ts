@@ -192,6 +192,9 @@ Deno.serve(async (req) => {
       await clearState(supabase, chatId);
       if (text === "/start") {
         await sendMainMenu(chatId, TELEGRAM_BOT_TOKEN, supabase);
+      } else if (text.startsWith("/start invite_")) {
+        const inviteCode = text.replace("/start ", "").trim();
+        await handleInviteLink(supabase, chatId, inviteCode, TELEGRAM_BOT_TOKEN);
       } else {
         await sendMessage(chatId, TELEGRAM_BOT_TOKEN,
           "❓ أمر غير معروف.\nاضغط /start لعرض القائمة الرئيسية."
@@ -332,16 +335,6 @@ Deno.serve(async (req) => {
         return new Response("OK", { status: 200 });
       }
       await handleDelegateNameInput(supabase, chatId, text, TELEGRAM_BOT_TOKEN);
-      return new Response("OK", { status: 200 });
-    }
-
-    if (state?.step === "awaiting_delegate_chatid") {
-      if (!text || !/^-?\d+$/.test(text.trim())) {
-        await sendMessage(chatId, TELEGRAM_BOT_TOKEN, "⚠️ أرسل معرف التليجرام (رقم). يمكن للشريك معرفة معرفه بإرسال /start لبوت @userinfobot");
-        return new Response("OK", { status: 200 });
-      }
-      await handleDelegateChatIdInput(supabase, chatId, parseInt(text.trim()), state.data, TELEGRAM_BOT_TOKEN);
-      await clearState(supabase, chatId);
       return new Response("OK", { status: 200 });
     }
 
@@ -881,107 +874,161 @@ async function handleAddDelegateStart(supabase: any, chatId: number, token: stri
 }
 
 async function handleDelegateNameInput(supabase: any, chatId: number, name: string, token: string) {
-  await setState(supabase, chatId, "awaiting_delegate_chatid", { delegateName: name });
-  await sendMessage(chatId, token,
-    "━━━━━━━━━━━━━━━━━━━━━\n" +
-    "🆔 *أرسل معرف تليجرام الشريك*\n" +
-    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
-    `👤 اسم الشريك: *${name}*\n\n` +
-    "📌 يمكن للشريك معرفة معرفه بإرسال /start لبوت:\n" +
-    "@userinfobot\n\n" +
-    "أرسل الرقم (مثال: `123456789`)",
-    "Markdown"
-  );
-}
-
-async function handleDelegateChatIdInput(supabase: any, chatId: number, delegateChatId: number, stateData: any, token: string) {
   const customer = await getCustomerByChatId(supabase, chatId);
   if (!customer) return;
 
-  // Can't add yourself
-  if (delegateChatId === chatId) {
-    await sendMessageWithKeyboard(chatId, token,
-      "⚠️ لا يمكنك إضافة نفسك كشريك!",
-      { inline_keyboard: [[{ text: "👥 إدارة الشركاء", callback_data: "manage_delegates" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
-    );
-    return;
-  }
+  // Generate unique invite code
+  const code = "invite_" + crypto.randomUUID().replace(/-/g, "").slice(0, 12);
 
-  // Check if already exists
-  const { data: existing } = await supabase
-    .from("telegram_delegates")
-    .select("id")
-    .eq("owner_customer_id", customer.customer_id)
-    .eq("delegate_chat_id", delegateChatId)
-    .maybeSingle();
-
-  if (existing) {
-    await sendMessageWithKeyboard(chatId, token,
-      "⚠️ هذا الشخص مضاف كشريك بالفعل!",
-      { inline_keyboard: [[{ text: "👥 إدارة الشركاء", callback_data: "manage_delegates" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
-    );
-    return;
-  }
-
-  // Check limit
-  const { count } = await supabase
-    .from("telegram_delegates")
-    .select("*", { count: "exact", head: true })
-    .eq("owner_customer_id", customer.customer_id);
-
-  if ((count || 0) >= MAX_DELEGATES) {
-    await sendMessageWithKeyboard(chatId, token,
-      `⚠️ وصلت للحد الأقصى (${MAX_DELEGATES} شركاء).`,
-      { inline_keyboard: [[{ text: "👥 إدارة الشركاء", callback_data: "manage_delegates" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
-    );
-    return;
-  }
-
-  const delegateName = stateData?.delegateName || null;
-
+  // Store invite code
   const { error } = await supabase
-    .from("telegram_delegates")
+    .from("telegram_invite_codes")
     .insert({
+      code,
       owner_customer_id: customer.customer_id,
-      delegate_chat_id: delegateChatId,
-      delegate_name: delegateName,
+      delegate_name: name,
     });
 
   if (error) {
-    console.error("Add delegate error:", error);
+    console.error("Create invite code error:", error);
     await sendMessage(chatId, token, "❌ حدث خطأ. حاول مرة أخرى.");
     return;
   }
 
-  // Get owner's name for notification
-  const { data: ownerCustomer } = await supabase.from("customers").select("name").eq("id", customer.customer_id).maybeSingle();
+  // Get bot username
+  const meRes = await fetch(`https://api.telegram.org/bot${token}/getMe`);
+  const meData = await meRes.json();
+  const botUsername = meData.result?.username || "bot";
 
-  // Notify the delegate
-  await sendMessageWithKeyboard(delegateChatId, token,
+  const inviteLink = `https://t.me/${botUsername}?start=${code}`;
+
+  await clearState(supabase, chatId);
+  await sendMessageWithKeyboard(chatId, token,
     "━━━━━━━━━━━━━━━━━━━━━\n" +
-    "🎉 *تمت إضافتك كشريك!*\n" +
+    "🔗 *رابط دعوة الشريك*\n" +
     "━━━━━━━━━━━━━━━━━━━━━\n\n" +
-    `👤 تمت إضافتك كشريك في حساب *${ownerCustomer?.name || "غير معروف"}*\n\n` +
-    "يمكنك الآن:\n" +
-    "📋 عرض التراخيص\n" +
-    "🔄 تجديد التراخيص\n" +
-    "🖥️ إدارة أجهزة RustDesk\n" +
-    "🔑 ريسيت المفاتيح\n\n" +
-    "اضغط /start للبدء 🚀",
+    `👤 الشريك: *${name}*\n\n` +
+    "أرسل هذا الرابط للشريك ليضغط عليه:\n\n" +
+    `${inviteLink}\n\n` +
+    "⏰ _الرابط صالح لمدة 24 ساعة_",
+    {
+      inline_keyboard: [
+        [{ text: "👥 إدارة الشركاء", callback_data: "manage_delegates" }],
+        [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }],
+      ],
+    },
+    "Markdown"
+  );
+}
+
+// Handle invite link when partner clicks it
+async function handleInviteLink(supabase: any, chatId: number, code: string, token: string) {
+  // Look up the invite code
+  const { data: invite, error } = await supabase
+    .from("telegram_invite_codes")
+    .select("*")
+    .eq("code", code)
+    .is("used_by_chat_id", null)
+    .maybeSingle();
+
+  if (error || !invite) {
+    await sendMessage(chatId, token, "❌ رابط الدعوة غير صالح أو تم استخدامه بالفعل.");
+    return;
+  }
+
+  // Check expiry
+  if (new Date(invite.expires_at) < new Date()) {
+    await sendMessage(chatId, token, "⏰ رابط الدعوة منتهي الصلاحية. اطلب من صاحب الحساب إنشاء رابط جديد.");
+    return;
+  }
+
+  // Check if the partner is the owner themselves
+  const { data: ownerLink } = await supabase
+    .from("telegram_links")
+    .select("telegram_chat_id")
+    .eq("customer_id", invite.owner_customer_id)
+    .maybeSingle();
+
+  if (ownerLink?.telegram_chat_id === chatId) {
+    await sendMessage(chatId, token, "⚠️ لا يمكنك إضافة نفسك كشريك!");
+    return;
+  }
+
+  // Check if already a delegate
+  const { data: existing } = await supabase
+    .from("telegram_delegates")
+    .select("id")
+    .eq("owner_customer_id", invite.owner_customer_id)
+    .eq("delegate_chat_id", chatId)
+    .maybeSingle();
+
+  if (existing) {
+    await sendMessage(chatId, token, "✅ أنت مضاف كشريك بالفعل لهذا الحساب!");
+    return;
+  }
+
+  // Check delegate limit
+  const { count } = await supabase
+    .from("telegram_delegates")
+    .select("*", { count: "exact", head: true })
+    .eq("owner_customer_id", invite.owner_customer_id);
+
+  if ((count || 0) >= MAX_DELEGATES) {
+    await sendMessage(chatId, token, `⚠️ صاحب الحساب وصل للحد الأقصى (${MAX_DELEGATES} شركاء).`);
+    return;
+  }
+
+  // Add delegate
+  const { error: insertErr } = await supabase
+    .from("telegram_delegates")
+    .insert({
+      owner_customer_id: invite.owner_customer_id,
+      delegate_chat_id: chatId,
+      delegate_name: invite.delegate_name,
+    });
+
+  if (insertErr) {
+    console.error("Add delegate via invite error:", insertErr);
+    await sendMessage(chatId, token, "❌ حدث خطأ. حاول مرة أخرى.");
+    return;
+  }
+
+  // Mark invite as used
+  await supabase
+    .from("telegram_invite_codes")
+    .update({ used_by_chat_id: chatId, used_at: new Date().toISOString() })
+    .eq("id", invite.id);
+
+  // Get owner's name
+  const { data: ownerCustomer } = await supabase
+    .from("customers")
+    .select("name")
+    .eq("id", invite.owner_customer_id)
+    .maybeSingle();
+
+  // Notify the partner
+  await sendMessageWithKeyboard(chatId, token,
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    "✅ *تم ربطك كشريك بنجاح!*\n" +
+    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+    `👤 صاحب الحساب: *${ownerCustomer?.name || "غير معروف"}*\n\n` +
+    "يمكنك الآن إدارة الحساب نيابة عن صاحبه.\nاضغط /start لعرض القائمة.",
     { inline_keyboard: [[{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
     "Markdown"
   );
 
-  await sendMessageWithKeyboard(chatId, token,
-    "━━━━━━━━━━━━━━━━━━━━━\n" +
-    "✅ *تمت إضافة الشريك بنجاح!*\n" +
-    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
-    `👤 الاسم: *${delegateName || "—"}*\n` +
-    `🆔 المعرف: \`${delegateChatId}\`\n\n` +
-    "تم إرسال إشعار للشريك ✅",
-    { inline_keyboard: [[{ text: "👥 إدارة الشركاء", callback_data: "manage_delegates" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
-    "Markdown"
-  );
+  // Notify the owner
+  if (ownerLink?.telegram_chat_id) {
+    await sendMessageWithKeyboard(ownerLink.telegram_chat_id, token,
+      "━━━━━━━━━━━━━━━━━━━━━\n" +
+      "✅ *تم قبول دعوة الشريك!*\n" +
+      "━━━━━━━━━━━━━━━━━━━━━\n\n" +
+      `👤 الشريك: *${invite.delegate_name || "غير معروف"}*\n` +
+      "تم ربطه بحسابك بنجاح. يمكنه الآن إدارة حسابك.",
+      { inline_keyboard: [[{ text: "👥 إدارة الشركاء", callback_data: "manage_delegates" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
+      "Markdown"
+    );
+  }
 }
 
 async function handleRemoveDelegate(supabase: any, chatId: number, delegateId: string, token: string) {
