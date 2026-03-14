@@ -367,7 +367,7 @@ const RenewalOrders = () => {
       // Create customer
       const { data: customer, error: custErr } = await supabase
         .from("customers")
-        .insert({ name: req.name, email: req.email })
+        .insert({ name: req.name, email: req.email, daily_rate: dailyRate })
         .select()
         .single();
       if (custErr) throw custErr;
