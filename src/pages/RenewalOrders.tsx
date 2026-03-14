@@ -160,6 +160,7 @@ const ApproveRegDialog = ({
       maxDevices,
       productId: createLicense && selectedProduct ? selectedProduct : null,
       renewalDays: createLicense && renewalDays ? parseInt(renewalDays) : null,
+      dailyRate: parseFloat(dailyRate) || 10,
     });
     onClose();
   };
