@@ -221,6 +221,32 @@ const ApproveRegDialog = ({
                   onChange={(e) => setRenewalDays(e.target.value)}
                 />
               </div>
+              <div className="space-y-1.5">
+                <Label className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 text-primary" />
+                  سعر اليوم (جنيه)
+                </Label>
+                <Input
+                  type="number"
+                  min={0.01}
+                  step="any"
+                  value={dailyRate}
+                  onChange={(e) => setDailyRate(e.target.value)}
+                  placeholder="10"
+                />
+                {renewalDays && parseFloat(dailyRate) > 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    الإجمالي: {(parseFloat(dailyRate) * parseInt(renewalDays)).toFixed(2)} ج.م ({renewalDays} يوم × {dailyRate} ج.م)
+                  </p>
+                )}
+              </div>
+                  type="number"
+                  min={1}
+                  placeholder="مثال: 30"
+                  value={renewalDays}
+                  onChange={(e) => setRenewalDays(e.target.value)}
+                />
+              </div>
             </div>
           )}
         </div>
