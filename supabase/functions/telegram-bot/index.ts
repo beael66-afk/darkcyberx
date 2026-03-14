@@ -338,16 +338,6 @@ Deno.serve(async (req) => {
       return new Response("OK", { status: 200 });
     }
 
-    if (state?.step === "awaiting_delegate_chatid") {
-      if (!text || !/^-?\d+$/.test(text.trim())) {
-        await sendMessage(chatId, TELEGRAM_BOT_TOKEN, "⚠️ أرسل معرف التليجرام (رقم). يمكن للشريك معرفة معرفه بإرسال /start لبوت @userinfobot");
-        return new Response("OK", { status: 200 });
-      }
-      await handleDelegateChatIdInput(supabase, chatId, parseInt(text.trim()), state.data, TELEGRAM_BOT_TOKEN);
-      await clearState(supabase, chatId);
-      return new Response("OK", { status: 200 });
-    }
-
     // No state - greet automatically
     await sendMainMenu(chatId, TELEGRAM_BOT_TOKEN, supabase);
   } catch (error) {
