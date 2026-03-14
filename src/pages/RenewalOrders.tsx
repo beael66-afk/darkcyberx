@@ -240,13 +240,6 @@ const ApproveRegDialog = ({
                   </p>
                 )}
               </div>
-                  type="number"
-                  min={1}
-                  placeholder="مثال: 30"
-                  value={renewalDays}
-                  onChange={(e) => setRenewalDays(e.target.value)}
-                />
-              </div>
             </div>
           )}
         </div>
