@@ -411,12 +411,13 @@ const RenewalOrders = () => {
           licenseKey = licData.license_key;
 
           // Create persistent invoice record so revenue is never lost on deletion
-          if (req.amount && Number(req.amount) > 0) {
+          const calculatedAmount = renewalDays ? dailyRate * renewalDays : (req.amount ? Number(req.amount) : 0);
+          if (calculatedAmount > 0) {
             const { data: invNum } = await supabase.rpc("generate_invoice_number");
             await supabase.from("invoices").insert({
               customer_id: customer.id,
               license_id: licData.id,
-              amount: req.amount,
+              amount: calculatedAmount,
               invoice_number: invNum || `INV-${Date.now()}`,
               status: "paid",
               paid_at: new Date().toISOString(),
