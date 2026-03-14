@@ -138,12 +138,13 @@ const ApproveRegDialog = ({
 }: {
   request: RegistrationRequest;
   onClose: () => void;
-  onApprove: (data: { requestId: string; maxDevices: number; productId: string | null; renewalDays: number | null }) => void;
+  onApprove: (data: { requestId: string; maxDevices: number; productId: string | null; renewalDays: number | null; dailyRate: number }) => void;
 }) => {
   const [maxDevices, setMaxDevices] = useState(1);
   const [selectedProduct, setSelectedProduct] = useState<string>("");
   const [renewalDays, setRenewalDays] = useState<string>(request.requested_days ? String(request.requested_days) : "");
   const [createLicense, setCreateLicense] = useState(true);
+  const [dailyRate, setDailyRate] = useState<string>("10");
 
   const { data: products } = useQuery({
     queryKey: ["products-active"],
@@ -159,6 +160,7 @@ const ApproveRegDialog = ({
       maxDevices,
       productId: createLicense && selectedProduct ? selectedProduct : null,
       renewalDays: createLicense && renewalDays ? parseInt(renewalDays) : null,
+      dailyRate: parseFloat(dailyRate) || 10,
     });
     onClose();
   };
@@ -218,6 +220,25 @@ const ApproveRegDialog = ({
                   value={renewalDays}
                   onChange={(e) => setRenewalDays(e.target.value)}
                 />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 text-primary" />
+                  سعر اليوم (جنيه)
+                </Label>
+                <Input
+                  type="number"
+                  min={0.01}
+                  step="any"
+                  value={dailyRate}
+                  onChange={(e) => setDailyRate(e.target.value)}
+                  placeholder="10"
+                />
+                {renewalDays && parseFloat(dailyRate) > 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    الإجمالي: {(parseFloat(dailyRate) * parseInt(renewalDays)).toFixed(2)} ج.م ({renewalDays} يوم × {dailyRate} ج.م)
+                  </p>
+                )}
               </div>
             </div>
           )}
@@ -328,11 +349,12 @@ const RenewalOrders = () => {
 
   // ─── Approve Registration with License ────────────
   const approveRegMutation = useMutation({
-    mutationFn: async ({ requestId, maxDevices, productId, renewalDays }: {
+    mutationFn: async ({ requestId, maxDevices, productId, renewalDays, dailyRate }: {
       requestId: string;
       maxDevices: number;
       productId: string | null;
       renewalDays: number | null;
+      dailyRate: number;
     }) => {
       // Get the request details
       const { data: req, error: fetchErr } = await supabase
@@ -345,7 +367,7 @@ const RenewalOrders = () => {
       // Create customer
       const { data: customer, error: custErr } = await supabase
         .from("customers")
-        .insert({ name: req.name, email: req.email })
+        .insert({ name: req.name, email: req.email, daily_rate: dailyRate })
         .select()
         .single();
       if (custErr) throw custErr;
@@ -389,12 +411,13 @@ const RenewalOrders = () => {
           licenseKey = licData.license_key;
 
           // Create persistent invoice record so revenue is never lost on deletion
-          if (req.amount && Number(req.amount) > 0) {
+          const calculatedAmount = renewalDays ? dailyRate * renewalDays : (req.amount ? Number(req.amount) : 0);
+          if (calculatedAmount > 0) {
             const { data: invNum } = await supabase.rpc("generate_invoice_number");
             await supabase.from("invoices").insert({
               customer_id: customer.id,
               license_id: licData.id,
-              amount: req.amount,
+              amount: calculatedAmount,
               invoice_number: invNum || `INV-${Date.now()}`,
               status: "paid",
               paid_at: new Date().toISOString(),
