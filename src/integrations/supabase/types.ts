@@ -637,6 +637,47 @@ export type Database = {
           },
         ]
       }
+      telegram_invite_codes: {
+        Row: {
+          code: string
+          created_at: string
+          delegate_name: string | null
+          expires_at: string
+          id: string
+          owner_customer_id: string
+          used_at: string | null
+          used_by_chat_id: number | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          delegate_name?: string | null
+          expires_at?: string
+          id?: string
+          owner_customer_id: string
+          used_at?: string | null
+          used_by_chat_id?: number | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          delegate_name?: string | null
+          expires_at?: string
+          id?: string
+          owner_customer_id?: string
+          used_at?: string | null
+          used_by_chat_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telegram_invite_codes_owner_customer_id_fkey"
+            columns: ["owner_customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       telegram_links: {
         Row: {
           created_at: string
