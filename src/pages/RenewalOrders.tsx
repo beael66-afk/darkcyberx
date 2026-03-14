@@ -349,11 +349,12 @@ const RenewalOrders = () => {
 
   // ─── Approve Registration with License ────────────
   const approveRegMutation = useMutation({
-    mutationFn: async ({ requestId, maxDevices, productId, renewalDays }: {
+    mutationFn: async ({ requestId, maxDevices, productId, renewalDays, dailyRate }: {
       requestId: string;
       maxDevices: number;
       productId: string | null;
       renewalDays: number | null;
+      dailyRate: number;
     }) => {
       // Get the request details
       const { data: req, error: fetchErr } = await supabase
