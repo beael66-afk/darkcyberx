@@ -1031,34 +1031,6 @@ async function handleInviteLink(supabase: any, chatId: number, code: string, tok
   }
 }
 
-  // Notify the delegate
-  await sendMessageWithKeyboard(delegateChatId, token,
-    "━━━━━━━━━━━━━━━━━━━━━\n" +
-    "🎉 *تمت إضافتك كشريك!*\n" +
-    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
-    `👤 تمت إضافتك كشريك في حساب *${ownerCustomer?.name || "غير معروف"}*\n\n` +
-    "يمكنك الآن:\n" +
-    "📋 عرض التراخيص\n" +
-    "🔄 تجديد التراخيص\n" +
-    "🖥️ إدارة أجهزة RustDesk\n" +
-    "🔑 ريسيت المفاتيح\n\n" +
-    "اضغط /start للبدء 🚀",
-    { inline_keyboard: [[{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
-    "Markdown"
-  );
-
-  await sendMessageWithKeyboard(chatId, token,
-    "━━━━━━━━━━━━━━━━━━━━━\n" +
-    "✅ *تمت إضافة الشريك بنجاح!*\n" +
-    "━━━━━━━━━━━━━━━━━━━━━\n\n" +
-    `👤 الاسم: *${delegateName || "—"}*\n` +
-    `🆔 المعرف: \`${delegateChatId}\`\n\n` +
-    "تم إرسال إشعار للشريك ✅",
-    { inline_keyboard: [[{ text: "👥 إدارة الشركاء", callback_data: "manage_delegates" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
-    "Markdown"
-  );
-}
-
 async function handleRemoveDelegate(supabase: any, chatId: number, delegateId: string, token: string) {
   const customer = await getCustomerByChatId(supabase, chatId);
   if (!customer) return;
