@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { KeyRound, Users, Package, Monitor, TrendingUp, AlertCircle } from "lucide-react";
 import { StatCard } from "@/components/DashboardStats";
@@ -41,41 +41,48 @@ const Dashboard = () => {
   const [logs, setLogs] = useState<Log[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchStats();
-  }, []);
-
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
-      const [licenses, customers, products, devices, recentLogs] = await Promise.all([
-        supabase.from("licenses").select("*"),
-        supabase.from("customers").select("id"),
-        supabase.from("products").select("id"),
-        supabase.from("devices").select("id"),
-        supabase.from("logs").select("*").order("created_at", { ascending: false }).limit(10),
-      ]);
-
-      const activeLicenses = licenses.data?.filter((l) => l.status === "active").length || 0;
-      const expiredLicenses = licenses.data?.filter((l) => l.status === "expired").length || 0;
-      const pendingLicenses = licenses.data?.filter((l) => l.status === "pending").length || 0;
-      const suspendedLicenses = licenses.data?.filter((l) => l.status === "suspended").length || 0;
-      
       const thirtyDaysFromNow = new Date();
       thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
-      const expiringSoon = licenses.data?.filter(
-        (l) => l.expire_at && new Date(l.expire_at) <= thirtyDaysFromNow && l.status === "active"
-      ).length || 0;
 
-      setStats({
-        totalLicenses: licenses.data?.length || 0,
+      const [
+        totalLicenses,
         activeLicenses,
         expiredLicenses,
         pendingLicenses,
         suspendedLicenses,
-        totalCustomers: customers.data?.length || 0,
-        totalProducts: products.data?.length || 0,
-        totalDevices: devices.data?.length || 0,
         expiringSoon,
+        customers,
+        products,
+        devices,
+        recentLogs,
+      ] = await Promise.all([
+        supabase.from("licenses").select("*", { count: "exact", head: true }),
+        supabase.from("licenses").select("*", { count: "exact", head: true }).eq("status", "active"),
+        supabase.from("licenses").select("*", { count: "exact", head: true }).eq("status", "expired"),
+        supabase.from("licenses").select("*", { count: "exact", head: true }).eq("status", "pending"),
+        supabase.from("licenses").select("*", { count: "exact", head: true }).eq("status", "suspended"),
+        supabase.from("licenses").select("*", { count: "exact", head: true })
+          .eq("status", "active")
+          .not("expire_at", "is", null)
+          .lte("expire_at", thirtyDaysFromNow.toISOString()),
+        supabase.from("customers").select("*", { count: "exact", head: true }),
+        supabase.from("products").select("*", { count: "exact", head: true }),
+        supabase.from("devices").select("*", { count: "exact", head: true }),
+        supabase.from("logs").select("*").order("created_at", { ascending: false }).limit(10),
+      ]);
+
+      setStats({
+        totalLicenses: totalLicenses.count || 0,
+        activeLicenses: activeLicenses.count || 0,
+        expiredLicenses: expiredLicenses.count || 0,
+        pendingLicenses: pendingLicenses.count || 0,
+        suspendedLicenses: suspendedLicenses.count || 0,
+        totalCustomers: customers.count || 0,
+        totalProducts: products.count || 0,
+        totalDevices: devices.count || 0,
+        expiringSoon: expiringSoon.count || 0,
       });
 
       setLogs(recentLogs.data || []);
@@ -84,7 +91,25 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchStats();
+
+    // Realtime subscriptions for all dashboard tables
+    const channel = supabase
+      .channel("dashboard-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "licenses" }, () => fetchStats())
+      .on("postgres_changes", { event: "*", schema: "public", table: "customers" }, () => fetchStats())
+      .on("postgres_changes", { event: "*", schema: "public", table: "products" }, () => fetchStats())
+      .on("postgres_changes", { event: "*", schema: "public", table: "devices" }, () => fetchStats())
+      .on("postgres_changes", { event: "*", schema: "public", table: "logs" }, () => fetchStats())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchStats]);
 
   const statCards = [
     {
