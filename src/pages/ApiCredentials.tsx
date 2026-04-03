@@ -600,7 +600,7 @@ export default function ApiCredentials() {
                       </code>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      آخر استخدام: {apiKey.last_used_at ? new Date(apiKey.last_used_at).toLocaleDateString('ar-SA') : 'لم يستخدم بعد'}
+                      آخر استخدام: {apiKey.last_used_at ? new Date(apiKey.last_used_at).toLocaleString('ar-EG', { timeZone: 'Africa/Cairo', hour12: true, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'لم يستخدم بعد'}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">

@@ -299,7 +299,7 @@ const Logs = () => {
                       />
                     </TableCell>
                     <TableCell className="font-mono text-sm">
-                      {format(new Date(log.created_at!), "dd MMM yyyy، HH:mm:ss", {
+                      {format(new Date(log.created_at!), "dd MMM yyyy، hh:mm:ss a", {
                         locale: ar,
                       })}
                     </TableCell>

@@ -486,7 +486,7 @@ export default function LegacyMonitor() {
                     <TableRow key={log.id} className={isFullyBlocked ? "opacity-60" : undefined}>
                       <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                         {log.created_at
-                          ? format(new Date(log.created_at), "dd/MM/yyyy HH:mm:ss")
+                          ? format(new Date(log.created_at), "dd/MM/yyyy hh:mm:ss a")
                           : "—"}
                       </TableCell>
 

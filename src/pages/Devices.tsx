@@ -288,7 +288,7 @@ const Devices = () => {
                             <TableCell>{device.os_info || "-"}</TableCell>
                             <TableCell>
                               {device.last_verified
-                                ? format(new Date(device.last_verified), "dd MMM yyyy، HH:mm", { locale: ar })
+                                ? format(new Date(device.last_verified), "dd MMM yyyy، hh:mm a", { locale: ar })
                                 : "-"}
                             </TableCell>
                             <TableCell>
