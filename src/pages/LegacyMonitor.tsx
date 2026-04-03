@@ -388,7 +388,7 @@ export default function LegacyMonitor() {
               <p className="text-xs text-muted-foreground">آخر محاولة</p>
               <p className="text-sm font-semibold text-foreground">
                 {stats.lastAttempt
-                  ? format(new Date(stats.lastAttempt), "HH:mm - dd MMM", { locale: arSA })
+                  ? format(new Date(stats.lastAttempt), "hh:mm a - dd MMM", { locale: arSA })
                   : "لا يوجد"}
               </p>
             </div>
