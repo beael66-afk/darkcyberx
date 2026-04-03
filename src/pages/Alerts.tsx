@@ -173,7 +173,7 @@ export default function Alerts() {
   const lowCount = alerts.filter((a) => a.severity === "low").length;
 
   const lastUpdated = dataUpdatedAt
-    ? new Date(dataUpdatedAt).toLocaleTimeString("ar-EG")
+    ? new Date(dataUpdatedAt).toLocaleTimeString("ar-EG", { hour12: true, timeZone: 'Africa/Cairo' })
     : "—";
 
   const handleExport = () => {

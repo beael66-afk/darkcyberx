@@ -166,7 +166,7 @@ export default function BlockedHwids() {
                       </div>
                       {item.reason && <p className="text-xs text-muted-foreground mt-0.5">{item.reason}</p>}
                       <p className="text-xs text-muted-foreground/60 mt-0.5">
-                        {format(new Date(item.created_at), "d MMM yyyy - HH:mm", { locale: ar })}
+                        {format(new Date(item.created_at), "d MMM yyyy - hh:mm a", { locale: ar })}
                       </p>
                     </div>
                   </div>

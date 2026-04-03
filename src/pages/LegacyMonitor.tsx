@@ -388,7 +388,7 @@ export default function LegacyMonitor() {
               <p className="text-xs text-muted-foreground">آخر محاولة</p>
               <p className="text-sm font-semibold text-foreground">
                 {stats.lastAttempt
-                  ? format(new Date(stats.lastAttempt), "HH:mm - dd MMM", { locale: arSA })
+                  ? format(new Date(stats.lastAttempt), "hh:mm a - dd MMM", { locale: arSA })
                   : "لا يوجد"}
               </p>
             </div>
@@ -486,7 +486,7 @@ export default function LegacyMonitor() {
                     <TableRow key={log.id} className={isFullyBlocked ? "opacity-60" : undefined}>
                       <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                         {log.created_at
-                          ? format(new Date(log.created_at), "dd/MM/yyyy HH:mm:ss")
+                          ? format(new Date(log.created_at), "dd/MM/yyyy hh:mm:ss a")
                           : "—"}
                       </TableCell>
 
