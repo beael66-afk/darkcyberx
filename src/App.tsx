@@ -15,7 +15,7 @@ const Licenses = lazy(() => import("./pages/Licenses"));
 const Customers = lazy(() => import("./pages/Customers"));
 const Products = lazy(() => import("./pages/Products"));
 const Devices = lazy(() => import("./pages/Devices"));
-const Logs = lazy(() => import("./pages/Logs"));
+
 const Reports = lazy(() => import("./pages/Reports"));
 const Settings = lazy(() => import("./pages/Settings"));
 const ApiCredentials = lazy(() => import("./pages/ApiCredentials"));
