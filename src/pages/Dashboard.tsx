@@ -30,7 +30,6 @@ const Dashboard = () => {
     totalDevices: 0,
     expiringSoon: 0,
   });
-  const [logs, setLogs] = useState<Log[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchStats = useCallback(async () => {
