@@ -3,7 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { KeyRound, Users, Package, Monitor, TrendingUp, AlertCircle } from "lucide-react";
 import { StatCard } from "@/components/DashboardStats";
 import { LicenseChart } from "@/components/LicenseChart";
-import { RecentActivity } from "@/components/RecentActivity";
 import { RevenueStats } from "@/components/RevenueStats";
 
 interface Stats {
@@ -18,13 +17,6 @@ interface Stats {
   expiringSoon: number;
 }
 
-interface Log {
-  id: string;
-  action: string;
-  description: string;
-  created_at: string;
-  entity_type: string;
-}
 
 const Dashboard = () => {
   const [stats, setStats] = useState<Stats>({
@@ -38,7 +30,6 @@ const Dashboard = () => {
     totalDevices: 0,
     expiringSoon: 0,
   });
-  const [logs, setLogs] = useState<Log[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchStats = useCallback(async () => {
@@ -56,7 +47,6 @@ const Dashboard = () => {
         customers,
         products,
         devices,
-        recentLogs,
       ] = await Promise.all([
         supabase.from("licenses").select("*", { count: "exact", head: true }),
         supabase.from("licenses").select("*", { count: "exact", head: true }).eq("status", "active"),
@@ -70,7 +60,6 @@ const Dashboard = () => {
         supabase.from("customers").select("*", { count: "exact", head: true }),
         supabase.from("products").select("*", { count: "exact", head: true }),
         supabase.from("devices").select("*", { count: "exact", head: true }),
-        supabase.from("logs").select("*").order("created_at", { ascending: false }).limit(10),
       ]);
 
       setStats({
@@ -85,7 +74,7 @@ const Dashboard = () => {
         expiringSoon: expiringSoon.count || 0,
       });
 
-      setLogs(recentLogs.data || []);
+      
     } catch (error) {
       console.error("Error fetching stats:", error);
     } finally {
@@ -96,18 +85,11 @@ const Dashboard = () => {
   useEffect(() => {
     fetchStats();
 
-    // Realtime subscriptions for all dashboard tables
-    const channel = supabase
-      .channel("dashboard-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "licenses" }, () => fetchStats())
-      .on("postgres_changes", { event: "*", schema: "public", table: "customers" }, () => fetchStats())
-      .on("postgres_changes", { event: "*", schema: "public", table: "products" }, () => fetchStats())
-      .on("postgres_changes", { event: "*", schema: "public", table: "devices" }, () => fetchStats())
-      .on("postgres_changes", { event: "*", schema: "public", table: "logs" }, () => fetchStats())
-      .subscribe();
+    // Poll every 60 seconds instead of realtime to reduce Cloud usage
+    const interval = setInterval(fetchStats, 60000);
 
     return () => {
-      supabase.removeChannel(channel);
+      clearInterval(interval);
     };
   }, [fetchStats]);
 
@@ -176,14 +158,13 @@ const Dashboard = () => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="flex justify-center">
         <LicenseChart
           active={stats.activeLicenses}
           expired={stats.expiredLicenses}
           pending={stats.pendingLicenses}
           suspended={stats.suspendedLicenses}
         />
-        <RecentActivity logs={logs} loading={loading} />
       </div>
     </div>
   );
