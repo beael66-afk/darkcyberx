@@ -61,7 +61,6 @@ const Dashboard = () => {
         supabase.from("customers").select("*", { count: "exact", head: true }),
         supabase.from("products").select("*", { count: "exact", head: true }),
         supabase.from("devices").select("*", { count: "exact", head: true }),
-        supabase.from("logs").select("*").order("created_at", { ascending: false }).limit(10),
       ]);
 
       setStats({
