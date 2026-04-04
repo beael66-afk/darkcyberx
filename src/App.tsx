@@ -72,7 +72,7 @@ const App = () => (
               <Route path="/customers" element={<Customers />} />
               <Route path="/products" element={<Products />} />
               <Route path="/devices" element={<Devices />} />
-              <Route path="/logs" element={<Logs />} />
+              
               <Route path="/reports" element={<Reports />} />
               <Route path="/api-credentials" element={<ApiCredentials />} />
               <Route path="/notification-settings" element={<NotificationSettings />} />
