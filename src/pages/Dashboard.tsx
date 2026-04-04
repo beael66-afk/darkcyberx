@@ -158,14 +158,13 @@ const Dashboard = () => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="flex justify-center">
         <LicenseChart
           active={stats.activeLicenses}
           expired={stats.expiredLicenses}
           pending={stats.pendingLicenses}
           suspended={stats.suspendedLicenses}
         />
-        <RecentActivity logs={logs} loading={loading} />
       </div>
     </div>
   );
