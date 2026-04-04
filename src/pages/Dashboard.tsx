@@ -74,7 +74,7 @@ const Dashboard = () => {
         expiringSoon: expiringSoon.count || 0,
       });
 
-      setLogs(recentLogs.data || []);
+      
     } catch (error) {
       console.error("Error fetching stats:", error);
     } finally {
