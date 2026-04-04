@@ -74,10 +74,6 @@ const App = () => (
               <Route path="/notification-settings" element={<NotificationSettings />} />
               <Route path="/telegram-settings" element={<TelegramSettings />} />
               <Route path="/renewal-orders" element={<RenewalOrders />} />
-              <Route path="/ip-management" element={<IpManagement />} />
-              <Route path="/blocked-hwids" element={<BlockedHwids />} />
-              <Route path="/alerts" element={<Alerts />} />
-              <Route path="/legacy-monitor" element={<LegacyMonitor />} />
               <Route path="/rustdesk-ids" element={<RustDeskIds />} />
               <Route path="/api-integration" element={<ApiIntegration />} />
               <Route path="/broadcast" element={<BroadcastMessages />} />
