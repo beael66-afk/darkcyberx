@@ -47,7 +47,6 @@ const Dashboard = () => {
         customers,
         products,
         devices,
-        recentLogs,
       ] = await Promise.all([
         supabase.from("licenses").select("*", { count: "exact", head: true }),
         supabase.from("licenses").select("*", { count: "exact", head: true }).eq("status", "active"),
