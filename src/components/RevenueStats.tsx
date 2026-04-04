@@ -83,16 +83,11 @@ export const RevenueStats = () => {
   useEffect(() => {
     fetchRevenue();
 
-    // Real-time updates
-    const channel = supabase
-      .channel("revenue-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "customers" }, () => fetchRevenue())
-      .on("postgres_changes", { event: "*", schema: "public", table: "licenses" }, () => fetchRevenue())
-      .on("postgres_changes", { event: "*", schema: "public", table: "telegram_links" }, () => fetchRevenue())
-      .subscribe();
+    // Poll every 60 seconds instead of realtime
+    const interval = setInterval(fetchRevenue, 60000);
 
     return () => {
-      supabase.removeChannel(channel);
+      clearInterval(interval);
     };
   }, []);
 
