@@ -5,7 +5,7 @@ import {
   Users,
   Package,
   Monitor,
-  ScrollText,
+  
   BarChart3,
   Settings,
   LogOut,
