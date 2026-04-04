@@ -85,18 +85,11 @@ const Dashboard = () => {
   useEffect(() => {
     fetchStats();
 
-    // Realtime subscriptions for all dashboard tables
-    const channel = supabase
-      .channel("dashboard-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "licenses" }, () => fetchStats())
-      .on("postgres_changes", { event: "*", schema: "public", table: "customers" }, () => fetchStats())
-      .on("postgres_changes", { event: "*", schema: "public", table: "products" }, () => fetchStats())
-      .on("postgres_changes", { event: "*", schema: "public", table: "devices" }, () => fetchStats())
-      .on("postgres_changes", { event: "*", schema: "public", table: "logs" }, () => fetchStats())
-      .subscribe();
+    // Poll every 60 seconds instead of realtime to reduce Cloud usage
+    const interval = setInterval(fetchStats, 60000);
 
     return () => {
-      supabase.removeChannel(channel);
+      clearInterval(interval);
     };
   }, [fetchStats]);
 
