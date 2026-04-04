@@ -17,13 +17,6 @@ interface Stats {
   expiringSoon: number;
 }
 
-interface Log {
-  id: string;
-  action: string;
-  description: string;
-  created_at: string;
-  entity_type: string;
-}
 
 const Dashboard = () => {
   const [stats, setStats] = useState<Stats>({
