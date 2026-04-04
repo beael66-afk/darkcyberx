@@ -23,10 +23,6 @@ const NotificationSettings = lazy(() => import("./pages/NotificationSettings"));
 const TelegramSettings = lazy(() => import("./pages/TelegramSettings"));
 const RenewalOrders = lazy(() => import("./pages/RenewalOrders"));
 const RustDeskIds = lazy(() => import("./pages/RustDeskIds"));
-const IpManagement = lazy(() => import("./pages/IpManagement"));
-const BlockedHwids = lazy(() => import("./pages/BlockedHwids"));
-const Alerts = lazy(() => import("./pages/Alerts"));
-const LegacyMonitor = lazy(() => import("./pages/LegacyMonitor"));
 const ApiIntegration = lazy(() => import("./pages/ApiIntegration"));
 const BroadcastMessages = lazy(() => import("./pages/BroadcastMessages"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -78,10 +74,6 @@ const App = () => (
               <Route path="/notification-settings" element={<NotificationSettings />} />
               <Route path="/telegram-settings" element={<TelegramSettings />} />
               <Route path="/renewal-orders" element={<RenewalOrders />} />
-              <Route path="/ip-management" element={<IpManagement />} />
-              <Route path="/blocked-hwids" element={<BlockedHwids />} />
-              <Route path="/alerts" element={<Alerts />} />
-              <Route path="/legacy-monitor" element={<LegacyMonitor />} />
               <Route path="/rustdesk-ids" element={<RustDeskIds />} />
               <Route path="/api-integration" element={<ApiIntegration />} />
               <Route path="/broadcast" element={<BroadcastMessages />} />
