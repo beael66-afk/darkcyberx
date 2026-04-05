@@ -16,7 +16,7 @@ const Customers = lazy(() => import("./pages/Customers"));
 const Products = lazy(() => import("./pages/Products"));
 const Devices = lazy(() => import("./pages/Devices"));
 
-const Reports = lazy(() => import("./pages/Reports"));
+
 const Settings = lazy(() => import("./pages/Settings"));
 const ApiCredentials = lazy(() => import("./pages/ApiCredentials"));
 const NotificationSettings = lazy(() => import("./pages/NotificationSettings"));
@@ -69,7 +69,7 @@ const App = () => (
               <Route path="/products" element={<Products />} />
               <Route path="/devices" element={<Devices />} />
               
-              <Route path="/reports" element={<Reports />} />
+              
               <Route path="/api-credentials" element={<ApiCredentials />} />
               <Route path="/notification-settings" element={<NotificationSettings />} />
               <Route path="/telegram-settings" element={<TelegramSettings />} />

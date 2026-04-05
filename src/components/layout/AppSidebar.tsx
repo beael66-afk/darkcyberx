@@ -41,7 +41,7 @@ const menuItems = [
   { title: "المنتجات", url: "/products", icon: Package },
   { title: "الأجهزة", url: "/devices", icon: Monitor },
   { title: "RustDesk IDs", url: "/rustdesk-ids", icon: MonitorPlay },
-  { title: "التقارير", url: "/reports", icon: BarChart3 },
+  
   
   { title: "بيانات الاعتماد", url: "/api-credentials", icon: Code2 },
   { title: "دليل تكامل API", url: "/api-integration", icon: BookOpen },
