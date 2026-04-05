@@ -13,12 +13,8 @@ import {
   Code2,
   Bell,
   Bot,
-  ShoppingCart,
-  Shield,
   MonitorPlay,
-  ShieldAlert,
-  Cpu,
-  RadioTower,
+  ShoppingCart,
   BookOpen,
   Megaphone,
 } from "lucide-react";
