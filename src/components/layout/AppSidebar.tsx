@@ -6,7 +6,7 @@ import {
   Package,
   Monitor,
   
-  BarChart3,
+  
   Settings,
   LogOut,
   KeySquare,
