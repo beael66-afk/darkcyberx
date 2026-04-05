@@ -96,7 +96,7 @@ Deno.serve(async (req) => {
     });
   } catch (err) {
     console.error("Import error:", err);
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: "Import failed. Check server logs for details." }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
