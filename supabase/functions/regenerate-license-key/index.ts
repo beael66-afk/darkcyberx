@@ -9,12 +9,12 @@ const TELEGRAM_API = "https://api.telegram.org/bot";
 
 function generateLicenseKey(): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
   let result = "";
-  for (let i = 0; i < 4; i++) {
-    for (let j = 0; j < 4; j++) {
-      result += chars[Math.floor(Math.random() * chars.length)];
-    }
-    if (i < 3) result += "-";
+  for (let i = 0; i < 16; i++) {
+    if (i > 0 && i % 4 === 0) result += "-";
+    result += chars[bytes[i] % chars.length];
   }
   return result;
 }
