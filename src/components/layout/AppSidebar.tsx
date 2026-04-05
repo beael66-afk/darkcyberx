@@ -14,11 +14,6 @@ import {
   Bell,
   Bot,
   ShoppingCart,
-  Shield,
-  MonitorPlay,
-  ShieldAlert,
-  Cpu,
-  RadioTower,
   BookOpen,
   Megaphone,
 } from "lucide-react";
