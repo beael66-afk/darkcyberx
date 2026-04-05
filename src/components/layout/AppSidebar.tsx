@@ -13,6 +13,7 @@ import {
   Code2,
   Bell,
   Bot,
+  MonitorPlay,
   ShoppingCart,
   BookOpen,
   Megaphone,
