@@ -17,6 +17,7 @@ import {
   ShoppingCart,
   BookOpen,
   Megaphone,
+  HardDrive,
 } from "lucide-react";
 import {
   Sidebar,

@@ -15,7 +15,6 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // Verify admin authentication
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -33,7 +32,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check admin role
     const { data: roleData } = await supabase
       .from("user_roles")
       .select("role")
@@ -58,10 +56,9 @@ Deno.serve(async (req) => {
 
     const summary: Record<string, number> = {};
 
-    // Order matters for foreign keys
     const orderedTables = [
       "products",
-      "customers", 
+      "customers",
       "licenses",
       "devices",
       "blocked_ips",
@@ -70,6 +67,13 @@ Deno.serve(async (req) => {
       "notification_settings",
       "rustdesk_ids",
       "telegram_links",
+      "telegram_delegates",
+      "telegram_invite_codes",
+      "telegram_user_states",
+      "registration_requests",
+      "renewal_requests",
+      "invoices",
+      "logs",
     ];
 
     for (const tableName of orderedTables) {
