@@ -50,6 +50,7 @@ const menuItems = [
   { title: "بوت التليجرام", url: "/telegram-settings", icon: Bot },
   { title: "إرسال رسالة", url: "/broadcast", icon: Megaphone },
   { title: "الطلبات", url: "/renewal-orders", icon: ShoppingCart },
+  { title: "النسخ الاحتياطي", url: "/backup", icon: HardDrive },
   { title: "الإعدادات", url: "/settings", icon: Settings },
 ];
 
