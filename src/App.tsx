@@ -25,6 +25,7 @@ const RenewalOrders = lazy(() => import("./pages/RenewalOrders"));
 const RustDeskIds = lazy(() => import("./pages/RustDeskIds"));
 const ApiIntegration = lazy(() => import("./pages/ApiIntegration"));
 const BroadcastMessages = lazy(() => import("./pages/BroadcastMessages"));
+const BackupRestore = lazy(() => import("./pages/BackupRestore"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 
@@ -77,6 +78,7 @@ const App = () => (
               <Route path="/rustdesk-ids" element={<RustDeskIds />} />
               <Route path="/api-integration" element={<ApiIntegration />} />
               <Route path="/broadcast" element={<BroadcastMessages />} />
+              <Route path="/backup" element={<BackupRestore />} />
               <Route path="/settings" element={<Settings />} />
             </Route>
             
