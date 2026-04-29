@@ -690,11 +690,23 @@ export default function ApiIntegration() {
                         <td className="p-2"><Badge variant="outline" className="text-[10px]">لا</Badge></td>
                         <td className="p-2">اسم الجهاز (max 200 حرف)</td>
                       </tr>
-                      <tr>
+                      <tr className="border-b">
                         <td className="p-2 font-mono text-primary">os_info</td>
                         <td className="p-2">string</td>
                         <td className="p-2"><Badge variant="outline" className="text-[10px]">لا</Badge></td>
                         <td className="p-2">نظام التشغيل (max 200 حرف)</td>
+                      </tr>
+                      <tr className="border-b">
+                        <td className="p-2 font-mono text-primary">product_id</td>
+                        <td className="p-2">string</td>
+                        <td className="p-2"><Badge variant="outline" className="text-[10px]">لا</Badge></td>
+                        <td className="p-2">UUID المنتج المراد التحقق منه (للتراخيص متعددة المنتجات)</td>
+                      </tr>
+                      <tr>
+                        <td className="p-2 font-mono text-primary">product_name</td>
+                        <td className="p-2">string</td>
+                        <td className="p-2"><Badge variant="outline" className="text-[10px]">لا</Badge></td>
+                        <td className="p-2">اسم المنتج (بديل لـ product_id، حساس لحالة الأحرف لا)</td>
                       </tr>
                     </tbody>
                   </table>
