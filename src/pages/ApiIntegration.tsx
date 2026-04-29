@@ -151,11 +151,12 @@ class LicenseValidator:
         this.apiKey = apiKey;
     }
 
-    async validate(licenseKey, hwid = null, deviceName = null, osInfo = null) {
+    async validate(licenseKey, hwid = null, deviceName = null, osInfo = null, productName = null) {
         const payload = { license_key: licenseKey };
         if (hwid) payload.hwid = hwid;
         if (deviceName) payload.device_name = deviceName;
         if (osInfo) payload.os_info = osInfo;
+        if (productName) payload.product_name = productName; // للتراخيص متعددة المنتجات
 
         try {
             const response = await fetch(this.apiUrl, {
@@ -184,8 +185,10 @@ class LicenseValidator:
 
 // ── الاستخدام ──
 // const validator = new LicenseValidator("YOUR_API_KEY");
-// const result = await validator.validate("XXXX-XXXX-XXXX-XXXX", "DEVICE_HWID");
-// if (result.valid) { /* ترخيص صالح */ }`,
+// const result = await validator.validate("XXXX-XXXX-XXXX-XXXX", "DEVICE_HWID", null, null, "اسم المنتج");
+// if (result.valid) {
+//     console.log("المنتجات المسموحة:", result.license.allowed_products?.map(p => p.name));
+// }`,
 
   php: `<?php
 
