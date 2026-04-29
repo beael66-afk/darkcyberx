@@ -31,7 +31,7 @@ public class LicenseValidator
         _apiKey = apiKey;
     }
 
-    public async Task<LicenseResult> ValidateAsync(string licenseKey, string hwid = null, string deviceName = null, string osInfo = null)
+    public async Task<LicenseResult> ValidateAsync(string licenseKey, string hwid = null, string deviceName = null, string osInfo = null, string productName = null)
     {
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Add("x-api-key", _apiKey);
@@ -41,7 +41,8 @@ public class LicenseValidator
             license_key = licenseKey,
             hwid,
             device_name = deviceName,
-            os_info = osInfo
+            os_info = osInfo,
+            product_name = productName  // اسم المنتج للتحقق منه (للتراخيص متعددة المنتجات)
         };
 
         var json = JsonSerializer.Serialize(payload);
@@ -77,20 +78,28 @@ public class LicenseResult
     public LicenseInfo license { get; set; }
 }
 
+public class AllowedProduct
+{
+    public string id { get; set; }
+    public string name { get; set; }
+}
+
 public class LicenseInfo
 {
     public string key { get; set; }
     public string status { get; set; }
     public string expire_at { get; set; }
     public int? max_devices { get; set; }
+    public int? max_products { get; set; }
     public string customer { get; set; }
     public string product { get; set; }
+    public List<AllowedProduct> allowed_products { get; set; }
 }
 
 // ── الاستخدام ──
 // var validator = new LicenseValidator("YOUR_API_KEY");
-// var result = await validator.ValidateAsync("XXXX-XXXX-XXXX-XXXX", hwid: "DEVICE_HWID");
-// if (result.valid) { /* ترخيص صالح */ }`,
+// var result = await validator.ValidateAsync("XXXX-XXXX-XXXX-XXXX", hwid: "DEVICE_HWID", productName: "اسم المنتج");
+// if (result.valid) { /* ترخيص صالح للمنتج */ }`,
 
   python: `import requests
 import sys
@@ -100,7 +109,7 @@ class LicenseValidator:
         self.api_url = "${apiUrl}"
         self.api_key = api_key
 
-    def validate(self, license_key: str, hwid: str = None, device_name: str = None, os_info: str = None) -> dict:
+    def validate(self, license_key: str, hwid: str = None, device_name: str = None, os_info: str = None, product_name: str = None) -> dict:
         headers = {
             "x-api-key": self.api_key,
             "Content-Type": "application/json"
@@ -113,6 +122,8 @@ class LicenseValidator:
             payload["device_name"] = device_name
         if os_info:
             payload["os_info"] = os_info
+        if product_name:
+            payload["product_name"] = product_name  # للتحقق من المنتج للتراخيص متعددة المنتجات
 
         try:
             response = requests.post(self.api_url, json=payload, headers=headers, timeout=10)
@@ -129,9 +140,10 @@ class LicenseValidator:
 
 # ── الاستخدام ──
 # validator = LicenseValidator("YOUR_API_KEY")
-# result = validator.validate("XXXX-XXXX-XXXX-XXXX", hwid="DEVICE_HWID")
+# result = validator.validate("XXXX-XXXX-XXXX-XXXX", hwid="DEVICE_HWID", product_name="اسم المنتج")
 # if result.get("valid"):
-#     print("ترخيص صالح!")`,
+#     allowed = [p["name"] for p in result["license"].get("allowed_products", [])]
+#     print(f"ترخيص صالح! المنتجات المتاحة: {allowed}")`,
 
   javascript: `class LicenseValidator {
     constructor(apiKey) {
@@ -139,11 +151,12 @@ class LicenseValidator:
         this.apiKey = apiKey;
     }
 
-    async validate(licenseKey, hwid = null, deviceName = null, osInfo = null) {
+    async validate(licenseKey, hwid = null, deviceName = null, osInfo = null, productName = null) {
         const payload = { license_key: licenseKey };
         if (hwid) payload.hwid = hwid;
         if (deviceName) payload.device_name = deviceName;
         if (osInfo) payload.os_info = osInfo;
+        if (productName) payload.product_name = productName; // للتراخيص متعددة المنتجات
 
         try {
             const response = await fetch(this.apiUrl, {
@@ -172,8 +185,10 @@ class LicenseValidator:
 
 // ── الاستخدام ──
 // const validator = new LicenseValidator("YOUR_API_KEY");
-// const result = await validator.validate("XXXX-XXXX-XXXX-XXXX", "DEVICE_HWID");
-// if (result.valid) { /* ترخيص صالح */ }`,
+// const result = await validator.validate("XXXX-XXXX-XXXX-XXXX", "DEVICE_HWID", null, null, "اسم المنتج");
+// if (result.valid) {
+//     console.log("المنتجات المسموحة:", result.license.allowed_products?.map(p => p.name));
+// }`,
 
   php: `<?php
 
@@ -185,11 +200,12 @@ class LicenseValidator {
         \$this->apiKey = \$apiKey;
     }
 
-    public function validate(string \$licenseKey, ?string \$hwid = null, ?string \$deviceName = null, ?string \$osInfo = null): array {
+    public function validate(string \$licenseKey, ?string \$hwid = null, ?string \$deviceName = null, ?string \$osInfo = null, ?string \$productName = null): array {
         \$payload = ["license_key" => \$licenseKey];
         if (\$hwid) \$payload["hwid"] = \$hwid;
         if (\$deviceName) \$payload["device_name"] = \$deviceName;
         if (\$osInfo) \$payload["os_info"] = \$osInfo;
+        if (\$productName) \$payload["product_name"] = \$productName; // للتراخيص متعددة المنتجات
 
         \$options = [
             "http" => [
@@ -219,8 +235,8 @@ class LicenseValidator {
 
 // ── الاستخدام ──
 // \$validator = new LicenseValidator("YOUR_API_KEY");
-// \$result = \$validator->validate("XXXX-XXXX-XXXX-XXXX", "DEVICE_HWID");
-// if (\$result["valid"]) { /* ترخيص صالح */ }
+// \$result = \$validator->validate("XXXX-XXXX-XXXX-XXXX", "DEVICE_HWID", null, null, "اسم المنتج");
+// if (\$result["valid"]) { /* ترخيص صالح للمنتج */ }
 ?>`,
 
   delphi: `unit LicenseValidator;
@@ -250,7 +266,8 @@ type
   public
     constructor Create(const AApiKey: string);
     function Validate(const ALicenseKey: string; const AHwid: string = '';
-      const ADeviceName: string = ''; const AOsInfo: string = ''): TLicenseResult;
+      const ADeviceName: string = ''; const AOsInfo: string = '';
+      const AProductName: string = ''): TLicenseResult;
   end;
 
 implementation
@@ -262,7 +279,8 @@ begin
 end;
 
 function TLicenseValidator.Validate(const ALicenseKey: string;
-  const AHwid: string; const ADeviceName: string; const AOsInfo: string): TLicenseResult;
+  const AHwid: string; const ADeviceName: string; const AOsInfo: string;
+  const AProductName: string): TLicenseResult;
 var
   Http: TNetHTTPClient;
   Response: IHTTPResponse;
@@ -280,6 +298,7 @@ begin
     if AHwid <> '' then Payload := Payload + ',"hwid":"' + AHwid + '"';
     if ADeviceName <> '' then Payload := Payload + ',"device_name":"' + ADeviceName + '"';
     if AOsInfo <> '' then Payload := Payload + ',"os_info":"' + AOsInfo + '"';
+    if AProductName <> '' then Payload := Payload + ',"product_name":"' + AProductName + '"';
     Payload := Payload + '}';
 
     Stream := TStringStream.Create(Payload, TEncoding.UTF8);
@@ -346,7 +365,8 @@ public:
     LicenseResult validate(const std::string& license_key,
                            const std::string& hwid = "",
                            const std::string& device_name = "",
-                           const std::string& os_info = "") {
+                           const std::string& os_info = "",
+                           const std::string& product_name = "") {
         LicenseResult result;
         CURL* curl = curl_easy_init();
         if (!curl) { result.error = "Failed to init curl"; return result; }
@@ -355,6 +375,7 @@ public:
         if (!hwid.empty()) payload["hwid"] = hwid;
         if (!device_name.empty()) payload["device_name"] = device_name;
         if (!os_info.empty()) payload["os_info"] = os_info;
+        if (!product_name.empty()) payload["product_name"] = product_name; // للتراخيص متعددة المنتجات
 
         std::string body = payload.dump();
         std::string response;
@@ -460,6 +481,8 @@ export default function ApiIntegration() {
           hwid: { type: "string", required: false, max_length: 255, description: "معرف الجهاز (Hardware ID)" },
           device_name: { type: "string", required: false, max_length: 200, description: "اسم الجهاز" },
           os_info: { type: "string", required: false, max_length: 200, description: "معلومات نظام التشغيل" },
+          product_id: { type: "string", required: false, max_length: 100, description: "UUID المنتج المراد التحقق منه (اختياري)" },
+          product_name: { type: "string", required: false, max_length: 200, description: "اسم المنتج المراد التحقق منه (بديل لـ product_id)" },
         },
       },
       response: {
@@ -470,15 +493,21 @@ export default function ApiIntegration() {
             status: "active",
             expire_at: "2026-12-31T00:00:00+00:00",
             max_devices: 5,
+            max_products: 3,
             customer: "اسم العميل",
-            product: "اسم المنتج",
+            product: "المنتج الرئيسي",
+            allowed_products: [
+              { id: "uuid-1", name: "المنتج الأول" },
+              { id: "uuid-2", name: "المنتج الثاني" },
+            ],
           },
         },
         error_examples: {
           invalid_license: { valid: false, error: "License not found", force_shutdown: true },
           expired: { valid: false, error: "License has expired", license: { status: "expired" } },
-          suspended: { valid: false, error: "License is suspended", valid_: false, force_shutdown: true },
+          suspended: { valid: false, error: "License is suspended", force_shutdown: true },
           max_devices: { valid: false, error: "Maximum devices reached", license: { max_devices: 5, current_devices: 5 } },
+          product_not_allowed: { valid: false, error: "Product not allowed for this license", license: { allowed_products: ["المنتج الأول"] } },
           blocked_ip: { valid: false, error: "Access denied", force_shutdown: true },
           blocked_hwid: { valid: false, error: "Access denied", force_shutdown: true },
         },
@@ -682,11 +711,23 @@ export default function ApiIntegration() {
                         <td className="p-2"><Badge variant="outline" className="text-[10px]">لا</Badge></td>
                         <td className="p-2">اسم الجهاز (max 200 حرف)</td>
                       </tr>
-                      <tr>
+                      <tr className="border-b">
                         <td className="p-2 font-mono text-primary">os_info</td>
                         <td className="p-2">string</td>
                         <td className="p-2"><Badge variant="outline" className="text-[10px]">لا</Badge></td>
                         <td className="p-2">نظام التشغيل (max 200 حرف)</td>
+                      </tr>
+                      <tr className="border-b">
+                        <td className="p-2 font-mono text-primary">product_id</td>
+                        <td className="p-2">string</td>
+                        <td className="p-2"><Badge variant="outline" className="text-[10px]">لا</Badge></td>
+                        <td className="p-2">UUID المنتج المراد التحقق منه (للتراخيص متعددة المنتجات)</td>
+                      </tr>
+                      <tr>
+                        <td className="p-2 font-mono text-primary">product_name</td>
+                        <td className="p-2">string</td>
+                        <td className="p-2"><Badge variant="outline" className="text-[10px]">لا</Badge></td>
+                        <td className="p-2">اسم المنتج (بديل لـ product_id، حساس لحالة الأحرف لا)</td>
                       </tr>
                     </tbody>
                   </table>
@@ -705,13 +746,14 @@ export default function ApiIntegration() {
     "license_key": "XXXX-XXXX-XXXX-XXXX",
     "hwid": "DEVICE_HARDWARE_ID",
     "device_name": "My PC",
-    "os_info": "Windows 11"
+    "os_info": "Windows 11",
+    "product_name": "اسم المنتج"
   }'`}</pre>
                   <Button
                     size="sm"
                     variant="ghost"
                     className="absolute top-2 left-2"
-                    onClick={() => copyToClipboard(`curl -X POST ${currentUrl} -H "x-api-key: YOUR_API_KEY" -H "Content-Type: application/json" -d '{"license_key":"XXXX-XXXX-XXXX-XXXX","hwid":"DEVICE_HWID"}'`, "curl")}
+                    onClick={() => copyToClipboard(`curl -X POST ${currentUrl} -H "x-api-key: YOUR_API_KEY" -H "Content-Type: application/json" -d '{"license_key":"XXXX-XXXX-XXXX-XXXX","hwid":"DEVICE_HWID","product_name":"اسم المنتج"}'`, "curl")}
                   >
                     {copied === "curl" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                   </Button>
@@ -745,7 +787,7 @@ export default function ApiIntegration() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <h3 className="font-semibold mb-2 text-green-500">✅ ترخيص صالح</h3>
+                <h3 className="font-semibold mb-2 text-green-500">✅ ترخيص صالح (متعدد المنتجات)</h3>
                 <pre className="bg-muted rounded-lg p-4 text-sm overflow-x-auto">{JSON.stringify({
                   valid: true,
                   license: {
@@ -753,10 +795,19 @@ export default function ApiIntegration() {
                     status: "active",
                     expire_at: "2026-12-31T00:00:00+00:00",
                     max_devices: 5,
+                    max_products: 3,
                     customer: "اسم العميل",
-                    product: "اسم المنتج"
+                    product: "المنتج الرئيسي",
+                    allowed_products: [
+                      { id: "uuid-1", name: "المنتج الأول" },
+                      { id: "uuid-2", name: "المنتج الثاني" },
+                      { id: "uuid-3", name: "المنتج الثالث" }
+                    ]
                   }
                 }, null, 2)}</pre>
+                <p className="text-xs text-muted-foreground mt-2">
+                  💡 <code className="bg-muted px-1 rounded">allowed_products</code> = قائمة المنتجات التي يمكن للعميل استخدامها بهذا الترخيص. لو فارغة = جميع المنتجات.
+                </p>
               </div>
 
               <Separator />
@@ -767,6 +818,20 @@ export default function ApiIntegration() {
                   valid: false,
                   error: "License not found",
                   force_shutdown: true
+                }, null, 2)}</pre>
+              </div>
+
+              <Separator />
+
+              <div>
+                <h3 className="font-semibold mb-2 text-purple-500">🚫 منتج غير مسموح به</h3>
+                <pre className="bg-muted rounded-lg p-4 text-sm overflow-x-auto">{JSON.stringify({
+                  valid: false,
+                  error: "Product not allowed for this license",
+                  license: {
+                    key: "ABCD-1234-EFGH-5678",
+                    allowed_products: ["المنتج الأول", "المنتج الثاني"]
+                  }
                 }, null, 2)}</pre>
               </div>
 
