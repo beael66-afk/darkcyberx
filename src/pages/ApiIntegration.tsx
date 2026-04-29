@@ -725,13 +725,14 @@ export default function ApiIntegration() {
     "license_key": "XXXX-XXXX-XXXX-XXXX",
     "hwid": "DEVICE_HARDWARE_ID",
     "device_name": "My PC",
-    "os_info": "Windows 11"
+    "os_info": "Windows 11",
+    "product_name": "اسم المنتج"
   }'`}</pre>
                   <Button
                     size="sm"
                     variant="ghost"
                     className="absolute top-2 left-2"
-                    onClick={() => copyToClipboard(`curl -X POST ${currentUrl} -H "x-api-key: YOUR_API_KEY" -H "Content-Type: application/json" -d '{"license_key":"XXXX-XXXX-XXXX-XXXX","hwid":"DEVICE_HWID"}'`, "curl")}
+                    onClick={() => copyToClipboard(`curl -X POST ${currentUrl} -H "x-api-key: YOUR_API_KEY" -H "Content-Type: application/json" -d '{"license_key":"XXXX-XXXX-XXXX-XXXX","hwid":"DEVICE_HWID","product_name":"اسم المنتج"}'`, "curl")}
                   >
                     {copied === "curl" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                   </Button>
