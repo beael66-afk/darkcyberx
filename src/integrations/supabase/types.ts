@@ -250,6 +250,42 @@ export type Database = {
           },
         ]
       }
+      license_products: {
+        Row: {
+          created_at: string
+          id: string
+          license_id: string
+          product_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          license_id: string
+          product_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          license_id?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "license_products_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "licenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "license_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       licenses: {
         Row: {
           created_at: string | null
@@ -258,6 +294,7 @@ export type Database = {
           id: string
           license_key: string
           max_devices: number | null
+          max_products: number | null
           notes: string | null
           product_id: string | null
           status: Database["public"]["Enums"]["license_status"] | null
@@ -270,6 +307,7 @@ export type Database = {
           id?: string
           license_key: string
           max_devices?: number | null
+          max_products?: number | null
           notes?: string | null
           product_id?: string | null
           status?: Database["public"]["Enums"]["license_status"] | null
@@ -282,6 +320,7 @@ export type Database = {
           id?: string
           license_key?: string
           max_devices?: number | null
+          max_products?: number | null
           notes?: string | null
           product_id?: string | null
           status?: Database["public"]["Enums"]["license_status"] | null
