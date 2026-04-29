@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Copy, Trash2, Edit, FileSpreadsheet, FileText, KeyRound, Loader2, PauseCircle, PlayCircle } from "lucide-react";
+import { Plus, Search, Copy, Trash2, Edit, FileSpreadsheet, FileText, KeyRound, Loader2, PauseCircle, PlayCircle, Package } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { exportToExcel, exportToCSV } from "@/lib/exportUtils";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -43,10 +44,12 @@ interface License {
   license_key: string;
   status: string;
   max_devices: number;
+  max_products: number | null;
   expire_at: string | null;
   created_at: string;
   customer: { id: string; name: string } | null;
   product: { id: string; name: string } | null;
+  allowed_products: { id: string; name: string }[];
 }
 
 interface Customer {
@@ -76,15 +79,17 @@ const Licenses = () => {
   const [suspendingId, setSuspendingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<{
     customer_id: string;
-    product_id: string;
+    product_ids: string[];
     max_devices: string;
+    max_products: string;
     expire_at: string;
     status: "active" | "expired" | "pending" | "suspended";
     notes: string;
   }>({
     customer_id: "",
-    product_id: "",
+    product_ids: [],
     max_devices: "1",
+    max_products: "",
     expire_at: "",
     status: "active",
     notes: ""
@@ -107,12 +112,19 @@ const Licenses = () => {
         .select(`
           *,
           customer:customers(id, name),
-          product:products(id, name)
+          product:products(id, name),
+          license_products(product:products(id, name))
         `)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setLicenses(data || []);
+      const mapped: License[] = (data || []).map((l: any) => ({
+        ...l,
+        allowed_products: (l.license_products || [])
+          .map((lp: any) => lp.product)
+          .filter(Boolean),
+      }));
+      setLicenses(mapped);
     } catch (error) {
       console.error("Error fetching licenses:", error);
       toast({
@@ -141,14 +153,32 @@ const Licenses = () => {
     return data;
   };
 
+  const syncLicenseProducts = async (licenseId: string, productIds: string[]) => {
+    // Remove old links and insert fresh
+    await supabase.from("license_products" as any).delete().eq("license_id", licenseId);
+    if (productIds.length > 0) {
+      await supabase.from("license_products" as any).insert(
+        productIds.map((pid) => ({ license_id: licenseId, product_id: pid }))
+      );
+    }
+  };
+
   const createLicense = async () => {
     try {
+      const maxProductsNum = formData.max_products ? parseInt(formData.max_products) : null;
+      if (maxProductsNum !== null && formData.product_ids.length > maxProductsNum) {
+        toast({ title: "خطأ", description: `عدد المنتجات المختارة أكبر من الحد الأقصى (${maxProductsNum})`, variant: "destructive" });
+        return;
+      }
+
       const licenseKey = await generateLicenseKey();
+      const primaryProduct = formData.product_ids[0] || null;
       const { data, error } = await supabase.from("licenses").insert([{
         license_key: licenseKey,
         customer_id: formData.customer_id || null,
-        product_id: formData.product_id || null,
+        product_id: primaryProduct, // legacy primary product
         max_devices: parseInt(formData.max_devices),
+        max_products: maxProductsNum,
         expire_at: formData.expire_at || null,
         status: formData.status,
         notes: formData.notes || null
@@ -156,11 +186,13 @@ const Licenses = () => {
 
       if (error) throw error;
 
+      await syncLicenseProducts(data.id, formData.product_ids);
+
       await logActivity({
         action: "created",
         entityType: "license",
         entityId: data.id,
-        description: `تم إنشاء ترخيص جديد: ${licenseKey}`
+        description: `تم إنشاء ترخيص جديد: ${licenseKey} (${formData.product_ids.length} منتج)`
       });
 
       toast({
@@ -182,6 +214,12 @@ const Licenses = () => {
     if (!editingLicense) return;
 
     try {
+      const maxProductsNum = formData.max_products ? parseInt(formData.max_products) : null;
+      if (maxProductsNum !== null && formData.product_ids.length > maxProductsNum) {
+        toast({ title: "خطأ", description: `عدد المنتجات المختارة أكبر من الحد الأقصى (${maxProductsNum})`, variant: "destructive" });
+        return;
+      }
+
       // Auto-set status to active if expire_at is in the future (or no expiry) and current status is expired
       let resolvedStatus = formData.status;
       if (formData.status === "expired") {
@@ -191,12 +229,14 @@ const Licenses = () => {
         }
       }
 
+      const primaryProduct = formData.product_ids[0] || null;
       const { error } = await supabase
         .from("licenses")
         .update({
           customer_id: formData.customer_id || null,
-          product_id: formData.product_id || null,
+          product_id: primaryProduct,
           max_devices: parseInt(formData.max_devices),
+          max_products: maxProductsNum,
           expire_at: formData.expire_at || null,
           status: resolvedStatus,
           notes: formData.notes || null
@@ -205,11 +245,13 @@ const Licenses = () => {
 
       if (error) throw error;
 
+      await syncLicenseProducts(editingLicense.id, formData.product_ids);
+
       await logActivity({
         action: "updated",
         entityType: "license",
         entityId: editingLicense.id,
-        description: `تم تحديث الترخيص: ${editingLicense.license_key}${resolvedStatus !== formData.status ? " (تم تفعيله تلقائياً)" : ""}`
+        description: `تم تحديث الترخيص: ${editingLicense.license_key} (${formData.product_ids.length} منتج)${resolvedStatus !== formData.status ? " (تم تفعيله تلقائياً)" : ""}`
       });
 
       toast({
@@ -240,10 +282,14 @@ const Licenses = () => {
 
   const handleEdit = (license: License) => {
     setEditingLicense(license);
+    const allowedIds = license.allowed_products.map((p) => p.id);
+    // Fallback to legacy product_id if no link rows
+    const productIds = allowedIds.length > 0 ? allowedIds : (license.product?.id ? [license.product.id] : []);
     setFormData({
       customer_id: license.customer?.id || "",
-      product_id: license.product?.id || "",
+      product_ids: productIds,
       max_devices: license.max_devices.toString(),
+      max_products: license.max_products?.toString() || "",
       expire_at: license.expire_at ? new Date(license.expire_at).toISOString().split('T')[0] : "",
       status: license.status as "active" | "expired" | "pending" | "suspended",
       notes: ""
@@ -256,12 +302,22 @@ const Licenses = () => {
     setEditingLicense(null);
     setFormData({
       customer_id: "",
-      product_id: "",
+      product_ids: [],
       max_devices: "1",
+      max_products: "",
       expire_at: "",
       status: "active",
       notes: ""
     });
+  };
+
+  const toggleProduct = (productId: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      product_ids: prev.product_ids.includes(productId)
+        ? prev.product_ids.filter((id) => id !== productId)
+        : [...prev.product_ids, productId],
+    }));
   };
 
   const copyLicenseKey = (key: string) => {
@@ -475,19 +531,44 @@ const Licenses = () => {
               </div>
 
               <div>
-                <Label htmlFor="product">المنتج</Label>
-                <Select value={formData.product_id} onValueChange={(value) => setFormData({ ...formData, product_id: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="اختر منتج" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {products.map((product) => (
-                      <SelectItem key={product.id} value={product.id}>
-                        {product.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>المنتجات المسموح بها ({formData.product_ids.length})</Label>
+                <div className="border rounded-md p-3 max-h-48 overflow-y-auto space-y-2 bg-muted/20">
+                  {products.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">لا توجد منتجات. أضف منتجات أولاً.</p>
+                  ) : (
+                    products.map((product) => (
+                      <label
+                        key={product.id}
+                        className="flex items-center gap-2 cursor-pointer hover:bg-muted/40 rounded px-2 py-1"
+                      >
+                        <Checkbox
+                          checked={formData.product_ids.includes(product.id)}
+                          onCheckedChange={() => toggleProduct(product.id)}
+                        />
+                        <Package className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">{product.name}</span>
+                      </label>
+                    ))
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  اترك الكل غير مُحدد للسماح بكل المنتجات افتراضياً
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="max_products">الحد الأقصى لعدد المنتجات (اختياري)</Label>
+                <Input
+                  id="max_products"
+                  type="number"
+                  min="1"
+                  placeholder="غير محدود"
+                  value={formData.max_products}
+                  onChange={(e) => setFormData({ ...formData, max_products: e.target.value })}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  مثال: 3 = العميل يمكنه استخدام 3 منتجات فقط من القائمة
+                </p>
               </div>
 
               <div>
@@ -574,7 +655,7 @@ const Licenses = () => {
               <TableRow>
                 <TableHead>مفتاح الترخيص</TableHead>
                 <TableHead>العميل</TableHead>
-                <TableHead>المنتج</TableHead>
+                <TableHead>المنتجات</TableHead>
                 <TableHead>الحالة</TableHead>
                 <TableHead>الأجهزة</TableHead>
                 <TableHead>تاريخ الانتهاء</TableHead>
@@ -610,7 +691,27 @@ const Licenses = () => {
                       )}
                     </TableCell>
                     <TableCell>{license.customer?.name || "-"}</TableCell>
-                    <TableCell>{license.product?.name || "-"}</TableCell>
+                    <TableCell>
+                      {license.allowed_products.length > 0 ? (
+                        <div className="flex flex-wrap gap-1 max-w-xs">
+                          {license.allowed_products.slice(0, 3).map((p) => (
+                            <Badge key={p.id} variant="secondary" className="text-xs">{p.name}</Badge>
+                          ))}
+                          {license.allowed_products.length > 3 && (
+                            <Badge variant="outline" className="text-xs">+{license.allowed_products.length - 3}</Badge>
+                          )}
+                          {license.max_products && (
+                            <span className="text-xs text-muted-foreground self-center">
+                              (حد: {license.max_products})
+                            </span>
+                          )}
+                        </div>
+                      ) : license.product?.name ? (
+                        <Badge variant="secondary" className="text-xs">{license.product.name}</Badge>
+                      ) : (
+                        <span className="text-muted-foreground">الكل</span>
+                      )}
+                    </TableCell>
                     <TableCell>{getStatusBadge(license.status)}</TableCell>
                     <TableCell>{license.max_devices}</TableCell>
                     <TableCell>

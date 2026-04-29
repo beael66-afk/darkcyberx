@@ -222,7 +222,7 @@ serve(async (req) => {
       );
     }
 
-    const { license_key, hwid, device_name, os_info } = body;
+    const { license_key, hwid, device_name, os_info, product_id, product_name } = body;
 
     if (!license_key || typeof license_key !== 'string') {
       return new Response(
@@ -265,7 +265,7 @@ serve(async (req) => {
 
     const { data: license, error: licenseError } = await supabase
       .from('licenses')
-      .select(`*, customer:customers(*), product:products(*)`)
+      .select(`*, customer:customers(*), product:products(*), license_products(product:products(id, name))`)
       .eq('license_key', license_key)
       .single();
 
@@ -303,6 +303,47 @@ serve(async (req) => {
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // ── Product allowlist check ───────────────────────────────────────────────
+    const allowedProducts: { id: string; name: string }[] =
+      (license.license_products || [])
+        .map((lp: any) => lp.product)
+        .filter(Boolean);
+
+    // Fallback to legacy single product if no allowlist rows
+    if (allowedProducts.length === 0 && license.product) {
+      allowedProducts.push({ id: license.product.id, name: license.product.name });
+    }
+
+    const safeProductId = typeof product_id === 'string' ? product_id.slice(0, 100) : null;
+    const safeProductName = typeof product_name === 'string' ? product_name.slice(0, 200) : null;
+
+    if ((safeProductId || safeProductName) && allowedProducts.length > 0) {
+      const matched = allowedProducts.find(
+        (p) =>
+          (safeProductId && p.id === safeProductId) ||
+          (safeProductName && p.name.toLowerCase() === safeProductName.toLowerCase())
+      );
+      if (!matched) {
+        await supabase.from('logs').insert({
+          entity_type: 'security',
+          action: 'verified',
+          description: `محاولة استخدام منتج غير مسموح به للترخيص ${license.license_key} - المنتج المطلوب: ${safeProductName || safeProductId}`,
+          ip_address: clientIp,
+        });
+        return new Response(
+          JSON.stringify({
+            error: 'Product not allowed for this license',
+            valid: false,
+            license: {
+              key: license.license_key,
+              allowed_products: allowedProducts.map((p) => p.name),
+            },
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     if (safeHwid) {
@@ -394,8 +435,10 @@ serve(async (req) => {
           status: license.status,
           expire_at: license.expire_at,
           max_devices: license.max_devices,
+          max_products: license.max_products,
           customer: license.customer?.name,
-          product: license.product?.name
+          product: license.product?.name,
+          allowed_products: allowedProducts.map((p) => ({ id: p.id, name: p.name })),
         }
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
