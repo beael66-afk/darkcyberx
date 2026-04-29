@@ -655,7 +655,7 @@ const Licenses = () => {
               <TableRow>
                 <TableHead>مفتاح الترخيص</TableHead>
                 <TableHead>العميل</TableHead>
-                <TableHead>المنتج</TableHead>
+                <TableHead>المنتجات</TableHead>
                 <TableHead>الحالة</TableHead>
                 <TableHead>الأجهزة</TableHead>
                 <TableHead>تاريخ الانتهاء</TableHead>
