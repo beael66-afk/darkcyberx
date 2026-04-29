@@ -365,7 +365,8 @@ public:
     LicenseResult validate(const std::string& license_key,
                            const std::string& hwid = "",
                            const std::string& device_name = "",
-                           const std::string& os_info = "") {
+                           const std::string& os_info = "",
+                           const std::string& product_name = "") {
         LicenseResult result;
         CURL* curl = curl_easy_init();
         if (!curl) { result.error = "Failed to init curl"; return result; }
@@ -374,6 +375,7 @@ public:
         if (!hwid.empty()) payload["hwid"] = hwid;
         if (!device_name.empty()) payload["device_name"] = device_name;
         if (!os_info.empty()) payload["os_info"] = os_info;
+        if (!product_name.empty()) payload["product_name"] = product_name; // للتراخيص متعددة المنتجات
 
         std::string body = payload.dump();
         std::string response;
