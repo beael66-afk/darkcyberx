@@ -531,19 +531,44 @@ const Licenses = () => {
               </div>
 
               <div>
-                <Label htmlFor="product">المنتج</Label>
-                <Select value={formData.product_id} onValueChange={(value) => setFormData({ ...formData, product_id: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="اختر منتج" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {products.map((product) => (
-                      <SelectItem key={product.id} value={product.id}>
-                        {product.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>المنتجات المسموح بها ({formData.product_ids.length})</Label>
+                <div className="border rounded-md p-3 max-h-48 overflow-y-auto space-y-2 bg-muted/20">
+                  {products.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">لا توجد منتجات. أضف منتجات أولاً.</p>
+                  ) : (
+                    products.map((product) => (
+                      <label
+                        key={product.id}
+                        className="flex items-center gap-2 cursor-pointer hover:bg-muted/40 rounded px-2 py-1"
+                      >
+                        <Checkbox
+                          checked={formData.product_ids.includes(product.id)}
+                          onCheckedChange={() => toggleProduct(product.id)}
+                        />
+                        <Package className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">{product.name}</span>
+                      </label>
+                    ))
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  اترك الكل غير مُحدد للسماح بكل المنتجات افتراضياً
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="max_products">الحد الأقصى لعدد المنتجات (اختياري)</Label>
+                <Input
+                  id="max_products"
+                  type="number"
+                  min="1"
+                  placeholder="غير محدود"
+                  value={formData.max_products}
+                  onChange={(e) => setFormData({ ...formData, max_products: e.target.value })}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  مثال: 3 = العميل يمكنه استخدام 3 منتجات فقط من القائمة
+                </p>
               </div>
 
               <div>
