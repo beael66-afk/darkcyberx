@@ -222,7 +222,7 @@ serve(async (req) => {
       );
     }
 
-    const { license_key, hwid, device_name, os_info } = body;
+    const { license_key, hwid, device_name, os_info, product_id, product_name } = body;
 
     if (!license_key || typeof license_key !== 'string') {
       return new Response(
