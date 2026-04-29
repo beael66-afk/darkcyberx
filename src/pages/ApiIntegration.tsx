@@ -200,11 +200,12 @@ class LicenseValidator {
         \$this->apiKey = \$apiKey;
     }
 
-    public function validate(string \$licenseKey, ?string \$hwid = null, ?string \$deviceName = null, ?string \$osInfo = null): array {
+    public function validate(string \$licenseKey, ?string \$hwid = null, ?string \$deviceName = null, ?string \$osInfo = null, ?string \$productName = null): array {
         \$payload = ["license_key" => \$licenseKey];
         if (\$hwid) \$payload["hwid"] = \$hwid;
         if (\$deviceName) \$payload["device_name"] = \$deviceName;
         if (\$osInfo) \$payload["os_info"] = \$osInfo;
+        if (\$productName) \$payload["product_name"] = \$productName; // للتراخيص متعددة المنتجات
 
         \$options = [
             "http" => [
@@ -234,8 +235,8 @@ class LicenseValidator {
 
 // ── الاستخدام ──
 // \$validator = new LicenseValidator("YOUR_API_KEY");
-// \$result = \$validator->validate("XXXX-XXXX-XXXX-XXXX", "DEVICE_HWID");
-// if (\$result["valid"]) { /* ترخيص صالح */ }
+// \$result = \$validator->validate("XXXX-XXXX-XXXX-XXXX", "DEVICE_HWID", null, null, "اسم المنتج");
+// if (\$result["valid"]) { /* ترخيص صالح للمنتج */ }
 ?>`,
 
   delphi: `unit LicenseValidator;
