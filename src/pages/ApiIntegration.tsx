@@ -31,7 +31,7 @@ public class LicenseValidator
         _apiKey = apiKey;
     }
 
-    public async Task<LicenseResult> ValidateAsync(string licenseKey, string hwid = null, string deviceName = null, string osInfo = null)
+    public async Task<LicenseResult> ValidateAsync(string licenseKey, string hwid = null, string deviceName = null, string osInfo = null, string productName = null)
     {
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Add("x-api-key", _apiKey);
@@ -41,7 +41,8 @@ public class LicenseValidator
             license_key = licenseKey,
             hwid,
             device_name = deviceName,
-            os_info = osInfo
+            os_info = osInfo,
+            product_name = productName  // اسم المنتج للتحقق منه (للتراخيص متعددة المنتجات)
         };
 
         var json = JsonSerializer.Serialize(payload);
@@ -77,20 +78,28 @@ public class LicenseResult
     public LicenseInfo license { get; set; }
 }
 
+public class AllowedProduct
+{
+    public string id { get; set; }
+    public string name { get; set; }
+}
+
 public class LicenseInfo
 {
     public string key { get; set; }
     public string status { get; set; }
     public string expire_at { get; set; }
     public int? max_devices { get; set; }
+    public int? max_products { get; set; }
     public string customer { get; set; }
     public string product { get; set; }
+    public List<AllowedProduct> allowed_products { get; set; }
 }
 
 // ── الاستخدام ──
 // var validator = new LicenseValidator("YOUR_API_KEY");
-// var result = await validator.ValidateAsync("XXXX-XXXX-XXXX-XXXX", hwid: "DEVICE_HWID");
-// if (result.valid) { /* ترخيص صالح */ }`,
+// var result = await validator.ValidateAsync("XXXX-XXXX-XXXX-XXXX", hwid: "DEVICE_HWID", productName: "اسم المنتج");
+// if (result.valid) { /* ترخيص صالح للمنتج */ }`,
 
   python: `import requests
 import sys
