@@ -153,14 +153,32 @@ const Licenses = () => {
     return data;
   };
 
+  const syncLicenseProducts = async (licenseId: string, productIds: string[]) => {
+    // Remove old links and insert fresh
+    await supabase.from("license_products" as any).delete().eq("license_id", licenseId);
+    if (productIds.length > 0) {
+      await supabase.from("license_products" as any).insert(
+        productIds.map((pid) => ({ license_id: licenseId, product_id: pid }))
+      );
+    }
+  };
+
   const createLicense = async () => {
     try {
+      const maxProductsNum = formData.max_products ? parseInt(formData.max_products) : null;
+      if (maxProductsNum !== null && formData.product_ids.length > maxProductsNum) {
+        toast({ title: "خطأ", description: `عدد المنتجات المختارة أكبر من الحد الأقصى (${maxProductsNum})`, variant: "destructive" });
+        return;
+      }
+
       const licenseKey = await generateLicenseKey();
+      const primaryProduct = formData.product_ids[0] || null;
       const { data, error } = await supabase.from("licenses").insert([{
         license_key: licenseKey,
         customer_id: formData.customer_id || null,
-        product_id: formData.product_id || null,
+        product_id: primaryProduct, // legacy primary product
         max_devices: parseInt(formData.max_devices),
+        max_products: maxProductsNum,
         expire_at: formData.expire_at || null,
         status: formData.status,
         notes: formData.notes || null
@@ -168,11 +186,13 @@ const Licenses = () => {
 
       if (error) throw error;
 
+      await syncLicenseProducts(data.id, formData.product_ids);
+
       await logActivity({
         action: "created",
         entityType: "license",
         entityId: data.id,
-        description: `تم إنشاء ترخيص جديد: ${licenseKey}`
+        description: `تم إنشاء ترخيص جديد: ${licenseKey} (${formData.product_ids.length} منتج)`
       });
 
       toast({
@@ -194,6 +214,12 @@ const Licenses = () => {
     if (!editingLicense) return;
 
     try {
+      const maxProductsNum = formData.max_products ? parseInt(formData.max_products) : null;
+      if (maxProductsNum !== null && formData.product_ids.length > maxProductsNum) {
+        toast({ title: "خطأ", description: `عدد المنتجات المختارة أكبر من الحد الأقصى (${maxProductsNum})`, variant: "destructive" });
+        return;
+      }
+
       // Auto-set status to active if expire_at is in the future (or no expiry) and current status is expired
       let resolvedStatus = formData.status;
       if (formData.status === "expired") {
@@ -203,12 +229,14 @@ const Licenses = () => {
         }
       }
 
+      const primaryProduct = formData.product_ids[0] || null;
       const { error } = await supabase
         .from("licenses")
         .update({
           customer_id: formData.customer_id || null,
-          product_id: formData.product_id || null,
+          product_id: primaryProduct,
           max_devices: parseInt(formData.max_devices),
+          max_products: maxProductsNum,
           expire_at: formData.expire_at || null,
           status: resolvedStatus,
           notes: formData.notes || null
@@ -217,11 +245,13 @@ const Licenses = () => {
 
       if (error) throw error;
 
+      await syncLicenseProducts(editingLicense.id, formData.product_ids);
+
       await logActivity({
         action: "updated",
         entityType: "license",
         entityId: editingLicense.id,
-        description: `تم تحديث الترخيص: ${editingLicense.license_key}${resolvedStatus !== formData.status ? " (تم تفعيله تلقائياً)" : ""}`
+        description: `تم تحديث الترخيص: ${editingLicense.license_key} (${formData.product_ids.length} منتج)${resolvedStatus !== formData.status ? " (تم تفعيله تلقائياً)" : ""}`
       });
 
       toast({
@@ -252,10 +282,14 @@ const Licenses = () => {
 
   const handleEdit = (license: License) => {
     setEditingLicense(license);
+    const allowedIds = license.allowed_products.map((p) => p.id);
+    // Fallback to legacy product_id if no link rows
+    const productIds = allowedIds.length > 0 ? allowedIds : (license.product?.id ? [license.product.id] : []);
     setFormData({
       customer_id: license.customer?.id || "",
-      product_id: license.product?.id || "",
+      product_ids: productIds,
       max_devices: license.max_devices.toString(),
+      max_products: license.max_products?.toString() || "",
       expire_at: license.expire_at ? new Date(license.expire_at).toISOString().split('T')[0] : "",
       status: license.status as "active" | "expired" | "pending" | "suspended",
       notes: ""
@@ -268,12 +302,22 @@ const Licenses = () => {
     setEditingLicense(null);
     setFormData({
       customer_id: "",
-      product_id: "",
+      product_ids: [],
       max_devices: "1",
+      max_products: "",
       expire_at: "",
       status: "active",
       notes: ""
     });
+  };
+
+  const toggleProduct = (productId: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      product_ids: prev.product_ids.includes(productId)
+        ? prev.product_ids.filter((id) => id !== productId)
+        : [...prev.product_ids, productId],
+    }));
   };
 
   const copyLicenseKey = (key: string) => {
