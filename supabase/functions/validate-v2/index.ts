@@ -305,6 +305,47 @@ serve(async (req) => {
       );
     }
 
+    // ── Product allowlist check ───────────────────────────────────────────────
+    const allowedProducts: { id: string; name: string }[] =
+      (license.license_products || [])
+        .map((lp: any) => lp.product)
+        .filter(Boolean);
+
+    // Fallback to legacy single product if no allowlist rows
+    if (allowedProducts.length === 0 && license.product) {
+      allowedProducts.push({ id: license.product.id, name: license.product.name });
+    }
+
+    const safeProductId = typeof product_id === 'string' ? product_id.slice(0, 100) : null;
+    const safeProductName = typeof product_name === 'string' ? product_name.slice(0, 200) : null;
+
+    if ((safeProductId || safeProductName) && allowedProducts.length > 0) {
+      const matched = allowedProducts.find(
+        (p) =>
+          (safeProductId && p.id === safeProductId) ||
+          (safeProductName && p.name.toLowerCase() === safeProductName.toLowerCase())
+      );
+      if (!matched) {
+        await supabase.from('logs').insert({
+          entity_type: 'security',
+          action: 'verified',
+          description: `محاولة استخدام منتج غير مسموح به للترخيص ${license.license_key} - المنتج المطلوب: ${safeProductName || safeProductId}`,
+          ip_address: clientIp,
+        });
+        return new Response(
+          JSON.stringify({
+            error: 'Product not allowed for this license',
+            valid: false,
+            license: {
+              key: license.license_key,
+              allowed_products: allowedProducts.map((p) => p.name),
+            },
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     if (safeHwid) {
       // Check if the device was previously deactivated (e.g. after key regeneration)
       // If so, re-activate it since the license is valid
