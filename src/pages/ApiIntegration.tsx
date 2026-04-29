@@ -766,7 +766,7 @@ export default function ApiIntegration() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <h3 className="font-semibold mb-2 text-green-500">✅ ترخيص صالح</h3>
+                <h3 className="font-semibold mb-2 text-green-500">✅ ترخيص صالح (متعدد المنتجات)</h3>
                 <pre className="bg-muted rounded-lg p-4 text-sm overflow-x-auto">{JSON.stringify({
                   valid: true,
                   license: {
@@ -774,10 +774,19 @@ export default function ApiIntegration() {
                     status: "active",
                     expire_at: "2026-12-31T00:00:00+00:00",
                     max_devices: 5,
+                    max_products: 3,
                     customer: "اسم العميل",
-                    product: "اسم المنتج"
+                    product: "المنتج الرئيسي",
+                    allowed_products: [
+                      { id: "uuid-1", name: "المنتج الأول" },
+                      { id: "uuid-2", name: "المنتج الثاني" },
+                      { id: "uuid-3", name: "المنتج الثالث" }
+                    ]
                   }
                 }, null, 2)}</pre>
+                <p className="text-xs text-muted-foreground mt-2">
+                  💡 <code className="bg-muted px-1 rounded">allowed_products</code> = قائمة المنتجات التي يمكن للعميل استخدامها بهذا الترخيص. لو فارغة = جميع المنتجات.
+                </p>
               </div>
 
               <Separator />
@@ -788,6 +797,20 @@ export default function ApiIntegration() {
                   valid: false,
                   error: "License not found",
                   force_shutdown: true
+                }, null, 2)}</pre>
+              </div>
+
+              <Separator />
+
+              <div>
+                <h3 className="font-semibold mb-2 text-purple-500">🚫 منتج غير مسموح به</h3>
+                <pre className="bg-muted rounded-lg p-4 text-sm overflow-x-auto">{JSON.stringify({
+                  valid: false,
+                  error: "Product not allowed for this license",
+                  license: {
+                    key: "ABCD-1234-EFGH-5678",
+                    allowed_products: ["المنتج الأول", "المنتج الثاني"]
+                  }
                 }, null, 2)}</pre>
               </div>
 
