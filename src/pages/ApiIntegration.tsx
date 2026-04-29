@@ -279,7 +279,8 @@ begin
 end;
 
 function TLicenseValidator.Validate(const ALicenseKey: string;
-  const AHwid: string; const ADeviceName: string; const AOsInfo: string): TLicenseResult;
+  const AHwid: string; const ADeviceName: string; const AOsInfo: string;
+  const AProductName: string): TLicenseResult;
 var
   Http: TNetHTTPClient;
   Response: IHTTPResponse;
@@ -297,6 +298,7 @@ begin
     if AHwid <> '' then Payload := Payload + ',"hwid":"' + AHwid + '"';
     if ADeviceName <> '' then Payload := Payload + ',"device_name":"' + ADeviceName + '"';
     if AOsInfo <> '' then Payload := Payload + ',"os_info":"' + AOsInfo + '"';
+    if AProductName <> '' then Payload := Payload + ',"product_name":"' + AProductName + '"';
     Payload := Payload + '}';
 
     Stream := TStringStream.Create(Payload, TEncoding.UTF8);
