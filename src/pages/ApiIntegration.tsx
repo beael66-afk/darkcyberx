@@ -266,7 +266,8 @@ type
   public
     constructor Create(const AApiKey: string);
     function Validate(const ALicenseKey: string; const AHwid: string = '';
-      const ADeviceName: string = ''; const AOsInfo: string = ''): TLicenseResult;
+      const ADeviceName: string = ''; const AOsInfo: string = '';
+      const AProductName: string = ''): TLicenseResult;
   end;
 
 implementation
