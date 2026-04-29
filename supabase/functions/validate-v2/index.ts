@@ -435,8 +435,10 @@ serve(async (req) => {
           status: license.status,
           expire_at: license.expire_at,
           max_devices: license.max_devices,
+          max_products: license.max_products,
           customer: license.customer?.name,
-          product: license.product?.name
+          product: license.product?.name,
+          allowed_products: allowedProducts.map((p) => ({ id: p.id, name: p.name })),
         }
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
