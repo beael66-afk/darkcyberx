@@ -691,7 +691,27 @@ const Licenses = () => {
                       )}
                     </TableCell>
                     <TableCell>{license.customer?.name || "-"}</TableCell>
-                    <TableCell>{license.product?.name || "-"}</TableCell>
+                    <TableCell>
+                      {license.allowed_products.length > 0 ? (
+                        <div className="flex flex-wrap gap-1 max-w-xs">
+                          {license.allowed_products.slice(0, 3).map((p) => (
+                            <Badge key={p.id} variant="secondary" className="text-xs">{p.name}</Badge>
+                          ))}
+                          {license.allowed_products.length > 3 && (
+                            <Badge variant="outline" className="text-xs">+{license.allowed_products.length - 3}</Badge>
+                          )}
+                          {license.max_products && (
+                            <span className="text-xs text-muted-foreground self-center">
+                              (حد: {license.max_products})
+                            </span>
+                          )}
+                        </div>
+                      ) : license.product?.name ? (
+                        <Badge variant="secondary" className="text-xs">{license.product.name}</Badge>
+                      ) : (
+                        <span className="text-muted-foreground">الكل</span>
+                      )}
+                    </TableCell>
                     <TableCell>{getStatusBadge(license.status)}</TableCell>
                     <TableCell>{license.max_devices}</TableCell>
                     <TableCell>
