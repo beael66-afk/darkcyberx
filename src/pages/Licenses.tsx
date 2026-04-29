@@ -112,12 +112,19 @@ const Licenses = () => {
         .select(`
           *,
           customer:customers(id, name),
-          product:products(id, name)
+          product:products(id, name),
+          license_products(product:products(id, name))
         `)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setLicenses(data || []);
+      const mapped: License[] = (data || []).map((l: any) => ({
+        ...l,
+        allowed_products: (l.license_products || [])
+          .map((lp: any) => lp.product)
+          .filter(Boolean),
+      }));
+      setLicenses(mapped);
     } catch (error) {
       console.error("Error fetching licenses:", error);
       toast({
