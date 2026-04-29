@@ -265,7 +265,7 @@ serve(async (req) => {
 
     const { data: license, error: licenseError } = await supabase
       .from('licenses')
-      .select(`*, customer:customers(*), product:products(*)`)
+      .select(`*, customer:customers(*), product:products(*), license_products(product:products(id, name))`)
       .eq('license_key', license_key)
       .single();
 
