@@ -44,10 +44,12 @@ interface License {
   license_key: string;
   status: string;
   max_devices: number;
+  max_products: number | null;
   expire_at: string | null;
   created_at: string;
   customer: { id: string; name: string } | null;
   product: { id: string; name: string } | null;
+  allowed_products: { id: string; name: string }[];
 }
 
 interface Customer {
@@ -77,15 +79,17 @@ const Licenses = () => {
   const [suspendingId, setSuspendingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<{
     customer_id: string;
-    product_id: string;
+    product_ids: string[];
     max_devices: string;
+    max_products: string;
     expire_at: string;
     status: "active" | "expired" | "pending" | "suspended";
     notes: string;
   }>({
     customer_id: "",
-    product_id: "",
+    product_ids: [],
     max_devices: "1",
+    max_products: "",
     expire_at: "",
     status: "active",
     notes: ""
