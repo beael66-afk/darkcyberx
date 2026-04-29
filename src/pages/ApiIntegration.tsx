@@ -109,7 +109,7 @@ class LicenseValidator:
         self.api_url = "${apiUrl}"
         self.api_key = api_key
 
-    def validate(self, license_key: str, hwid: str = None, device_name: str = None, os_info: str = None) -> dict:
+    def validate(self, license_key: str, hwid: str = None, device_name: str = None, os_info: str = None, product_name: str = None) -> dict:
         headers = {
             "x-api-key": self.api_key,
             "Content-Type": "application/json"
@@ -122,6 +122,8 @@ class LicenseValidator:
             payload["device_name"] = device_name
         if os_info:
             payload["os_info"] = os_info
+        if product_name:
+            payload["product_name"] = product_name  # للتحقق من المنتج للتراخيص متعددة المنتجات
 
         try:
             response = requests.post(self.api_url, json=payload, headers=headers, timeout=10)
@@ -138,9 +140,10 @@ class LicenseValidator:
 
 # ── الاستخدام ──
 # validator = LicenseValidator("YOUR_API_KEY")
-# result = validator.validate("XXXX-XXXX-XXXX-XXXX", hwid="DEVICE_HWID")
+# result = validator.validate("XXXX-XXXX-XXXX-XXXX", hwid="DEVICE_HWID", product_name="اسم المنتج")
 # if result.get("valid"):
-#     print("ترخيص صالح!")`,
+#     allowed = [p["name"] for p in result["license"].get("allowed_products", [])]
+#     print(f"ترخيص صالح! المنتجات المتاحة: {allowed}")`,
 
   javascript: `class LicenseValidator {
     constructor(apiKey) {
