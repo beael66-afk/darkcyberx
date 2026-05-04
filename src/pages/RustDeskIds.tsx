@@ -525,7 +525,8 @@ const RustDeskIds = () => {
                             </AlertDialog>
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </CardContent>
                 )}
