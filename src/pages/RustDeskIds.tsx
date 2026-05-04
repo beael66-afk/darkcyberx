@@ -111,20 +111,18 @@ const RustDeskIds = () => {
   });
 
   const saveMutation = useMutation({
-    mutationFn: async (data: { id?: string; customer_id: string; rustdesk_id: string; device_label: string }) => {
+    mutationFn: async (data: { id?: string; customer_id: string; rustdesk_id: string; device_label: string; anydesk_id: string }) => {
+      const payload = {
+        customer_id: data.customer_id,
+        rustdesk_id: data.rustdesk_id || "",
+        anydesk_id: data.anydesk_id || null,
+        device_label: data.device_label || null,
+      };
       if (data.id) {
-        const { error } = await supabase.from("rustdesk_ids").update({
-          customer_id: data.customer_id,
-          rustdesk_id: data.rustdesk_id,
-          device_label: data.device_label || null,
-        }).eq("id", data.id);
+        const { error } = await supabase.from("rustdesk_ids").update(payload).eq("id", data.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("rustdesk_ids").insert({
-          customer_id: data.customer_id,
-          rustdesk_id: data.rustdesk_id,
-          device_label: data.device_label || null,
-        });
+        const { error } = await supabase.from("rustdesk_ids").insert(payload);
         if (error) throw error;
       }
     },
@@ -159,6 +157,13 @@ const RustDeskIds = () => {
     navigator.clipboard.writeText(RUSTDESK_PASSWORD);
     toast.success("تم نسخ كلمة المرور للحافظة 🔑", { description: RUSTDESK_PASSWORD });
     window.open(`https://rustdesk.com/web/#${cleanId}`, "_blank");
+  };
+
+  const openAnyDeskApp = (anydeskId: string) => {
+    const cleanId = anydeskId.replace(/\s+/g, "");
+    toast.success("جاري فتح AnyDesk...", { description: cleanId });
+    // AnyDesk protocol handler (works when AnyDesk client is installed)
+    window.location.href = `anydesk:${cleanId}`;
   };
 
 
