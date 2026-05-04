@@ -1,0 +1,1 @@
+ALTER TABLE public.rustdesk_ids ADD COLUMN IF NOT EXISTS anydesk_id text;

@@ -608,6 +608,7 @@ export type Database = {
       }
       rustdesk_ids: {
         Row: {
+          anydesk_id: string | null
           created_at: string
           customer_id: string
           device_label: string | null
@@ -616,6 +617,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          anydesk_id?: string | null
           created_at?: string
           customer_id: string
           device_label?: string | null
@@ -624,6 +626,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          anydesk_id?: string | null
           created_at?: string
           customer_id?: string
           device_label?: string | null
