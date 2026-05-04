@@ -373,7 +373,12 @@ const RustDeskIds = () => {
                 {!isCollapsed && (
                   <CardContent className="p-0">
                     <div className="divide-y divide-border/60">
-                      {group.devices.map((entry, idx) => (
+                      {group.devices.map((entry, idx) => {
+                        const status = getDeviceStatus(entry.updated_at);
+                        const meta = STATUS_META[status];
+                        const hasRust = !!entry.rustdesk_id?.trim();
+                        const hasAny = !!entry.anydesk_id?.trim();
+                        return (
                         <div
                           key={entry.id}
                           className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3.5 hover:bg-muted/30 transition-colors group"
@@ -385,16 +390,52 @@ const RustDeskIds = () => {
                             </div>
                             <div className="min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <code className="font-mono text-sm font-bold bg-muted/70 px-2.5 py-1 rounded-md border border-border/50">
-                                  {entry.rustdesk_id}
-                                </code>
-                                <button
-                                  onClick={() => copyText(entry.rustdesk_id, "ID الجهاز")}
-                                  className="p-1 rounded hover:bg-muted opacity-60 hover:opacity-100 transition-all"
-                                  title="نسخ ID"
+                                {/* Status badge */}
+                                <span
+                                  className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full ${meta.bg} ${meta.text} ring-1 ${meta.ring}`}
+                                  title={`آخر تحديث: ${formatDate(entry.updated_at)}`}
                                 >
-                                  <Copy className="h-3.5 w-3.5" />
-                                </button>
+                                  <span className={`relative flex h-1.5 w-1.5`}>
+                                    {status === "online" && (
+                                      <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${meta.dot} opacity-60`} />
+                                    )}
+                                    <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${meta.dot}`} />
+                                  </span>
+                                  {meta.label}
+                                </span>
+
+                                {hasRust && (
+                                  <>
+                                    <span className="inline-flex items-center gap-1.5 font-mono text-sm font-bold bg-muted/70 px-2.5 py-1 rounded-md border border-border/50">
+                                      <span className="text-[10px] font-sans font-semibold text-muted-foreground uppercase tracking-wide">RD</span>
+                                      {entry.rustdesk_id}
+                                    </span>
+                                    <button
+                                      onClick={() => copyText(entry.rustdesk_id, "RustDesk ID")}
+                                      className="p-1 rounded hover:bg-muted opacity-60 hover:opacity-100 transition-all"
+                                      title="نسخ RustDesk ID"
+                                    >
+                                      <Copy className="h-3.5 w-3.5" />
+                                    </button>
+                                  </>
+                                )}
+
+                                {hasAny && (
+                                  <>
+                                    <span className="inline-flex items-center gap-1.5 font-mono text-sm font-bold bg-rose-500/10 text-rose-700 dark:text-rose-300 px-2.5 py-1 rounded-md border border-rose-500/20">
+                                      <span className="text-[10px] font-sans font-semibold uppercase tracking-wide opacity-80">AD</span>
+                                      {entry.anydesk_id}
+                                    </span>
+                                    <button
+                                      onClick={() => copyText(entry.anydesk_id!, "AnyDesk ID")}
+                                      className="p-1 rounded hover:bg-muted opacity-60 hover:opacity-100 transition-all"
+                                      title="نسخ AnyDesk ID"
+                                    >
+                                      <Copy className="h-3.5 w-3.5" />
+                                    </button>
+                                  </>
+                                )}
+
                                 {entry.device_label && (
                                   <Badge variant="outline" className="text-xs font-normal">
                                     {entry.device_label}
@@ -409,25 +450,40 @@ const RustDeskIds = () => {
 
                           {/* Actions */}
                           <div className="flex items-center gap-1.5 flex-shrink-0">
-                            <Button
-                              size="sm"
-                              className="h-8 gap-1 text-xs shadow-sm"
-                              onClick={() => openRustDeskApp(entry.rustdesk_id)}
-                              title="فتح تطبيق RustDesk"
-                            >
-                              <ExternalLink className="h-3.5 w-3.5" />
-                              اتصل
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-8 gap-1 text-xs"
-                              onClick={() => openRustDeskWeb(entry.rustdesk_id)}
-                              title="فتح ويب RustDesk"
-                            >
-                              <ExternalLink className="h-3.5 w-3.5" />
-                              ويب
-                            </Button>
+                            {hasRust && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  className="h-8 gap-1 text-xs shadow-sm"
+                                  onClick={() => openRustDeskApp(entry.rustdesk_id)}
+                                  title="فتح تطبيق RustDesk"
+                                >
+                                  <ExternalLink className="h-3.5 w-3.5" />
+                                  RustDesk
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-8 gap-1 text-xs"
+                                  onClick={() => openRustDeskWeb(entry.rustdesk_id)}
+                                  title="فتح ويب RustDesk"
+                                >
+                                  <ExternalLink className="h-3.5 w-3.5" />
+                                  ويب
+                                </Button>
+                              </>
+                            )}
+                            {hasAny && (
+                              <Button
+                                size="sm"
+                                className="h-8 gap-1 text-xs shadow-sm bg-rose-600 hover:bg-rose-700 text-white"
+                                onClick={() => openAnyDeskApp(entry.anydesk_id!)}
+                                title="فتح تطبيق AnyDesk"
+                              >
+                                <ExternalLink className="h-3.5 w-3.5" />
+                                AnyDesk
+                              </Button>
+                            )}
                             <Button
                               size="sm"
                               variant="ghost"
