@@ -17,19 +17,21 @@ interface RustDeskDevice {
   customer_id: string;
   rustdesk_id: string;
   device_label: string | null;
+  anydesk_id?: string | null;
 }
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   device: RustDeskDevice | null;
-  onSave: (data: { customer_id: string; rustdesk_id: string; device_label: string }) => void;
+  onSave: (data: { customer_id: string; rustdesk_id: string; device_label: string; anydesk_id: string }) => void;
   isSaving: boolean;
 }
 
 const RustDeskDeviceDialog = ({ open, onOpenChange, device, onSave, isSaving }: Props) => {
   const [customerId, setCustomerId] = useState("");
   const [rustdeskId, setRustdeskId] = useState("");
+  const [anydeskId, setAnydeskId] = useState("");
   const [deviceLabel, setDeviceLabel] = useState("");
 
   const { data: customers } = useQuery({
@@ -44,17 +46,24 @@ const RustDeskDeviceDialog = ({ open, onOpenChange, device, onSave, isSaving }: 
     if (open) {
       setCustomerId(device?.customer_id || "");
       setRustdeskId(device?.rustdesk_id || "");
+      setAnydeskId(device?.anydesk_id || "");
       setDeviceLabel(device?.device_label || "");
     }
   }, [open, device]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customerId || !rustdeskId.trim()) return;
-    onSave({ customer_id: customerId, rustdesk_id: rustdeskId.trim(), device_label: deviceLabel.trim() });
+    if (!customerId || (!rustdeskId.trim() && !anydeskId.trim())) return;
+    onSave({
+      customer_id: customerId,
+      rustdesk_id: rustdeskId.trim(),
+      device_label: deviceLabel.trim(),
+      anydesk_id: anydeskId.trim(),
+    });
   };
 
   const isEdit = !!device?.id;
+  const canSubmit = !!customerId && (!!rustdeskId.trim() || !!anydeskId.trim());
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -86,8 +95,20 @@ const RustDeskDeviceDialog = ({ open, onOpenChange, device, onSave, isSaving }: 
               onChange={(e) => setRustdeskId(e.target.value)}
               placeholder="مثال: 123456789"
               dir="ltr"
-              required
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label>AnyDesk ID (اختياري)</Label>
+            <Input
+              value={anydeskId}
+              onChange={(e) => setAnydeskId(e.target.value)}
+              placeholder="مثال: 987654321"
+              dir="ltr"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              يجب إدخال RustDesk ID أو AnyDesk ID على الأقل.
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -103,7 +124,7 @@ const RustDeskDeviceDialog = ({ open, onOpenChange, device, onSave, isSaving }: 
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               إلغاء
             </Button>
-            <Button type="submit" disabled={!customerId || !rustdeskId.trim() || isSaving}>
+            <Button type="submit" disabled={!canSubmit || isSaving}>
               {isSaving && <Loader2 className="h-4 w-4 ml-1 animate-spin" />}
               {isEdit ? "حفظ التعديلات" : "إضافة"}
             </Button>

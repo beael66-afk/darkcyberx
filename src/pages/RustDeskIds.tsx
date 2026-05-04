@@ -22,6 +22,7 @@ interface RustDeskEntry {
   id: string;
   customer_id: string;
   rustdesk_id: string;
+  anydesk_id: string | null;
   device_label: string | null;
   created_at: string;
   updated_at: string;
@@ -45,6 +46,25 @@ const formatDate = (dateStr: string) => {
 
 const getInitials = (name: string) =>
   name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+
+// Status by last update: <24h online, <7d idle, otherwise offline, none = unknown
+type DeviceStatus = "online" | "idle" | "offline" | "unknown";
+const getDeviceStatus = (updatedAt: string | null): DeviceStatus => {
+  if (!updatedAt) return "unknown";
+  const t = new Date(updatedAt).getTime();
+  if (isNaN(t)) return "unknown";
+  const diffH = (Date.now() - t) / 3_600_000;
+  if (diffH < 24) return "online";
+  if (diffH < 24 * 7) return "idle";
+  return "offline";
+};
+
+const STATUS_META: Record<DeviceStatus, { label: string; dot: string; bg: string; text: string; ring: string }> = {
+  online:  { label: "متصل",      dot: "bg-emerald-500", bg: "bg-emerald-500/15", text: "text-emerald-700 dark:text-emerald-300", ring: "ring-emerald-500/30" },
+  idle:    { label: "خامل",      dot: "bg-amber-500",   bg: "bg-amber-500/15",   text: "text-amber-700 dark:text-amber-300",   ring: "ring-amber-500/30" },
+  offline: { label: "غير متصل",  dot: "bg-rose-500",    bg: "bg-rose-500/15",    text: "text-rose-700 dark:text-rose-300",    ring: "ring-rose-500/30" },
+  unknown: { label: "غير معروف", dot: "bg-slate-400",   bg: "bg-slate-400/15",   text: "text-slate-600 dark:text-slate-300",  ring: "ring-slate-400/30" },
+};
 
 const RustDeskIds = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -91,20 +111,18 @@ const RustDeskIds = () => {
   });
 
   const saveMutation = useMutation({
-    mutationFn: async (data: { id?: string; customer_id: string; rustdesk_id: string; device_label: string }) => {
+    mutationFn: async (data: { id?: string; customer_id: string; rustdesk_id: string; device_label: string; anydesk_id: string }) => {
+      const payload = {
+        customer_id: data.customer_id,
+        rustdesk_id: data.rustdesk_id || "",
+        anydesk_id: data.anydesk_id || null,
+        device_label: data.device_label || null,
+      };
       if (data.id) {
-        const { error } = await supabase.from("rustdesk_ids").update({
-          customer_id: data.customer_id,
-          rustdesk_id: data.rustdesk_id,
-          device_label: data.device_label || null,
-        }).eq("id", data.id);
+        const { error } = await supabase.from("rustdesk_ids").update(payload).eq("id", data.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("rustdesk_ids").insert({
-          customer_id: data.customer_id,
-          rustdesk_id: data.rustdesk_id,
-          device_label: data.device_label || null,
-        });
+        const { error } = await supabase.from("rustdesk_ids").insert(payload);
         if (error) throw error;
       }
     },
@@ -141,6 +159,13 @@ const RustDeskIds = () => {
     window.open(`https://rustdesk.com/web/#${cleanId}`, "_blank");
   };
 
+  const openAnyDeskApp = (anydeskId: string) => {
+    const cleanId = anydeskId.replace(/\s+/g, "");
+    toast.success("جاري فتح AnyDesk...", { description: cleanId });
+    // AnyDesk protocol handler (works when AnyDesk client is installed)
+    window.location.href = `anydesk:${cleanId}`;
+  };
+
 
 
 
@@ -148,6 +173,7 @@ const RustDeskIds = () => {
   const grouped: CustomerGroup[] = [];
   const filtered = entries?.filter(e =>
     e.rustdesk_id.includes(searchTerm) ||
+    (e.anydesk_id || "").includes(searchTerm) ||
     e.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     e.device_label?.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
@@ -347,7 +373,12 @@ const RustDeskIds = () => {
                 {!isCollapsed && (
                   <CardContent className="p-0">
                     <div className="divide-y divide-border/60">
-                      {group.devices.map((entry, idx) => (
+                      {group.devices.map((entry, idx) => {
+                        const status = getDeviceStatus(entry.updated_at);
+                        const meta = STATUS_META[status];
+                        const hasRust = !!entry.rustdesk_id?.trim();
+                        const hasAny = !!entry.anydesk_id?.trim();
+                        return (
                         <div
                           key={entry.id}
                           className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3.5 hover:bg-muted/30 transition-colors group"
@@ -359,16 +390,52 @@ const RustDeskIds = () => {
                             </div>
                             <div className="min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <code className="font-mono text-sm font-bold bg-muted/70 px-2.5 py-1 rounded-md border border-border/50">
-                                  {entry.rustdesk_id}
-                                </code>
-                                <button
-                                  onClick={() => copyText(entry.rustdesk_id, "ID الجهاز")}
-                                  className="p-1 rounded hover:bg-muted opacity-60 hover:opacity-100 transition-all"
-                                  title="نسخ ID"
+                                {/* Status badge */}
+                                <span
+                                  className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full ${meta.bg} ${meta.text} ring-1 ${meta.ring}`}
+                                  title={`آخر تحديث: ${formatDate(entry.updated_at)}`}
                                 >
-                                  <Copy className="h-3.5 w-3.5" />
-                                </button>
+                                  <span className={`relative flex h-1.5 w-1.5`}>
+                                    {status === "online" && (
+                                      <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${meta.dot} opacity-60`} />
+                                    )}
+                                    <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${meta.dot}`} />
+                                  </span>
+                                  {meta.label}
+                                </span>
+
+                                {hasRust && (
+                                  <>
+                                    <span className="inline-flex items-center gap-1.5 font-mono text-sm font-bold bg-muted/70 px-2.5 py-1 rounded-md border border-border/50">
+                                      <span className="text-[10px] font-sans font-semibold text-muted-foreground uppercase tracking-wide">RD</span>
+                                      {entry.rustdesk_id}
+                                    </span>
+                                    <button
+                                      onClick={() => copyText(entry.rustdesk_id, "RustDesk ID")}
+                                      className="p-1 rounded hover:bg-muted opacity-60 hover:opacity-100 transition-all"
+                                      title="نسخ RustDesk ID"
+                                    >
+                                      <Copy className="h-3.5 w-3.5" />
+                                    </button>
+                                  </>
+                                )}
+
+                                {hasAny && (
+                                  <>
+                                    <span className="inline-flex items-center gap-1.5 font-mono text-sm font-bold bg-rose-500/10 text-rose-700 dark:text-rose-300 px-2.5 py-1 rounded-md border border-rose-500/20">
+                                      <span className="text-[10px] font-sans font-semibold uppercase tracking-wide opacity-80">AD</span>
+                                      {entry.anydesk_id}
+                                    </span>
+                                    <button
+                                      onClick={() => copyText(entry.anydesk_id!, "AnyDesk ID")}
+                                      className="p-1 rounded hover:bg-muted opacity-60 hover:opacity-100 transition-all"
+                                      title="نسخ AnyDesk ID"
+                                    >
+                                      <Copy className="h-3.5 w-3.5" />
+                                    </button>
+                                  </>
+                                )}
+
                                 {entry.device_label && (
                                   <Badge variant="outline" className="text-xs font-normal">
                                     {entry.device_label}
@@ -383,25 +450,40 @@ const RustDeskIds = () => {
 
                           {/* Actions */}
                           <div className="flex items-center gap-1.5 flex-shrink-0">
-                            <Button
-                              size="sm"
-                              className="h-8 gap-1 text-xs shadow-sm"
-                              onClick={() => openRustDeskApp(entry.rustdesk_id)}
-                              title="فتح تطبيق RustDesk"
-                            >
-                              <ExternalLink className="h-3.5 w-3.5" />
-                              اتصل
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-8 gap-1 text-xs"
-                              onClick={() => openRustDeskWeb(entry.rustdesk_id)}
-                              title="فتح ويب RustDesk"
-                            >
-                              <ExternalLink className="h-3.5 w-3.5" />
-                              ويب
-                            </Button>
+                            {hasRust && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  className="h-8 gap-1 text-xs shadow-sm"
+                                  onClick={() => openRustDeskApp(entry.rustdesk_id)}
+                                  title="فتح تطبيق RustDesk"
+                                >
+                                  <ExternalLink className="h-3.5 w-3.5" />
+                                  RustDesk
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-8 gap-1 text-xs"
+                                  onClick={() => openRustDeskWeb(entry.rustdesk_id)}
+                                  title="فتح ويب RustDesk"
+                                >
+                                  <ExternalLink className="h-3.5 w-3.5" />
+                                  ويب
+                                </Button>
+                              </>
+                            )}
+                            {hasAny && (
+                              <Button
+                                size="sm"
+                                className="h-8 gap-1 text-xs shadow-sm bg-rose-600 hover:bg-rose-700 text-white"
+                                onClick={() => openAnyDeskApp(entry.anydesk_id!)}
+                                title="فتح تطبيق AnyDesk"
+                              >
+                                <ExternalLink className="h-3.5 w-3.5" />
+                                AnyDesk
+                              </Button>
+                            )}
                             <Button
                               size="sm"
                               variant="ghost"
@@ -443,7 +525,8 @@ const RustDeskIds = () => {
                             </AlertDialog>
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </CardContent>
                 )}
