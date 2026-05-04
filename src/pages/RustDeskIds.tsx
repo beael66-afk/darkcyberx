@@ -173,6 +173,7 @@ const RustDeskIds = () => {
   const grouped: CustomerGroup[] = [];
   const filtered = entries?.filter(e =>
     e.rustdesk_id.includes(searchTerm) ||
+    (e.anydesk_id || "").includes(searchTerm) ||
     e.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     e.device_label?.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
