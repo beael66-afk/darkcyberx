@@ -169,58 +169,99 @@ const RustDeskIds = () => {
   const totalCount = entries?.length || 0;
   const uniqueCustomers = new Set(entries?.map(e => e.customer_id)).size;
 
+  // Color accents to rotate per customer card for visual variety
+  const accentPalette = [
+    { ring: "ring-violet-500/30", bar: "bg-gradient-to-b from-violet-500 to-violet-700", chip: "bg-violet-500/15 text-violet-600 dark:text-violet-300", soft: "from-violet-500/10" },
+    { ring: "ring-sky-500/30", bar: "bg-gradient-to-b from-sky-500 to-sky-700", chip: "bg-sky-500/15 text-sky-600 dark:text-sky-300", soft: "from-sky-500/10" },
+    { ring: "ring-emerald-500/30", bar: "bg-gradient-to-b from-emerald-500 to-emerald-700", chip: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300", soft: "from-emerald-500/10" },
+    { ring: "ring-amber-500/30", bar: "bg-gradient-to-b from-amber-500 to-amber-700", chip: "bg-amber-500/15 text-amber-600 dark:text-amber-300", soft: "from-amber-500/10" },
+    { ring: "ring-pink-500/30", bar: "bg-gradient-to-b from-pink-500 to-pink-700", chip: "bg-pink-500/15 text-pink-600 dark:text-pink-300", soft: "from-pink-500/10" },
+    { ring: "ring-cyan-500/30", bar: "bg-gradient-to-b from-cyan-500 to-cyan-700", chip: "bg-cyan-500/15 text-cyan-600 dark:text-cyan-300", soft: "from-cyan-500/10" },
+  ];
+
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-            <Monitor className="h-8 w-8 text-primary" />
-            RustDesk IDs
-          </h1>
-          <p className="text-muted-foreground mt-1">معرّفات الأجهزة للدعم عن بعد — مرتبة حسب العميل</p>
-        </div>
-        <div className="flex gap-2">
-          <Button size="sm" onClick={() => { setEditingDevice(null); setDialogOpen(true); }}>
-            <Plus className="h-4 w-4 ml-1" />
-            إضافة جهاز
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => refetch()}>
-            <RefreshCw className="h-4 w-4 ml-1" />
-            تحديث
-          </Button>
+      {/* Hero Header */}
+      <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-l from-primary/15 via-primary/5 to-transparent p-6 shadow-sm">
+        <div className="absolute -top-10 -left-10 h-48 w-48 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-12 right-10 h-40 w-40 rounded-full bg-sky-500/10 blur-3xl pointer-events-none" />
+        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4">
+            <div className="rounded-2xl bg-gradient-to-br from-primary to-primary/70 p-3 shadow-lg shadow-primary/20">
+              <Monitor className="h-7 w-7 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-l from-foreground to-foreground/70 bg-clip-text">
+                RustDesk IDs
+              </h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                معرّفات الأجهزة للدعم عن بعد — مرتبة حسب العميل
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              onClick={() => { setEditingDevice(null); setDialogOpen(true); }}
+              className="shadow-md shadow-primary/20"
+            >
+              <Plus className="h-4 w-4 ml-1" />
+              إضافة جهاز
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => refetch()} className="bg-background/60 backdrop-blur">
+              <RefreshCw className="h-4 w-4 ml-1" />
+              تحديث
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="border-none shadow-sm bg-gradient-to-br from-primary/10 to-primary/5">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="rounded-xl bg-primary/15 p-2.5"><Monitor className="h-5 w-5 text-primary" /></div>
+        <Card className="relative overflow-hidden border bg-gradient-to-br from-violet-500/10 via-card to-card hover:shadow-md transition-shadow">
+          <div className="absolute top-0 right-0 h-1 w-full bg-gradient-to-l from-violet-500 to-violet-700" />
+          <CardContent className="p-5 flex items-center gap-4">
+            <div className="rounded-2xl bg-violet-500/15 p-3 ring-1 ring-violet-500/20">
+              <Monitor className="h-6 w-6 text-violet-600 dark:text-violet-400" />
+            </div>
             <div>
-              <p className="text-xs text-muted-foreground">إجمالي الأجهزة المسجّلة</p>
-              <p className="text-2xl font-bold">{totalCount}</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">إجمالي الأجهزة</p>
+              <p className="text-3xl font-bold mt-0.5 text-foreground">{totalCount}</p>
             </div>
           </CardContent>
         </Card>
-        <Card className="border-none shadow-sm bg-gradient-to-br from-green-500/10 to-green-500/5">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="rounded-xl bg-green-500/15 p-2.5"><Users className="h-5 w-5 text-green-600" /></div>
+
+        <Card className="relative overflow-hidden border bg-gradient-to-br from-emerald-500/10 via-card to-card hover:shadow-md transition-shadow">
+          <div className="absolute top-0 right-0 h-1 w-full bg-gradient-to-l from-emerald-500 to-emerald-700" />
+          <CardContent className="p-5 flex items-center gap-4">
+            <div className="rounded-2xl bg-emerald-500/15 p-3 ring-1 ring-emerald-500/20">
+              <Users className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+            </div>
             <div>
-              <p className="text-xs text-muted-foreground">عملاء لديهم أجهزة</p>
-              <p className="text-2xl font-bold">{uniqueCustomers}</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">عملاء نشطون</p>
+              <p className="text-3xl font-bold mt-0.5 text-foreground">{uniqueCustomers}</p>
             </div>
           </CardContent>
         </Card>
-        <Card className="border-none shadow-sm bg-gradient-to-br from-blue-500/10 to-blue-500/5">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="rounded-xl bg-blue-500/15 p-2.5"><Key className="h-5 w-5 text-blue-500" /></div>
-            <div>
-              <p className="text-xs text-muted-foreground">كلمة المرور الثابتة</p>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <code className="text-sm font-mono font-bold">{RUSTDESK_PASSWORD}</code>
-                <button onClick={() => copyText(RUSTDESK_PASSWORD, "كلمة المرور")}>
-                  <Copy className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
+
+        <Card className="relative overflow-hidden border bg-gradient-to-br from-amber-500/10 via-card to-card hover:shadow-md transition-shadow">
+          <div className="absolute top-0 right-0 h-1 w-full bg-gradient-to-l from-amber-500 to-amber-700" />
+          <CardContent className="p-5 flex items-center gap-4">
+            <div className="rounded-2xl bg-amber-500/15 p-3 ring-1 ring-amber-500/20 shrink-0">
+              <Key className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">كلمة المرور الثابتة</p>
+              <div className="flex items-center gap-2 mt-1">
+                <code className="text-sm font-mono font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 px-2 py-1 rounded-md border border-amber-500/20 truncate">
+                  {RUSTDESK_PASSWORD}
+                </code>
+                <button
+                  onClick={() => copyText(RUSTDESK_PASSWORD, "كلمة المرور")}
+                  className="p-1.5 rounded-md hover:bg-amber-500/15 transition-colors shrink-0"
+                  title="نسخ"
+                >
+                  <Copy className="h-3.5 w-3.5 text-amber-700 dark:text-amber-300" />
                 </button>
               </div>
             </div>
@@ -235,7 +276,7 @@ const RustDeskIds = () => {
           placeholder="ابحث باسم العميل أو ID الجهاز أو اسم الجهاز..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pr-10"
+          className="pr-10 h-11 bg-card border-border/60 focus-visible:ring-primary/40 shadow-sm"
         />
       </div>
 
@@ -246,45 +287,58 @@ const RustDeskIds = () => {
           جاري التحميل...
         </div>
       ) : grouped.length === 0 ? (
-        <div className="text-center py-16">
-          <div className="flex flex-col items-center gap-2 text-muted-foreground">
-            <Monitor className="h-12 w-12 opacity-20" />
-            <p className="font-medium">لا توجد أجهزة مسجّلة بعد</p>
-            <p className="text-xs">سيظهر ID الجهاز هنا بعد أن يسجّله العميل عبر البوت</p>
-          </div>
-        </div>
+        <Card className="border-dashed">
+          <CardContent className="py-16">
+            <div className="flex flex-col items-center gap-3 text-muted-foreground">
+              <div className="rounded-full bg-muted p-4">
+                <Monitor className="h-10 w-10 opacity-40" />
+              </div>
+              <p className="font-semibold text-base text-foreground">لا توجد أجهزة مسجّلة بعد</p>
+              <p className="text-xs">سيظهر ID الجهاز هنا بعد أن يسجّله العميل عبر البوت</p>
+            </div>
+          </CardContent>
+        </Card>
       ) : (
         <div className="space-y-4">
-          {grouped.map((group) => {
+          {grouped.map((group, gIdx) => {
             const isCollapsed = !openCustomers.has(group.customer_id);
+            const accent = accentPalette[gIdx % accentPalette.length];
             return (
-              <Card key={group.customer_id} className="overflow-hidden border shadow-sm">
+              <Card
+                key={group.customer_id}
+                className="relative overflow-hidden border shadow-sm hover:shadow-md transition-all"
+              >
+                {/* Vertical accent bar */}
+                <div className={`absolute right-0 top-0 bottom-0 w-1 ${accent.bar}`} />
+
                 {/* Customer Header */}
                 <CardHeader
                   className="p-0 cursor-pointer select-none"
                   onClick={() => toggleCustomer(group.customer_id)}
                 >
-                  <div className="flex items-center justify-between px-4 py-3 bg-muted/40 hover:bg-muted/60 transition-colors border-b">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-9 w-9">
-                        <AvatarFallback className="bg-primary/15 text-primary text-sm font-bold">
+                  <div className={`flex items-center justify-between pr-5 pl-4 py-3.5 bg-gradient-to-l ${accent.soft} to-transparent hover:to-muted/30 transition-colors ${!isCollapsed ? "border-b" : ""}`}>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Avatar className={`h-10 w-10 ring-2 ${accent.ring}`}>
+                        <AvatarFallback className={`${accent.chip} text-sm font-bold`}>
                           {getInitials(group.customer_name)}
                         </AvatarFallback>
                       </Avatar>
-                      <div>
-                        <p className="font-semibold text-sm">{group.customer_name}</p>
-                        <p className="text-xs text-muted-foreground">{group.customer_email}</p>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm truncate">{group.customer_name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{group.customer_email}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Badge variant="secondary" className="text-xs gap-1">
+                    <div className="flex items-center gap-3 shrink-0">
+                      <Badge className={`text-xs gap-1 border-0 ${accent.chip}`}>
                         <Monitor className="h-3 w-3" />
                         {group.devices.length} {group.devices.length === 1 ? "جهاز" : "أجهزة"}
                       </Badge>
-                      {isCollapsed
-                        ? <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                        : <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                      }
+                      <div className="rounded-full p-1 bg-background/60 border">
+                        {isCollapsed
+                          ? <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                          : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                        }
+                      </div>
                     </div>
                   </div>
                 </CardHeader>
@@ -292,36 +346,36 @@ const RustDeskIds = () => {
                 {/* Devices */}
                 {!isCollapsed && (
                   <CardContent className="p-0">
-                    <div className="divide-y divide-border">
+                    <div className="divide-y divide-border/60">
                       {group.devices.map((entry, idx) => (
                         <div
                           key={entry.id}
-                          className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 hover:bg-muted/20 transition-colors group"
+                          className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3.5 hover:bg-muted/30 transition-colors group"
                         >
                           {/* Device info */}
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className="flex-shrink-0 w-7 h-7 rounded-lg bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground">
+                            <div className={`flex-shrink-0 w-8 h-8 rounded-lg ${accent.chip} flex items-center justify-center text-xs font-bold ring-1 ring-border/50`}>
                               {idx + 1}
                             </div>
                             <div className="min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <code className="font-mono text-sm font-bold bg-muted px-2 py-0.5 rounded">
+                                <code className="font-mono text-sm font-bold bg-muted/70 px-2.5 py-1 rounded-md border border-border/50">
                                   {entry.rustdesk_id}
                                 </code>
                                 <button
                                   onClick={() => copyText(entry.rustdesk_id, "ID الجهاز")}
-                                  className="opacity-50 hover:opacity-100 transition-opacity"
+                                  className="p-1 rounded hover:bg-muted opacity-60 hover:opacity-100 transition-all"
                                   title="نسخ ID"
                                 >
                                   <Copy className="h-3.5 w-3.5" />
                                 </button>
                                 {entry.device_label && (
-                                  <Badge variant="outline" className="text-xs">
+                                  <Badge variant="outline" className="text-xs font-normal">
                                     {entry.device_label}
                                   </Badge>
                                 )}
                               </div>
-                              <p className="text-xs text-muted-foreground mt-0.5">
+                              <p className="text-[11px] text-muted-foreground mt-1">
                                 آخر تحديث: {formatDate(entry.updated_at)}
                               </p>
                             </div>
@@ -331,7 +385,7 @@ const RustDeskIds = () => {
                           <div className="flex items-center gap-1.5 flex-shrink-0">
                             <Button
                               size="sm"
-                              className="h-8 gap-1 text-xs"
+                              className="h-8 gap-1 text-xs shadow-sm"
                               onClick={() => openRustDeskApp(entry.rustdesk_id)}
                               title="فتح تطبيق RustDesk"
                             >
@@ -351,7 +405,7 @@ const RustDeskIds = () => {
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-8 w-8 p-0"
+                              className="h-8 w-8 p-0 hover:bg-primary/10 hover:text-primary"
                               onClick={() => { setEditingDevice(entry); setDialogOpen(true); }}
                               title="تعديل"
                             >
