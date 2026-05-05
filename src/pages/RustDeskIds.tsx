@@ -47,24 +47,6 @@ const formatDate = (dateStr: string) => {
 const getInitials = (name: string) =>
   name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
 
-// Status by last update: <24h online, <7d idle, otherwise offline, none = unknown
-type DeviceStatus = "online" | "idle" | "offline" | "unknown";
-const getDeviceStatus = (updatedAt: string | null): DeviceStatus => {
-  if (!updatedAt) return "unknown";
-  const t = new Date(updatedAt).getTime();
-  if (isNaN(t)) return "unknown";
-  const diffH = (Date.now() - t) / 3_600_000;
-  if (diffH < 24) return "online";
-  if (diffH < 24 * 7) return "idle";
-  return "offline";
-};
-
-const STATUS_META: Record<DeviceStatus, { label: string; dot: string; bg: string; text: string; ring: string }> = {
-  online:  { label: "متصل",      dot: "bg-emerald-500", bg: "bg-emerald-500/15", text: "text-emerald-700 dark:text-emerald-300", ring: "ring-emerald-500/30" },
-  idle:    { label: "خامل",      dot: "bg-amber-500",   bg: "bg-amber-500/15",   text: "text-amber-700 dark:text-amber-300",   ring: "ring-amber-500/30" },
-  offline: { label: "غير متصل",  dot: "bg-rose-500",    bg: "bg-rose-500/15",    text: "text-rose-700 dark:text-rose-300",    ring: "ring-rose-500/30" },
-  unknown: { label: "غير معروف", dot: "bg-slate-400",   bg: "bg-slate-400/15",   text: "text-slate-600 dark:text-slate-300",  ring: "ring-slate-400/30" },
-};
 
 const RustDeskIds = () => {
   const [searchTerm, setSearchTerm] = useState("");
