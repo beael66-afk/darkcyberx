@@ -47,24 +47,6 @@ const formatDate = (dateStr: string) => {
 const getInitials = (name: string) =>
   name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
 
-// Status by last update: <24h online, <7d idle, otherwise offline, none = unknown
-type DeviceStatus = "online" | "idle" | "offline" | "unknown";
-const getDeviceStatus = (updatedAt: string | null): DeviceStatus => {
-  if (!updatedAt) return "unknown";
-  const t = new Date(updatedAt).getTime();
-  if (isNaN(t)) return "unknown";
-  const diffH = (Date.now() - t) / 3_600_000;
-  if (diffH < 24) return "online";
-  if (diffH < 24 * 7) return "idle";
-  return "offline";
-};
-
-const STATUS_META: Record<DeviceStatus, { label: string; dot: string; bg: string; text: string; ring: string }> = {
-  online:  { label: "متصل",      dot: "bg-emerald-500", bg: "bg-emerald-500/15", text: "text-emerald-700 dark:text-emerald-300", ring: "ring-emerald-500/30" },
-  idle:    { label: "خامل",      dot: "bg-amber-500",   bg: "bg-amber-500/15",   text: "text-amber-700 dark:text-amber-300",   ring: "ring-amber-500/30" },
-  offline: { label: "غير متصل",  dot: "bg-rose-500",    bg: "bg-rose-500/15",    text: "text-rose-700 dark:text-rose-300",    ring: "ring-rose-500/30" },
-  unknown: { label: "غير معروف", dot: "bg-slate-400",   bg: "bg-slate-400/15",   text: "text-slate-600 dark:text-slate-300",  ring: "ring-slate-400/30" },
-};
 
 const RustDeskIds = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -161,8 +143,8 @@ const RustDeskIds = () => {
 
   const openAnyDeskApp = (anydeskId: string) => {
     const cleanId = anydeskId.replace(/\s+/g, "");
-    toast.success("جاري فتح AnyDesk...", { description: cleanId });
-    // AnyDesk protocol handler (works when AnyDesk client is installed)
+    navigator.clipboard.writeText(RUSTDESK_PASSWORD);
+    toast.success("تم نسخ كلمة المرور للحافظة 🔑", { description: RUSTDESK_PASSWORD });
     window.location.href = `anydesk:${cleanId}`;
   };
 
@@ -374,8 +356,6 @@ const RustDeskIds = () => {
                   <CardContent className="p-0">
                     <div className="divide-y divide-border/60">
                       {group.devices.map((entry, idx) => {
-                        const status = getDeviceStatus(entry.updated_at);
-                        const meta = STATUS_META[status];
                         const hasRust = !!entry.rustdesk_id?.trim();
                         const hasAny = !!entry.anydesk_id?.trim();
                         return (
@@ -390,20 +370,6 @@ const RustDeskIds = () => {
                             </div>
                             <div className="min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
-                                {/* Status badge */}
-                                <span
-                                  className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full ${meta.bg} ${meta.text} ring-1 ${meta.ring}`}
-                                  title={`آخر تحديث: ${formatDate(entry.updated_at)}`}
-                                >
-                                  <span className={`relative flex h-1.5 w-1.5`}>
-                                    {status === "online" && (
-                                      <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${meta.dot} opacity-60`} />
-                                    )}
-                                    <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${meta.dot}`} />
-                                  </span>
-                                  {meta.label}
-                                </span>
-
                                 {hasRust && (
                                   <>
                                     <span className="inline-flex items-center gap-1.5 font-mono text-sm font-bold bg-muted/70 px-2.5 py-1 rounded-md border border-border/50">
