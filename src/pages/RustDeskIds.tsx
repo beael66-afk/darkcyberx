@@ -356,8 +356,6 @@ const RustDeskIds = () => {
                   <CardContent className="p-0">
                     <div className="divide-y divide-border/60">
                       {group.devices.map((entry, idx) => {
-                        const status = getDeviceStatus(entry.updated_at);
-                        const meta = STATUS_META[status];
                         const hasRust = !!entry.rustdesk_id?.trim();
                         const hasAny = !!entry.anydesk_id?.trim();
                         return (
@@ -372,20 +370,6 @@ const RustDeskIds = () => {
                             </div>
                             <div className="min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
-                                {/* Status badge */}
-                                <span
-                                  className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full ${meta.bg} ${meta.text} ring-1 ${meta.ring}`}
-                                  title={`آخر تحديث: ${formatDate(entry.updated_at)}`}
-                                >
-                                  <span className={`relative flex h-1.5 w-1.5`}>
-                                    {status === "online" && (
-                                      <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${meta.dot} opacity-60`} />
-                                    )}
-                                    <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${meta.dot}`} />
-                                  </span>
-                                  {meta.label}
-                                </span>
-
                                 {hasRust && (
                                   <>
                                     <span className="inline-flex items-center gap-1.5 font-mono text-sm font-bold bg-muted/70 px-2.5 py-1 rounded-md border border-border/50">
