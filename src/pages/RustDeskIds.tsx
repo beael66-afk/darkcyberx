@@ -161,8 +161,8 @@ const RustDeskIds = () => {
 
   const openAnyDeskApp = (anydeskId: string) => {
     const cleanId = anydeskId.replace(/\s+/g, "");
-    toast.success("جاري فتح AnyDesk...", { description: cleanId });
-    // AnyDesk protocol handler (works when AnyDesk client is installed)
+    navigator.clipboard.writeText(RUSTDESK_PASSWORD);
+    toast.success("تم نسخ كلمة المرور للحافظة 🔑", { description: RUSTDESK_PASSWORD });
     window.location.href = `anydesk:${cleanId}`;
   };
 
