@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@4.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -35,6 +36,35 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // ── AuthZ: accept service-role (internal cron) OR authenticated admin user ──
+    const authHeader = req.headers.get("authorization") || "";
+    const token = authHeader.replace(/^Bearer\s+/i, "");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    let authorized = false;
+
+    if (token && serviceRoleKey && token === serviceRoleKey) {
+      authorized = true;
+    } else if (token) {
+      const userClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+        { global: { headers: { Authorization: `Bearer ${token}` } } }
+      );
+      const { data: { user } } = await userClient.auth.getUser();
+      if (user) {
+        const adminSupabase = createClient(Deno.env.get("SUPABASE_URL")!, serviceRoleKey);
+        const { data: isAdmin } = await adminSupabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
+        if (isAdmin) authorized = true;
+      }
+    }
+
+    if (!authorized) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
     const body = await req.json();
     const { customerEmail, customerName, licenseKey, productName, expiryDate, daysRemaining }: NotificationRequest = body;
 
