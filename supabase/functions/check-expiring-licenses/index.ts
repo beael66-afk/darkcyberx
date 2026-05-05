@@ -70,6 +70,35 @@ const handler = async (req: Request): Promise<Response> => {
     const telegramToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // ── AuthZ: accept CRON_SECRET header, service-role bearer, or admin JWT ──
+    const cronSecret = Deno.env.get("CRON_SECRET");
+    const incomingCron = req.headers.get("x-cron-secret");
+    const authHeader = req.headers.get("authorization") || "";
+    const token = authHeader.replace(/^Bearer\s+/i, "");
+    let authorized = false;
+
+    if (cronSecret && incomingCron && incomingCron === cronSecret) {
+      authorized = true;
+    } else if (token && token === supabaseServiceKey) {
+      authorized = true;
+    } else if (token) {
+      const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+        global: { headers: { Authorization: `Bearer ${token}` } },
+      });
+      const { data: { user } } = await userClient.auth.getUser();
+      if (user) {
+        const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
+        if (isAdmin) authorized = true;
+      }
+    }
+
+    if (!authorized) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
     console.log("Starting check for expiring licenses...");
 
     // Fetch notification settings
