@@ -11,6 +11,21 @@ const DEFAULT_PRICE_PER_DAY = 10;
 const PAYMENT_NUMBER = "01009046911";
 const MAX_DELEGATES = 3;
 
+// Derive a stable webhook secret from the bot token (server-side only).
+async function deriveWebhookSecret(token: string): Promise<string> {
+  const data = new TextEncoder().encode(`telegram-webhook:${token}`);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return btoa(String.fromCharCode(...new Uint8Array(digest)))
+    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function safeEqual(a: string | null, b: string): boolean {
+  if (!a || a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -75,10 +90,11 @@ Deno.serve(async (req) => {
       }
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const webhookUrl = `${supabaseUrl}/functions/v1/telegram-bot`;
+      const secretToken = await deriveWebhookSecret(TELEGRAM_BOT_TOKEN);
       const setRes = await fetch(`${TELEGRAM_API}${TELEGRAM_BOT_TOKEN}/setWebhook`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: webhookUrl }),
+        body: JSON.stringify({ url: webhookUrl, secret_token: secretToken }),
       });
       const setData = await setRes.json();
       return new Response(JSON.stringify(setData), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -190,6 +206,14 @@ Deno.serve(async (req) => {
           "Content-Disposition": `attachment; filename="${filePath.split("/").pop()}"`,
         },
       });
+    }
+
+    // Verify the request originated from Telegram via secret token
+    const expectedSecret = await deriveWebhookSecret(TELEGRAM_BOT_TOKEN);
+    const actualSecret = req.headers.get("x-telegram-bot-api-secret-token");
+    if (!safeEqual(actualSecret, expectedSecret)) {
+      console.warn("Rejected webhook call without valid Telegram secret token");
+      return new Response("Unauthorized", { status: 401 });
     }
 
     const update = body;
