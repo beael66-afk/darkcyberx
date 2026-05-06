@@ -208,6 +208,14 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Verify the request originated from Telegram via secret token
+    const expectedSecret = await deriveWebhookSecret(TELEGRAM_BOT_TOKEN);
+    const actualSecret = req.headers.get("x-telegram-bot-api-secret-token");
+    if (!safeEqual(actualSecret, expectedSecret)) {
+      console.warn("Rejected webhook call without valid Telegram secret token");
+      return new Response("Unauthorized", { status: 401 });
+    }
+
     const update = body;
 
     // Handle callback queries (button presses)
