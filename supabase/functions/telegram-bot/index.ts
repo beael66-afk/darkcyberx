@@ -1953,7 +1953,7 @@ async function handleRustDeskEditDevice(supabase: any, chatId: number, deviceId:
     "━━━━━━━━━━━━━━━━━━━━━\n\n" +
     `🔢 ID الجديد: \`${newId}\`\n` +
     (newLabel ? `🏷️ الاسم الجديد: ${newLabel}\n` : "") +
-    "\n🔑 *كلمة المرور للاتصال:* `123456medoissaA`",
+    "\n🔑 *كلمة المرور للاتصال:* `${Deno.env.get("RUSTDESK_PASSWORD") ?? ""}`",
     { inline_keyboard: [[{ text: "🖥️ إدارة الأجهزة", callback_data: "rustdesk_register" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
     "Markdown"
   );
@@ -1996,7 +1996,7 @@ async function handleRustDeskIdInput(supabase: any, chatId: number, rustdeskId: 
     "━━━━━━━━━━━━━━━━━━━━━\n\n" +
     `🖥️ *ID الجهاز:* \`${rustdeskId}\`\n` +
     (label ? `🏷️ *اسم الجهاز:* ${label}\n` : "") +
-    "\n🔑 *كلمة المرور للاتصال:* `123456medoissaA`\n\n" +
+    "\n🔑 *كلمة المرور للاتصال:* `${Deno.env.get("RUSTDESK_PASSWORD") ?? ""}`\n\n" +
     "سيتمكن فريق الدعم من الاتصال بجهازك عند الحاجة ✅",
     { inline_keyboard: [[{ text: "🖥️ إدارة الأجهزة", callback_data: "rustdesk_register" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
     "Markdown"
