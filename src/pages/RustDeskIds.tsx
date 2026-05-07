@@ -64,6 +64,17 @@ const RustDeskIds = () => {
     });
   };
 
+  const { data: rustdeskPwData } = useQuery({
+    queryKey: ["rustdesk-password"],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("get-rustdesk-password");
+      if (error) return { password: "" };
+      return data as { password: string };
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+  const RUSTDESK_PASSWORD = rustdeskPwData?.password || "";
+
   const { data: entries, isLoading, refetch } = useQuery({
     queryKey: ["rustdesk-ids"],
     queryFn: async () => {
