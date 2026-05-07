@@ -719,18 +719,27 @@ async function handleCallbackQuery(supabase: any, query: any, token: string) {
       } else if (data.startsWith("use_account_")) {
         const customerId = data.replace("use_account_", "");
         await handleUseAccount(supabase, chatId, customerId, token);
-      } else if (data.startsWith("act_licenses_")) {
-        const customerId = data.replace("act_licenses_", "");
-        await handleLicensesForCustomer(supabase, chatId, customerId, token);
-      } else if (data.startsWith("act_renew_")) {
-        const customerId = data.replace("act_renew_", "");
-        await handleRenewStartForCustomer(supabase, chatId, customerId, token);
-      } else if (data.startsWith("act_reset_")) {
-        const customerId = data.replace("act_reset_", "");
-        await handleResetKeyStartForCustomer(supabase, chatId, customerId, token);
-      } else if (data.startsWith("act_rustdesk_")) {
-        const customerId = data.replace("act_rustdesk_", "");
-        await handleRustDeskRegisterForCustomer(supabase, chatId, customerId, token);
+      } else if (
+        data.startsWith("act_licenses_") ||
+        data.startsWith("act_renew_") ||
+        data.startsWith("act_reset_") ||
+        data.startsWith("act_rustdesk_")
+      ) {
+        const prefix = data.startsWith("act_licenses_") ? "act_licenses_"
+          : data.startsWith("act_renew_") ? "act_renew_"
+          : data.startsWith("act_reset_") ? "act_reset_"
+          : "act_rustdesk_";
+        const customerId = data.replace(prefix, "");
+        // SECURITY: verify chatId has access to this customer (prevent IDOR)
+        const allowed = await getAllCustomerAccess(supabase, chatId);
+        if (!allowed.some((a) => a.customer_id === customerId)) {
+          await sendMessage(chatId, token, "❌ ليس لديك صلاحية الوصول لهذا الحساب.");
+          return;
+        }
+        if (prefix === "act_licenses_") await handleLicensesForCustomer(supabase, chatId, customerId, token);
+        else if (prefix === "act_renew_") await handleRenewStartForCustomer(supabase, chatId, customerId, token);
+        else if (prefix === "act_reset_") await handleResetKeyStartForCustomer(supabase, chatId, customerId, token);
+        else await handleRustDeskRegisterForCustomer(supabase, chatId, customerId, token);
       }
       break;
   }
