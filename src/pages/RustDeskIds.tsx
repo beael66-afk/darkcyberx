@@ -16,7 +16,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-
+// RustDesk password is fetched at runtime from a secure admin-only edge function.
 
 interface RustDeskEntry {
   id: string;
