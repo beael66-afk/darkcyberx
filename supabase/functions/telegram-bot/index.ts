@@ -312,7 +312,11 @@ Deno.serve(async (req) => {
         return new Response("OK", { status: 200 });
       }
       await handleLinkAccount(supabase, chatId, text.toLowerCase(), TELEGRAM_BOT_TOKEN);
-      await clearState(supabase, chatId);
+      return new Response("OK", { status: 200 });
+    }
+
+    if (state?.step === "awaiting_link_otp") {
+      await handleLinkOtpSubmit(supabase, chatId, text.trim(), TELEGRAM_BOT_TOKEN);
       return new Response("OK", { status: 200 });
     }
 
