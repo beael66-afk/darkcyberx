@@ -312,7 +312,11 @@ Deno.serve(async (req) => {
         return new Response("OK", { status: 200 });
       }
       await handleLinkAccount(supabase, chatId, text.toLowerCase(), TELEGRAM_BOT_TOKEN);
-      await clearState(supabase, chatId);
+      return new Response("OK", { status: 200 });
+    }
+
+    if (state?.step === "awaiting_link_otp") {
+      await handleLinkOtpSubmit(supabase, chatId, text.trim(), TELEGRAM_BOT_TOKEN);
       return new Response("OK", { status: 200 });
     }
 
@@ -719,18 +723,27 @@ async function handleCallbackQuery(supabase: any, query: any, token: string) {
       } else if (data.startsWith("use_account_")) {
         const customerId = data.replace("use_account_", "");
         await handleUseAccount(supabase, chatId, customerId, token);
-      } else if (data.startsWith("act_licenses_")) {
-        const customerId = data.replace("act_licenses_", "");
-        await handleLicensesForCustomer(supabase, chatId, customerId, token);
-      } else if (data.startsWith("act_renew_")) {
-        const customerId = data.replace("act_renew_", "");
-        await handleRenewStartForCustomer(supabase, chatId, customerId, token);
-      } else if (data.startsWith("act_reset_")) {
-        const customerId = data.replace("act_reset_", "");
-        await handleResetKeyStartForCustomer(supabase, chatId, customerId, token);
-      } else if (data.startsWith("act_rustdesk_")) {
-        const customerId = data.replace("act_rustdesk_", "");
-        await handleRustDeskRegisterForCustomer(supabase, chatId, customerId, token);
+      } else if (
+        data.startsWith("act_licenses_") ||
+        data.startsWith("act_renew_") ||
+        data.startsWith("act_reset_") ||
+        data.startsWith("act_rustdesk_")
+      ) {
+        const prefix = data.startsWith("act_licenses_") ? "act_licenses_"
+          : data.startsWith("act_renew_") ? "act_renew_"
+          : data.startsWith("act_reset_") ? "act_reset_"
+          : "act_rustdesk_";
+        const customerId = data.replace(prefix, "");
+        // SECURITY: verify chatId has access to this customer (prevent IDOR)
+        const allowed = await getAllCustomerAccess(supabase, chatId);
+        if (!allowed.some((a) => a.customer_id === customerId)) {
+          await sendMessage(chatId, token, "❌ ليس لديك صلاحية الوصول لهذا الحساب.");
+          return;
+        }
+        if (prefix === "act_licenses_") await handleLicensesForCustomer(supabase, chatId, customerId, token);
+        else if (prefix === "act_renew_") await handleRenewStartForCustomer(supabase, chatId, customerId, token);
+        else if (prefix === "act_reset_") await handleResetKeyStartForCustomer(supabase, chatId, customerId, token);
+        else await handleRustDeskRegisterForCustomer(supabase, chatId, customerId, token);
       }
       break;
   }
@@ -1444,14 +1457,63 @@ async function handleLinkStart(supabase: any, chatId: number, token: string) {
   );
 }
 
+async function sha256Hex(input: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function sendOtpEmail(toEmail: string, code: string): Promise<boolean> {
+  const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+  if (!RESEND_API_KEY) { console.error("RESEND_API_KEY missing"); return false; }
+  try {
+    const r = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
+      body: JSON.stringify({
+        from: "License Manager <onboarding@resend.dev>",
+        to: [toEmail],
+        subject: "رمز التحقق لربط حساب تليجرام",
+        html: `<div dir="rtl" style="font-family:sans-serif"><h2>رمز التحقق</h2><p>استخدم الرمز التالي لربط حسابك بالبوت خلال 10 دقائق:</p><p style="font-size:28px;font-weight:bold;letter-spacing:6px">${code}</p><p>إذا لم تطلب ذلك، تجاهل هذه الرسالة.</p></div>`,
+      }),
+    });
+    return r.ok;
+  } catch (e) { console.error("OTP email error", e); return false; }
+}
+
+async function performTelegramLink(supabase: any, chatId: number, customerId: string, customerName: string, token: string) {
+  const { data: locState } = await supabase
+    .from("telegram_user_states").select("data")
+    .eq("telegram_chat_id", chatId).eq("step", "has_location").maybeSingle();
+
+  const insertData: any = { customer_id: customerId, telegram_chat_id: chatId };
+  if (locState?.data?.latitude) {
+    insertData.latitude = locState.data.latitude;
+    insertData.longitude = locState.data.longitude;
+    insertData.location_updated_at = new Date().toISOString();
+  }
+  const { error } = await supabase.from("telegram_links").insert(insertData);
+  if (error) {
+    console.error("Error linking:", error);
+    await sendMessage(chatId, token, "❌ حدث خطأ. حاول مرة أخرى.");
+    return;
+  }
+  await sendMessageWithKeyboard(chatId, token,
+    "━━━━━━━━━━━━━━━━━━━━━\n" +
+    `✅ *تم ربط حسابك بنجاح!*\n\n` +
+    `👤 مرحباً *${customerName}*\n` +
+    "━━━━━━━━━━━━━━━━━━━━━",
+    { inline_keyboard: [[{ text: "📋 عرض تراخيصي", callback_data: "my_licenses" }], [{ text: "🔄 تجديد ترخيص", callback_data: "renew" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
+    "Markdown"
+  );
+}
+
 async function handleLinkAccount(supabase: any, chatId: number, email: string, token: string) {
   const { data: existingLink } = await supabase
-    .from("telegram_links")
-    .select("id")
-    .eq("telegram_chat_id", chatId)
-    .maybeSingle();
+    .from("telegram_links").select("id")
+    .eq("telegram_chat_id", chatId).maybeSingle();
 
   if (existingLink) {
+    await clearState(supabase, chatId);
     await sendMessageWithKeyboard(chatId, token,
       "✅ حسابك مربوط بالفعل!",
       { inline_keyboard: [[{ text: "📋 عرض تراخيصي", callback_data: "my_licenses" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
@@ -1460,19 +1522,16 @@ async function handleLinkAccount(supabase: any, chatId: number, email: string, t
   }
 
   const { data: customer } = await supabase
-    .from("customers")
-    .select("id, name")
-    .ilike("email", email)
-    .maybeSingle();
+    .from("customers").select("id, name, email")
+    .ilike("email", email).maybeSingle();
 
   if (customer) {
     const { data: existingCustLink } = await supabase
-      .from("telegram_links")
-      .select("id")
-      .eq("customer_id", customer.id)
-      .maybeSingle();
+      .from("telegram_links").select("id")
+      .eq("customer_id", customer.id).maybeSingle();
 
     if (existingCustLink) {
+      await clearState(supabase, chatId);
       await sendMessageWithKeyboard(chatId, token,
         "⚠️ هذا الحساب مربوط بمستخدم آخر بالفعل.\n\nإذا كنت تواجه مشكلة، تواصل مع الدعم.",
         { inline_keyboard: [[{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
@@ -1480,67 +1539,48 @@ async function handleLinkAccount(supabase: any, chatId: number, email: string, t
       return;
     }
 
-    const { data: locState } = await supabase
-      .from("telegram_user_states")
-      .select("data")
-      .eq("telegram_chat_id", chatId)
-      .eq("step", "has_location")
-      .maybeSingle();
-
-    const insertData: any = { customer_id: customer.id, telegram_chat_id: chatId };
-    if (locState?.data?.latitude) {
-      insertData.latitude = locState.data.latitude;
-      insertData.longitude = locState.data.longitude;
-      insertData.location_updated_at = new Date().toISOString();
-    }
-
-    const { error } = await supabase
-      .from("telegram_links")
-      .insert(insertData);
-
-    if (error) {
-      console.error("Error linking:", error);
-      await sendMessage(chatId, token, "❌ حدث خطأ. حاول مرة أخرى.");
+    // SECURITY: Generate OTP, send to email; do NOT link until verified
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp_hash = await sha256Hex(`${chatId}:${code}`);
+    // Remove any prior pending OTPs for this chat
+    await supabase.from("telegram_link_otps").delete().eq("telegram_chat_id", chatId);
+    await supabase.from("telegram_link_otps").insert({
+      telegram_chat_id: chatId,
+      email: customer.email,
+      customer_id: customer.id,
+      otp_hash,
+    });
+    const sent = await sendOtpEmail(customer.email, code);
+    if (!sent) {
+      await clearState(supabase, chatId);
+      await sendMessage(chatId, token, "❌ تعذر إرسال رمز التحقق إلى بريدك. تواصل مع الدعم.");
       return;
     }
-
-    await sendMessageWithKeyboard(chatId, token,
-      "━━━━━━━━━━━━━━━━━━━━━\n" +
-      `✅ *تم ربط حسابك بنجاح!*\n\n` +
-      `👤 مرحباً *${customer.name}*\n` +
-      "━━━━━━━━━━━━━━━━━━━━━",
-      { inline_keyboard: [[{ text: "📋 عرض تراخيصي", callback_data: "my_licenses" }], [{ text: "🔄 تجديد ترخيص", callback_data: "renew" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
-      "Markdown"
-    );
+    await setState(supabase, chatId, "awaiting_link_otp", { customer_id: customer.id });
+    await sendMessage(chatId, token,
+      "📧 تم إرسال رمز تحقق مكوّن من 6 أرقام إلى بريدك الإلكتروني.\n" +
+      "أرسل الرمز هنا للمتابعة (صالح لمدة 10 دقائق).");
     return;
   }
 
+  await clearState(supabase, chatId);
   const { data: regReq } = await supabase
-    .from("registration_requests")
-    .select("id, name, status")
-    .eq("email", email)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .from("registration_requests").select("id, name, status")
+    .eq("email", email).order("created_at", { ascending: false }).limit(1).maybeSingle();
 
   if (regReq) {
     if (regReq.status === "pending") {
       await sendMessageWithKeyboard(chatId, token,
         "⏳ *طلب تسجيلك قيد المراجعة*\n\nسيتم إبلاغك فور الموافقة عليه من الإدارة.",
-        { inline_keyboard: [[{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
-        "Markdown"
-      );
+        { inline_keyboard: [[{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }, "Markdown");
     } else if (regReq.status === "rejected") {
       await sendMessageWithKeyboard(chatId, token,
         "❌ *تم رفض طلب تسجيلك سابقاً*\n\nيمكنك التسجيل مجدداً أو التواصل مع الدعم.",
-        { inline_keyboard: [[{ text: "📝 تسجيل مستخدم جديد", callback_data: "register" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
-        "Markdown"
-      );
+        { inline_keyboard: [[{ text: "📝 تسجيل مستخدم جديد", callback_data: "register" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }, "Markdown");
     } else {
       await sendMessageWithKeyboard(chatId, token,
         "✅ تمت الموافقة على طلبك لكن الحساب لم يُنشأ بعد.\nتواصل مع الدعم.",
-        { inline_keyboard: [[{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] }
-      );
+        { inline_keyboard: [[{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] });
     }
     return;
   }
@@ -1549,8 +1589,41 @@ async function handleLinkAccount(supabase: any, chatId: number, email: string, t
     "❌ *لم يتم العثور على حساب بهذا البريد*\n\n" +
     "تأكد من البريد الإلكتروني أو سجّل كمستخدم جديد:",
     { inline_keyboard: [[{ text: "📝 تسجيل مستخدم جديد", callback_data: "register" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
-    "Markdown"
-  );
+    "Markdown");
+}
+
+async function handleLinkOtpSubmit(supabase: any, chatId: number, code: string, token: string) {
+  if (!/^\d{6}$/.test(code)) {
+    await sendMessage(chatId, token, "⚠️ الرمز يجب أن يكون 6 أرقام. حاول مرة أخرى:");
+    return;
+  }
+  const { data: rec } = await supabase
+    .from("telegram_link_otps").select("*")
+    .eq("telegram_chat_id", chatId)
+    .order("created_at", { ascending: false }).limit(1).maybeSingle();
+
+  if (!rec || new Date(rec.expires_at).getTime() < Date.now()) {
+    await clearState(supabase, chatId);
+    await sendMessage(chatId, token, "⌛ انتهت صلاحية الرمز. ابدأ عملية الربط من جديد.");
+    return;
+  }
+  if (rec.attempts >= 5) {
+    await supabase.from("telegram_link_otps").delete().eq("id", rec.id);
+    await clearState(supabase, chatId);
+    await sendMessage(chatId, token, "❌ تجاوزت عدد المحاولات. ابدأ من جديد.");
+    return;
+  }
+  const expected = await sha256Hex(`${chatId}:${code}`);
+  if (expected !== rec.otp_hash) {
+    await supabase.from("telegram_link_otps").update({ attempts: rec.attempts + 1 }).eq("id", rec.id);
+    await sendMessage(chatId, token, "❌ رمز غير صحيح. حاول مرة أخرى:");
+    return;
+  }
+  // Success: load customer name and link
+  const { data: customer } = await supabase.from("customers").select("name").eq("id", rec.customer_id).maybeSingle();
+  await supabase.from("telegram_link_otps").delete().eq("telegram_chat_id", chatId);
+  await clearState(supabase, chatId);
+  await performTelegramLink(supabase, chatId, rec.customer_id, customer?.name || "", token);
 }
 
 // ─── View Licenses (backward compat - uses resolveCustomer) ──
@@ -1880,7 +1953,7 @@ async function handleRustDeskEditDevice(supabase: any, chatId: number, deviceId:
     "━━━━━━━━━━━━━━━━━━━━━\n\n" +
     `🔢 ID الجديد: \`${newId}\`\n` +
     (newLabel ? `🏷️ الاسم الجديد: ${newLabel}\n` : "") +
-    "\n🔑 *كلمة المرور للاتصال:* `123456medoissaA`",
+    `\n🔑 *كلمة المرور للاتصال:* \`${Deno.env.get("RUSTDESK_PASSWORD") ?? "—"}\``,
     { inline_keyboard: [[{ text: "🖥️ إدارة الأجهزة", callback_data: "rustdesk_register" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
     "Markdown"
   );
@@ -1923,7 +1996,7 @@ async function handleRustDeskIdInput(supabase: any, chatId: number, rustdeskId: 
     "━━━━━━━━━━━━━━━━━━━━━\n\n" +
     `🖥️ *ID الجهاز:* \`${rustdeskId}\`\n` +
     (label ? `🏷️ *اسم الجهاز:* ${label}\n` : "") +
-    "\n🔑 *كلمة المرور للاتصال:* `123456medoissaA`\n\n" +
+    `\n🔑 *كلمة المرور للاتصال:* \`${Deno.env.get("RUSTDESK_PASSWORD") ?? "—"}\`\n\n` +
     "سيتمكن فريق الدعم من الاتصال بجهازك عند الحاجة ✅",
     { inline_keyboard: [[{ text: "🖥️ إدارة الأجهزة", callback_data: "rustdesk_register" }], [{ text: "🏠 القائمة الرئيسية", callback_data: "main_menu" }]] },
     "Markdown"

@@ -720,6 +720,39 @@ export type Database = {
           },
         ]
       }
+      telegram_link_otps: {
+        Row: {
+          attempts: number
+          created_at: string
+          customer_id: string
+          email: string
+          expires_at: string
+          id: string
+          otp_hash: string
+          telegram_chat_id: number
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          customer_id: string
+          email: string
+          expires_at?: string
+          id?: string
+          otp_hash: string
+          telegram_chat_id: number
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          customer_id?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          otp_hash?: string
+          telegram_chat_id?: number
+        }
+        Relationships: []
+      }
       telegram_links: {
         Row: {
           created_at: string
