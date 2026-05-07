@@ -75,8 +75,12 @@ Deno.serve(async (req) => {
     }
 
     if (action === "confirm") {
-      const currentExpiry = request.licenses?.expire_at ? new Date(request.licenses.expire_at) : new Date();
-      const baseDate = currentExpiry > new Date() ? currentExpiry : new Date();
+      // Always extend from the existing expiry date (even if it already passed)
+      // so the renewal day-of-month stays the same. Only fall back to "now" if
+      // the license has never had an expiry set.
+      const baseDate = request.licenses?.expire_at
+        ? new Date(request.licenses.expire_at)
+        : new Date();
       baseDate.setDate(baseDate.getDate() + request.days);
 
       const { error: licenseError } = await supabase
