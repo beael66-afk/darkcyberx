@@ -16,7 +16,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-const RUSTDESK_PASSWORD = "123456medoissaA";
+
 
 interface RustDeskEntry {
   id: string;
