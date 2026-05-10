@@ -7,6 +7,37 @@ const corsHeaders = {
 
 const TELEGRAM_API = "https://api.telegram.org/bot";
 
+function addCalendarMonthsPreservingDay(date: Date, months: number) {
+  const result = new Date(date);
+  const originalDay = result.getUTCDate();
+
+  result.setUTCDate(1);
+  result.setUTCMonth(result.getUTCMonth() + months);
+
+  const lastDayOfTargetMonth = new Date(Date.UTC(
+    result.getUTCFullYear(),
+    result.getUTCMonth() + 1,
+    0,
+  )).getUTCDate();
+
+  result.setUTCDate(Math.min(originalDay, lastDayOfTargetMonth));
+  return result;
+}
+
+function calculateRenewalExpiry(currentExpiry: string | null | undefined, days: number) {
+  const baseDate = currentExpiry ? new Date(currentExpiry) : new Date();
+
+  // In this app, 30/60/90-day renewals are sold as monthly periods, so keep
+  // the customer's renewal day stable instead of shifting on 31-day months.
+  if (days > 0 && days % 30 === 0) {
+    return addCalendarMonthsPreservingDay(baseDate, days / 30);
+  }
+
+  const result = new Date(baseDate);
+  result.setUTCDate(result.getUTCDate() + days);
+  return result;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -75,17 +106,11 @@ Deno.serve(async (req) => {
     }
 
     if (action === "confirm") {
-      // Always extend from the existing expiry date (even if it already passed)
-      // so the renewal day-of-month stays the same. Only fall back to "now" if
-      // the license has never had an expiry set.
-      const baseDate = request.licenses?.expire_at
-        ? new Date(request.licenses.expire_at)
-        : new Date();
-      baseDate.setDate(baseDate.getDate() + request.days);
+      const newExpiryDate = calculateRenewalExpiry(request.licenses?.expire_at, request.days);
 
       const { error: licenseError } = await supabase
         .from("licenses")
-        .update({ status: "active", expire_at: baseDate.toISOString() })
+        .update({ status: "active", expire_at: newExpiryDate.toISOString() })
         .eq("id", request.license_id);
 
       if (licenseError) {
@@ -121,7 +146,7 @@ Deno.serve(async (req) => {
           "━━━━━━━━━━━━━━━━━━━━━\n\n" +
           `🔑 المنتج: *${request.licenses?.products?.name || "منتج"}*\n` +
           `📅 تم إضافة: *${request.days} يوم*\n` +
-          `📅 تاريخ الانتهاء الجديد: *${baseDate.toLocaleDateString("ar-EG")}*\n` +
+          `📅 تاريخ الانتهاء الجديد: *${newExpiryDate.toLocaleDateString("ar-EG")}*\n` +
           `📊 الحالة: نشط 🟢\n\n` +
           "شكراً لك! 🙏\n" +
           "━━━━━━━━━━━━━━━━━━━━━";
@@ -136,7 +161,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({
         success: true,
         message: `تم تأكيد التجديد - ${request.days} يوم`,
-        newExpiry: baseDate.toISOString(),
+        newExpiry: newExpiryDate.toISOString(),
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
     } else if (action === "reject") {
