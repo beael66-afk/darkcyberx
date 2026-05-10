@@ -123,6 +123,12 @@ const Devices = () => {
     return groups;
   }, {} as Record<string, typeof filteredDevices>);
 
+  const groupEntries = groupedDevices ? Object.entries(groupedDevices) : [];
+  const { paginatedData: pageGroups, currentPage, totalPages, goToPage } = usePagination({
+    data: groupEntries,
+    itemsPerPage: 20,
+  });
+
   const handleSelectDevice = (deviceId: string, checked: boolean) => {
     const newSelected = new Set(selectedDevices);
     if (checked) newSelected.add(deviceId);
