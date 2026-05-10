@@ -223,7 +223,7 @@ const Devices = () => {
         </div>
       ) : (
         <div className="space-y-4">
-          {Object.entries(groupedDevices).map(([licenseId, groupDevices]) => {
+          {pageGroups.map(([licenseId, groupDevices]) => {
             const firstDevice = groupDevices?.[0];
             const licenseKey = (firstDevice?.licenses as any)?.license_key;
             const customerName = (firstDevice?.licenses as any)?.customers?.name;
