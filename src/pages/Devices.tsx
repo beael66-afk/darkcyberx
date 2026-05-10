@@ -10,6 +10,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Search, Trash2, Power, PowerOff, Monitor, ChevronDown, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
+import { usePagination } from "@/hooks/usePagination";
+import { DataPagination } from "@/components/ui/data-pagination";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import type { Tables } from "@/integrations/supabase/types";
