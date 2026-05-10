@@ -342,6 +342,13 @@ const Devices = () => {
               </Collapsible>
             );
           })}
+          <DataPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={groupEntries.length}
+            itemsPerPage={20}
+            onPageChange={goToPage}
+          />
         </div>
       )}
     </div>
