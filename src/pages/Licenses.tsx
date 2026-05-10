@@ -795,6 +795,13 @@ const Licenses = () => {
               )}
             </TableBody>
           </Table>
+          <DataPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredLicenses.length}
+            itemsPerPage={50}
+            onPageChange={goToPage}
+          />
         </CardContent>
       </Card>
 
