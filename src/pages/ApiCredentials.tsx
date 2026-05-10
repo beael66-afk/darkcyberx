@@ -1,3 +1,4 @@
+import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -571,7 +572,11 @@ export default function ApiCredentials() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <p className="text-center text-muted-foreground">جاري التحميل...</p>
+            <div className="space-y-3">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
           ) : apiKeys.length === 0 ? (
             <div className="text-center py-8 space-y-4">
               <p className="text-muted-foreground">لا توجد مفاتيح API. أنشئ مفتاحاً للبدء</p>

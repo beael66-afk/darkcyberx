@@ -1,3 +1,4 @@
+import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -265,9 +266,7 @@ const Products = () => {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center">جاري التحميل...</TableCell>
-              </TableRow>
+              <TableSkeleton rows={6} columns={5} />
             ) : filteredProducts?.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center">لا توجد منتجات</TableCell>

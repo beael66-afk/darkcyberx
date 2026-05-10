@@ -38,6 +38,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { logActivity } from "@/lib/logger";
+import { usePagination } from "@/hooks/usePagination";
+import { DataPagination } from "@/components/ui/data-pagination";
 
 interface License {
   id: string;
@@ -480,6 +482,11 @@ const Licenses = () => {
       return new Date(a.expire_at).getTime() - new Date(b.expire_at).getTime();
     });
 
+  const { paginatedData: pageLicenses, currentPage, totalPages, goToPage } = usePagination({
+    data: filteredLicenses,
+    itemsPerPage: 50,
+  });
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
@@ -682,7 +689,7 @@ const Licenses = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredLicenses.map((license) => (
+                pageLicenses.map((license) => (
                   <TableRow key={license.id}>
                     <TableCell>
                       <div className="font-mono text-sm">{license.license_key}</div>
@@ -788,6 +795,13 @@ const Licenses = () => {
               )}
             </TableBody>
           </Table>
+          <DataPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredLicenses.length}
+            itemsPerPage={50}
+            onPageChange={goToPage}
+          />
         </CardContent>
       </Card>
 

@@ -10,6 +10,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Search, Trash2, Power, PowerOff, Monitor, ChevronDown, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
+import { usePagination } from "@/hooks/usePagination";
+import { DataPagination } from "@/components/ui/data-pagination";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import type { Tables } from "@/integrations/supabase/types";
@@ -121,6 +123,12 @@ const Devices = () => {
     return groups;
   }, {} as Record<string, typeof filteredDevices>);
 
+  const groupEntries = groupedDevices ? Object.entries(groupedDevices) : [];
+  const { paginatedData: pageGroups, currentPage, totalPages, goToPage } = usePagination({
+    data: groupEntries,
+    itemsPerPage: 20,
+  });
+
   const handleSelectDevice = (deviceId: string, checked: boolean) => {
     const newSelected = new Set(selectedDevices);
     if (checked) newSelected.add(deviceId);
@@ -215,7 +223,7 @@ const Devices = () => {
         </div>
       ) : (
         <div className="space-y-4">
-          {Object.entries(groupedDevices).map(([licenseId, groupDevices]) => {
+          {pageGroups.map(([licenseId, groupDevices]) => {
             const firstDevice = groupDevices?.[0];
             const licenseKey = (firstDevice?.licenses as any)?.license_key;
             const customerName = (firstDevice?.licenses as any)?.customers?.name;
@@ -334,6 +342,13 @@ const Devices = () => {
               </Collapsible>
             );
           })}
+          <DataPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={groupEntries.length}
+            itemsPerPage={20}
+            onPageChange={goToPage}
+          />
         </div>
       )}
     </div>
