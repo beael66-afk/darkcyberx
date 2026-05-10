@@ -301,9 +301,10 @@ const RustDeskIds = () => {
 
       {/* Grouped by customer */}
       {isLoading ? (
-        <div className="text-center py-16 text-muted-foreground">
-          <Monitor className="h-10 w-10 mx-auto mb-3 opacity-30 animate-pulse" />
-          جاري التحميل...
+        <div className="space-y-3">
+          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-20 w-full" />
         </div>
       ) : grouped.length === 0 ? (
         <Card className="border-dashed">

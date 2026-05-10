@@ -313,11 +313,7 @@ const Customers = () => {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">
-                  جاري التحميل...
-                </TableCell>
-              </TableRow>
+              <TableSkeleton rows={6} columns={5} />
             ) : filteredCustomers?.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-12">

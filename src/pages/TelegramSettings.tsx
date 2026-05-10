@@ -229,11 +229,7 @@ const TelegramSettings = () => {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
-                  جاري التحميل...
-                </TableCell>
-              </TableRow>
+              <TableSkeleton rows={6} columns={6} />
             ) : filteredLinks?.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-12">

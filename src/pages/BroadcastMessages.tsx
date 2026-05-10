@@ -322,9 +322,11 @@ const BroadcastMessages = () => {
                     <ScrollArea className="h-[300px]">
                       <div className="space-y-1">
                         {loadingCustomers ? (
-                          <p className="text-center py-4 text-muted-foreground text-sm">
-                            جاري التحميل...
-                          </p>
+                          <div className="space-y-2 px-2">
+                            <Skeleton className="h-8 w-full" />
+                            <Skeleton className="h-8 w-full" />
+                            <Skeleton className="h-8 w-full" />
+                          </div>
                         ) : filteredCustomers?.length === 0 ? (
                           <p className="text-center py-4 text-muted-foreground text-sm">
                             لا يوجد عملاء

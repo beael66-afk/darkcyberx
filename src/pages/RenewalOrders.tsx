@@ -618,7 +618,7 @@ const RenewalOrders = () => {
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow><TableCell colSpan={8} className="text-center py-12 text-muted-foreground">جاري التحميل...</TableCell></TableRow>
+                  <TableSkeleton rows={5} columns={8} />
                 ) : filteredRequests?.length === 0 ? (
                   <TableRow><TableCell colSpan={8} className="text-center py-12"><div className="flex flex-col items-center gap-2 text-muted-foreground"><ShoppingCart className="h-10 w-10 opacity-30" /><p>لا توجد طلبات</p></div></TableCell></TableRow>
                 ) : (
@@ -757,7 +757,7 @@ const RenewalOrders = () => {
               </TableHeader>
               <TableBody>
                 {regLoading ? (
-                  <TableRow><TableCell colSpan={8} className="text-center py-12 text-muted-foreground">جاري التحميل...</TableCell></TableRow>
+                  <TableSkeleton rows={5} columns={8} />
                 ) : filteredRegRequests?.length === 0 ? (
                   <TableRow><TableCell colSpan={8} className="text-center py-12"><div className="flex flex-col items-center gap-2 text-muted-foreground"><UserPlus className="h-10 w-10 opacity-30" /><p>لا توجد طلبات تسجيل</p></div></TableCell></TableRow>
                 ) : (
