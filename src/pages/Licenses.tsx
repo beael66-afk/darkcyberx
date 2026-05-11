@@ -203,10 +203,11 @@ const Licenses = () => {
       });
       handleCloseDialog();
       fetchLicenses();
-    } catch (error) {
+    } catch (error: any) {
+      console.error("createLicense error:", error);
       toast({
         title: "خطأ",
-        description: "فشل إنشاء الترخيص",
+        description: `فشل إنشاء الترخيص: ${error?.message || "خطأ غير معروف"}`,
         variant: "destructive",
       });
     }
