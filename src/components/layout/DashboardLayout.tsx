@@ -53,7 +53,10 @@ export const DashboardLayout = () => {
       adminCheckRef.current = { userId, promise };
     }
 
-    adminCheckRef.current.promise.then((result) => {
+    const activeCheck = adminCheckRef.current;
+    if (!activeCheck) return;
+
+    activeCheck.promise.then((result) => {
       if (result === null) {
         setAdminCheckFailed(true);
         return;
