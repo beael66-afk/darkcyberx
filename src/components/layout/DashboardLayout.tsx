@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
 import { AppSidebar } from "./AppSidebar";
 import { ThemeToggle } from "./ThemeToggle";
 import { AiAssistant } from "@/components/ai/AiAssistant";
@@ -11,35 +12,56 @@ import { User } from "@supabase/supabase-js";
 export const DashboardLayout = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [adminCheckFailed, setAdminCheckFailed] = useState(false);
+  const adminCheckRef = useRef<{ userId: string; promise: Promise<boolean | null> } | null>(null);
   const navigate = useNavigate();
 
-  const checkAdminRole = async (userId: string, retry = 0): Promise<boolean> => {
-    const { data, error } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .eq("role", "admin")
-      .maybeSingle();
+  const checkAdminRole = useCallback(async (userId: string, retry = 0): Promise<boolean | null> => {
+    const { data, error } = await supabase.rpc("has_role", {
+      _user_id: userId,
+      _role: "admin",
+    });
 
     if (error) {
       console.error("checkAdminRole error:", error);
-      // Transient network/JWT error — retry once before giving up
       if (retry < 2) {
-        await new Promise((r) => setTimeout(r, 600));
+        await new Promise((r) => setTimeout(r, 700 * (retry + 1)));
         return checkAdminRole(userId, retry + 1);
       }
-      // Don't sign the user out on a query error — just send to auth
-      navigate("/auth");
-      return false;
+      return null;
     }
 
-    if (!data) {
+    if (data !== true) {
       await supabase.auth.signOut();
-      navigate("/auth");
+      navigate("/auth", { replace: true });
       return false;
     }
     return true;
-  };
+  }, [navigate]);
+
+  const runAdminCheck = useCallback((userId: string) => {
+    setAdminCheckFailed(false);
+
+    if (adminCheckRef.current?.userId !== userId) {
+      const promise = checkAdminRole(userId).finally(() => {
+        if (adminCheckRef.current?.userId === userId) {
+          adminCheckRef.current = null;
+        }
+      });
+      adminCheckRef.current = { userId, promise };
+    }
+
+    const activeCheck = adminCheckRef.current;
+    if (!activeCheck) return;
+
+    activeCheck.promise.then((result) => {
+      if (result === null) {
+        setAdminCheckFailed(true);
+        return;
+      }
+      setIsAdmin(result);
+    });
+  }, [checkAdminRole]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -47,30 +69,34 @@ export const DashboardLayout = () => {
         setUser(session?.user ?? null);
         if (!session) {
           setIsAdmin(null);
-          navigate("/auth");
-        } else {
+          setAdminCheckFailed(false);
+          adminCheckRef.current = null;
+          navigate("/auth", { replace: true });
+        } else if (event !== "TOKEN_REFRESHED") {
           setTimeout(() => {
-            checkAdminRole(session.user.id).then(setIsAdmin);
+            runAdminCheck(session.user.id);
           }, 0);
         }
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (!session) {
-        setIsAdmin(null);
-        navigate("/auth");
-      } else {
-        checkAdminRole(session.user.id).then(setIsAdmin);
-      }
-    });
-
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, runAdminCheck]);
 
-  if (!user || isAdmin === null) {
+  if (!user || (isAdmin === null && !adminCheckFailed)) {
     return null;
+  }
+
+  if (adminCheckFailed) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <div className="max-w-md space-y-4 text-center">
+          <h1 className="text-2xl font-bold text-foreground">تعذر التحقق من صلاحية الأدمن</h1>
+          <p className="text-muted-foreground">انتظر لحظات ثم أعد المحاولة. لن يتم تسجيل خروجك تلقائياً.</p>
+          <Button onClick={() => user && runAdminCheck(user.id)}>إعادة المحاولة</Button>
+        </div>
+      </div>
+    );
   }
 
   if (!isAdmin) {
