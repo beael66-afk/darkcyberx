@@ -13,14 +13,26 @@ export const DashboardLayout = () => {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const navigate = useNavigate();
 
-  const checkAdminRole = async (userId: string) => {
-    const { data } = await supabase
+  const checkAdminRole = async (userId: string, retry = 0): Promise<boolean> => {
+    const { data, error } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", userId)
       .eq("role", "admin")
-      .single();
-    
+      .maybeSingle();
+
+    if (error) {
+      console.error("checkAdminRole error:", error);
+      // Transient network/JWT error — retry once before giving up
+      if (retry < 2) {
+        await new Promise((r) => setTimeout(r, 600));
+        return checkAdminRole(userId, retry + 1);
+      }
+      // Don't sign the user out on a query error — just send to auth
+      navigate("/auth");
+      return false;
+    }
+
     if (!data) {
       await supabase.auth.signOut();
       navigate("/auth");
