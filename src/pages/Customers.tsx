@@ -118,6 +118,22 @@ const Customers = () => {
     onError: () => toast.error("فشل حذف العميل")
   });
 
+  const toggleIncludeRevenueMutation = useMutation({
+    mutationFn: async ({ id, value }: { id: string; value: boolean }) => {
+      const { error } = await supabase
+        .from("customers")
+        .update({ include_in_revenue: value } as any)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      toast.success("تم التحديث");
+    },
+    onError: () => toast.error("فشل التحديث"),
+  });
+
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -348,12 +364,26 @@ const Customers = () => {
                         مربوط
                       </Badge>
                     ) : (
-                      <Badge variant="secondary" className="text-xs gap-1">
-                        <MessageCircle className="h-3 w-3 opacity-50" />
-                        غير مربوط
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-xs gap-1">
+                          <MessageCircle className="h-3 w-3 opacity-50" />
+                          غير مربوط
+                        </Badge>
+                        <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 rounded border-border accent-primary cursor-pointer"
+                            checked={Boolean((customer as any).include_in_revenue)}
+                            onChange={(e) =>
+                              toggleIncludeRevenueMutation.mutate({ id: customer.id, value: e.target.checked })
+                            }
+                          />
+                          احتساب في الإيرادات
+                        </label>
+                      </div>
                     )}
                   </TableCell>
+
                   <TableCell>
                     <div className="flex gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
                       <Button
