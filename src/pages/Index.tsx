@@ -1,21 +1,18 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { KeySquare, Shield, Zap, BarChart } from "lucide-react";
+import { useAuth } from "@/contexts/useAuth";
 
 const Index = () => {
   const navigate = useNavigate();
+  const { session, loading } = useAuth();
 
   useEffect(() => {
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate("/dashboard");
-      }
-    };
-    checkUser();
-  }, [navigate]);
+    if (!loading && session) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [loading, navigate, session]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
