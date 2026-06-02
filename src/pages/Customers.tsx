@@ -118,6 +118,22 @@ const Customers = () => {
     onError: () => toast.error("فشل حذف العميل")
   });
 
+  const toggleIncludeRevenueMutation = useMutation({
+    mutationFn: async ({ id, value }: { id: string; value: boolean }) => {
+      const { error } = await supabase
+        .from("customers")
+        .update({ include_in_revenue: value } as any)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      toast.success("تم التحديث");
+    },
+    onError: () => toast.error("فشل التحديث"),
+  });
+
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     try {
