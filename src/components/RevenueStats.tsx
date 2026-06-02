@@ -27,19 +27,29 @@ export const RevenueStats = () => {
         .from("telegram_links")
         .select("customer_id");
 
-      if (!telegramLinks || telegramLinks.length === 0) {
+      const linkedIds = (telegramLinks || []).map((l) => l.customer_id).filter(Boolean) as string[];
+
+      // Get manually-included customers (not linked but marked include_in_revenue)
+      const { data: includedCustomers } = await supabase
+        .from("customers")
+        .select("id")
+        .eq("include_in_revenue", true);
+
+      const includedIds = (includedCustomers || []).map((c) => c.id);
+
+      const allRelevantIds = [...new Set([...linkedIds, ...includedIds])];
+
+      if (allRelevantIds.length === 0) {
         setData({ dailyRevenue: 0, monthlyRevenue: 0, yearlyRevenue: 0, activeSubscribers: 0 });
         setLoading(false);
         return;
       }
 
-      const customerIds = telegramLinks.map((l) => l.customer_id);
-
       // Get active licenses for these customers
       const { data: activeLicenses } = await supabase
         .from("licenses")
         .select("customer_id")
-        .in("customer_id", customerIds)
+        .in("customer_id", allRelevantIds)
         .eq("status", "active");
 
       if (!activeLicenses || activeLicenses.length === 0) {
@@ -48,10 +58,8 @@ export const RevenueStats = () => {
         return;
       }
 
-      // Get unique active customer IDs
       const activeCustomerIds = [...new Set(activeLicenses.map((l) => l.customer_id).filter(Boolean))] as string[];
 
-      // Get daily rates for active customers
       const { data: customers } = await supabase
         .from("customers")
         .select("id, daily_rate")
@@ -73,6 +81,7 @@ export const RevenueStats = () => {
         yearlyRevenue: dailyRevenue * daysInYear,
         activeSubscribers: customers.length,
       });
+
     } catch (error) {
       console.error("Error fetching revenue:", error);
     } finally {
