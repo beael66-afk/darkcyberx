@@ -7,10 +7,10 @@ import { AppSidebar } from "./AppSidebar";
 import { ThemeToggle } from "./ThemeToggle";
 import { AiAssistant } from "@/components/ai/AiAssistant";
 import { NotificationBell } from "./NotificationBell";
-import { User } from "@supabase/supabase-js";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const DashboardLayout = () => {
-  const [user, setUser] = useState<User | null>(null);
+  const { user, loading } = useAuth();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [adminCheckFailed, setAdminCheckFailed] = useState(false);
   const adminCheckRef = useRef<{ userId: string; promise: Promise<boolean | null> } | null>(null);
@@ -34,7 +34,6 @@ export const DashboardLayout = () => {
     }
 
     if (!data) {
-      await supabase.auth.signOut();
       navigate("/auth", { replace: true });
       return false;
     }
@@ -66,26 +65,20 @@ export const DashboardLayout = () => {
   }, [checkAdminRole]);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user ?? null);
-        if (!session) {
-          setIsAdmin(null);
-          setAdminCheckFailed(false);
-          adminCheckRef.current = null;
-          navigate("/auth", { replace: true });
-        } else if (event !== "TOKEN_REFRESHED") {
-          setTimeout(() => {
-            runAdminCheck(session.user.id);
-          }, 0);
-        }
-      }
-    );
+    if (loading) return;
 
-    return () => subscription.unsubscribe();
-  }, [navigate, runAdminCheck]);
+    if (!user) {
+      setIsAdmin(null);
+      setAdminCheckFailed(false);
+      adminCheckRef.current = null;
+      navigate("/auth", { replace: true });
+      return;
+    }
 
-  if (!user || (isAdmin === null && !adminCheckFailed)) {
+    runAdminCheck(user.id);
+  }, [loading, navigate, runAdminCheck, user]);
+
+  if (loading || !user || (isAdmin === null && !adminCheckFailed)) {
     return null;
   }
 
