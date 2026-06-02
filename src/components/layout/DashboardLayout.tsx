@@ -17,10 +17,12 @@ export const DashboardLayout = () => {
   const navigate = useNavigate();
 
   const checkAdminRole = useCallback(async (userId: string, retry = 0): Promise<boolean | null> => {
-    const { data, error } = await supabase.rpc("has_role", {
-      _user_id: userId,
-      _role: "admin",
-    });
+    const { data, error } = await supabase
+      .from("user_roles")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
 
     if (error) {
       console.error("checkAdminRole error:", error);
@@ -31,7 +33,7 @@ export const DashboardLayout = () => {
       return null;
     }
 
-    if (data !== true) {
+    if (!data) {
       await supabase.auth.signOut();
       navigate("/auth", { replace: true });
       return false;

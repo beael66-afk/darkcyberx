@@ -1,0 +1,1 @@
+ALTER FUNCTION public.generate_license_key() SECURITY INVOKER;
