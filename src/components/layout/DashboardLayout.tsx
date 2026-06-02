@@ -34,7 +34,6 @@ export const DashboardLayout = () => {
     }
 
     if (!data) {
-      navigate("/auth", { replace: true });
       return false;
     }
     return true;
@@ -95,7 +94,15 @@ export const DashboardLayout = () => {
   }
 
   if (!isAdmin) {
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <div className="max-w-md space-y-4 text-center">
+          <h1 className="text-2xl font-bold text-foreground">غير مصرح بالدخول</h1>
+          <p className="text-muted-foreground">هذا الحساب لا يملك صلاحية الأدمن.</p>
+          <Button onClick={() => supabase.auth.signOut()}>تسجيل الخروج</Button>
+        </div>
+      </div>
+    );
   }
 
   return (
