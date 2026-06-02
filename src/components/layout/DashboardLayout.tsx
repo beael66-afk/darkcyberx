@@ -7,7 +7,7 @@ import { AppSidebar } from "./AppSidebar";
 import { ThemeToggle } from "./ThemeToggle";
 import { AiAssistant } from "@/components/ai/AiAssistant";
 import { NotificationBell } from "./NotificationBell";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/useAuth";
 
 export const DashboardLayout = () => {
   const { user, loading } = useAuth();
