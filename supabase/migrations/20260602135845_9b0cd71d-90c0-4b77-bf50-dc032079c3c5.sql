@@ -1,0 +1,1 @@
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS include_in_revenue boolean NOT NULL DEFAULT false;

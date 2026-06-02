@@ -112,6 +112,7 @@ export type Database = {
           daily_rate: number
           email: string
           id: string
+          include_in_revenue: boolean
           name: string
           notes: string | null
           phone: string | null
@@ -125,6 +126,7 @@ export type Database = {
           daily_rate?: number
           email: string
           id?: string
+          include_in_revenue?: boolean
           name: string
           notes?: string | null
           phone?: string | null
@@ -138,6 +140,7 @@ export type Database = {
           daily_rate?: number
           email?: string
           id?: string
+          include_in_revenue?: boolean
           name?: string
           notes?: string | null
           phone?: string | null
