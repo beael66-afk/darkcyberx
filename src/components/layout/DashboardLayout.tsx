@@ -15,7 +15,11 @@ export const DashboardLayout = () => {
     if (loading) return;
 
     if (!user) {
-      navigate("/auth", { replace: true });
+      const redirectTimer = window.setTimeout(() => {
+        navigate("/auth", { replace: true });
+      }, 1500);
+
+      return () => window.clearTimeout(redirectTimer);
     }
   }, [loading, navigate, user]);
 
