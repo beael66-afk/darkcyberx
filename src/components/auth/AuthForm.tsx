@@ -35,7 +35,7 @@ export const AuthForm = () => {
         title: "تم تسجيل الدخول بنجاح",
         description: "مرحباً بك في نظام إدارة التراخيص",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof z.ZodError) {
         toast({
           title: "خطأ في التحقق",
@@ -45,7 +45,7 @@ export const AuthForm = () => {
       } else {
         toast({
           title: "حدث خطأ",
-          description: error.message,
+          description: error instanceof Error ? error.message : "حدث خطأ غير متوقع",
           variant: "destructive",
         });
       }
