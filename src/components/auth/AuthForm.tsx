@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +10,7 @@ import { loginSchema } from "@/lib/validations";
 import { z } from "zod";
 
 export const AuthForm = () => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -35,6 +37,7 @@ export const AuthForm = () => {
         title: "تم تسجيل الدخول بنجاح",
         description: "مرحباً بك في نظام إدارة التراخيص",
       });
+      navigate("/dashboard", { replace: true });
     } catch (error: unknown) {
       if (error instanceof z.ZodError) {
         toast({
