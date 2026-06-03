@@ -9,10 +9,8 @@ import { loginSchema, registerSchema } from "@/lib/validations";
 import { z } from "zod";
 
 export const AuthForm = () => {
-  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
   const submitLockRef = useRef(false);
   const { toast } = useToast();
@@ -24,42 +22,19 @@ export const AuthForm = () => {
     setLoading(true);
 
     try {
-      if (isLogin) {
-        const validated = loginSchema.parse({ email, password });
-        
-        const { error } = await supabase.auth.signInWithPassword({
-          email: validated.email,
-          password: validated.password,
-        });
+      const validated = loginSchema.parse({ email, password });
+      
+      const { error } = await supabase.auth.signInWithPassword({
+        email: validated.email,
+        password: validated.password,
+      });
 
-        if (error) throw error;
+      if (error) throw error;
 
-        toast({
-          title: "تم تسجيل الدخول بنجاح",
-          description: "مرحباً بك في نظام إدارة التراخيص",
-        });
-      } else {
-        const validated = registerSchema.parse({ username, email, password });
-        
-        const { error } = await supabase.auth.signUp({
-          email: validated.email,
-          password: validated.password,
-            options: {
-            emailRedirectTo: `${window.location.origin}/`,
-            data: {
-              username: validated.username,
-            },
-          },
-        });
-
-        if (error) throw error;
-
-        toast({
-          title: "تم إنشاء الحساب",
-          description: "يمكنك الآن تسجيل الدخول",
-        });
-        setIsLogin(true);
-      }
+      toast({
+        title: "تم تسجيل الدخول بنجاح",
+        description: "مرحباً بك في نظام إدارة التراخيص",
+      });
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         toast({
@@ -92,26 +67,11 @@ export const AuthForm = () => {
           License Manager
         </h1>
         <p className="text-muted-foreground">
-          {isLogin ? "سجل دخولك لإدارة التراخيص" : "أنشئ حساب جديد"}
+          سجل دخولك لإدارة التراخيص
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {!isLogin && (
-          <div className="space-y-2">
-            <Label htmlFor="username">اسم المستخدم</Label>
-            <Input
-              id="username"
-              type="text"
-              placeholder="أدخل اسم المستخدم"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required={!isLogin}
-              disabled={loading}
-            />
-          </div>
-        )}
-
         <div className="space-y-2">
           <Label htmlFor="email">البريد الإلكتروني</Label>
           <Input
@@ -145,21 +105,9 @@ export const AuthForm = () => {
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               جاري التحميل...
             </>
-          ) : isLogin ? (
-            "تسجيل الدخول"
           ) : (
-            "إنشاء حساب"
+            "تسجيل الدخول"
           )}
-        </Button>
-
-        <Button
-          type="button"
-          variant="ghost"
-          className="w-full"
-          onClick={() => setIsLogin(!isLogin)}
-          disabled={loading}
-        >
-          {isLogin ? "ليس لديك حساب؟ سجل الآن" : "لديك حساب؟ سجل دخولك"}
         </Button>
       </form>
     </div>
