@@ -35,6 +35,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 
+const EXPLICIT_LOGOUT_KEY = "license-manager-explicit-logout";
+
 const menuItems = [
   { title: "لوحة التحكم", url: "/dashboard", icon: LayoutDashboard },
   { title: "التراخيص", url: "/licenses", icon: KeyRound },
@@ -62,6 +64,7 @@ export function AppSidebar() {
 
   const handleLogout = async () => {
     try {
+      sessionStorage.setItem(EXPLICIT_LOGOUT_KEY, "true");
       await supabase.auth.signOut();
       toast({
         title: "تم تسجيل الخروج",
