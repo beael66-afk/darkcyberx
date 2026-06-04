@@ -37,6 +37,7 @@ export const AuthForm = () => {
     try {
       const validated = loginSchema.parse({ email, password });
       clearStaleAuthStorage();
+      await supabase.auth.signOut({ scope: "local" });
       
       const { error } = await supabase.auth.signInWithPassword({
         email: validated.email,
