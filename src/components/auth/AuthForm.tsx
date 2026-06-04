@@ -9,6 +9,17 @@ import { KeyRound, Loader2 } from "lucide-react";
 import { loginSchema } from "@/lib/validations";
 import { z } from "zod";
 
+const EXPLICIT_LOGOUT_KEY = "license-manager-explicit-logout";
+
+const clearStaleAuthStorage = () => {
+  sessionStorage.removeItem(EXPLICIT_LOGOUT_KEY);
+  Object.keys(localStorage).forEach((key) => {
+    if (key.startsWith("sb-") && key.endsWith("-auth-token")) {
+      localStorage.removeItem(key);
+    }
+  });
+};
+
 export const AuthForm = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -25,6 +36,7 @@ export const AuthForm = () => {
 
     try {
       const validated = loginSchema.parse({ email, password });
+      clearStaleAuthStorage();
       
       const { error } = await supabase.auth.signInWithPassword({
         email: validated.email,
